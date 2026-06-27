@@ -11,6 +11,10 @@ class CmsMedia extends Model
 
     public function url(): string
     {
+        if ($this->disk === 'public') {
+            return asset('storage/'.$this->path);
+        }
+
         return Storage::disk($this->disk)->url($this->path);
     }
 
