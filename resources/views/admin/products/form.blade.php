@@ -31,7 +31,7 @@
             <div class="col-md-6">
                 <label class="form-label">رنگ</label>
                 <select name="accent" class="form-select">
-                    @foreach (['orange', 'purple', 'blue'] as $accent)
+                    @foreach (['orange', 'purple', 'blue', 'green'] as $accent)
                         <option value="{{ $accent }}" @selected(old('accent', $product->accent) === $accent)>{{ $accent }}</option>
                     @endforeach
                 </select>

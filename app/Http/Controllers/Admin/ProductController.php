@@ -70,7 +70,7 @@ class ProductController extends Controller
             'title' => ['required', 'string', 'max:200'],
             'subtitle' => ['nullable', 'string', 'max:200'],
             'description' => ['nullable', 'string', 'max:1000'],
-            'accent' => ['required', 'in:orange,purple,blue'],
+            'accent' => ['required', 'in:orange,purple,blue,green'],
             'visual' => ['nullable', 'string', 'max:50'],
             'audience' => ['nullable', 'string', 'max:200'],
             'features' => ['nullable', 'string'],

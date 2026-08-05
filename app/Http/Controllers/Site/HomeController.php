@@ -27,7 +27,7 @@ class HomeController extends SiteController
             'home' => $home,
             'hero' => $home['hero'],
             'heroPills' => $home['hero']['pills'] ?? [],
-            'products' => $this->siteData->products()->take(3),
+            'products' => $this->siteData->products()->take(4),
             'stats' => $home['stats'],
             'whyBisan' => $home['why_bisan'],
             'devCapabilities' => $this->siteData->devCapabilities(),

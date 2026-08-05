@@ -4,16 +4,19 @@
     $accentColor = match ($product['accent'] ?? 'orange') {
         'purple' => 'text-purple-400',
         'blue' => 'text-blue-400',
+        'green' => 'text-emerald-400',
         default => 'text-bisan-orange',
     };
     $accentBg = match ($product['accent'] ?? 'orange') {
         'purple' => 'bg-purple-500/10 border-purple-500/20',
         'blue' => 'bg-blue-500/10 border-blue-500/20',
+        'green' => 'bg-emerald-500/10 border-emerald-500/20',
         default => 'bg-bisan-orange/10 border-bisan-orange/20',
     };
     $accentDot = match ($product['accent'] ?? 'orange') {
         'purple' => 'bg-purple-400',
         'blue' => 'bg-blue-400',
+        'green' => 'bg-emerald-400',
         default => 'bg-bisan-orange',
     };
 @endphp

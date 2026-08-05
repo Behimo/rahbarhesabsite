@@ -4,7 +4,7 @@
     <x-page-hero
         badge="محصولات"
         title="راه‌حل‌های آماده بیسان"
-        subtitle="۳ محصول تست‌شده — هر کدام را جدا یا با هم استفاده کنید."
+        subtitle="۴ محصول تست‌شده — هر کدام را جدا یا با هم استفاده کنید."
     />
 
     <section class="landing-section pb-20">
@@ -14,7 +14,7 @@
                 ['name' => 'محصولات', 'url' => route('products.index')],
             ]" />
 
-            <div class="grid gap-6 lg:grid-cols-3 lg:gap-8">
+            <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-4 lg:gap-8">
                 @foreach ($products as $product)
                     <x-product-card
                         :title="$product['title']"
@@ -41,12 +41,13 @@
                         subtitle="یک نگاه سریع برای انتخاب درست."
                     />
                     <div class="mt-8 overflow-x-auto">
-                        <table class="w-full min-w-[600px] text-sm">
+                        <table class="w-full min-w-[720px] text-sm">
                             <thead>
                                 <tr class="border-b border-white/10">
                                     <th class="py-4 pr-4 text-right text-slate-400 font-medium">قابلیت</th>
                                     <th class="py-4 px-4 text-center text-bisan-orange font-semibold">راهبر</th>
                                     <th class="py-4 px-4 text-center text-purple-400 font-semibold">نوژارو</th>
+                                    <th class="py-4 px-4 text-center text-emerald-400 font-semibold">ویلئو</th>
                                     <th class="py-4 px-4 text-center text-blue-400 font-semibold">افزونه</th>
                                 </tr>
                             </thead>
@@ -54,7 +55,7 @@
                                 @foreach ($comparison as $row)
                                     <tr class="border-b border-white/5">
                                         <td class="py-4 pr-4 text-slate-300">{{ $row['feature'] }}</td>
-                                        @foreach (['rahbar', 'nojaro', 'wordpress'] as $key)
+                                        @foreach (['rahbar', 'nojaro', 'vileo', 'wordpress'] as $key)
                                             <td class="py-4 px-4 text-center">
                                                 @if ($row[$key])
                                                     <svg class="h-5 w-5 mx-auto text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

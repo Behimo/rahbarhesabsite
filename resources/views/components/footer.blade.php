@@ -24,6 +24,7 @@
                 'محصولات' => [
                     'راهبر CRM' => route('products.show', 'rahbar'),
                     'نوژارو' => route('products.show', 'nojaro'),
+                    'ویلئو' => route('products.show', 'vileo'),
                     'افزونه وردپرس' => route('products.show', 'wordpress-plugin'),
                 ],
                 'پروژه اختصاصی' => [

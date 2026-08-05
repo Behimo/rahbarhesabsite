@@ -750,6 +750,14 @@
             0 0 48px rgba(59, 130, 246, 0.12);
     }
 
+    .product-card--green:hover {
+        border-color: rgba(16, 185, 129, 0.35);
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.1),
+            0 28px 64px rgba(0, 0, 0, 0.5),
+            0 0 48px rgba(16, 185, 129, 0.12);
+    }
+
     .product-card--featured {
         border-color: rgba(255, 102, 0, 0.3);
         box-shadow:
@@ -834,6 +842,12 @@
         background:
             radial-gradient(ellipse at 70% 25%, rgba(59, 130, 246, 0.28), transparent 55%),
             linear-gradient(180deg, rgba(59, 130, 246, 0.06), transparent);
+    }
+
+    .product-card--green .product-card__preview-bg {
+        background:
+            radial-gradient(ellipse at 30% 20%, rgba(16, 185, 129, 0.28), transparent 55%),
+            linear-gradient(180deg, rgba(16, 185, 129, 0.06), transparent);
     }
 
     .product-card__ribbon {
@@ -991,6 +1005,10 @@
         @apply border-blue-500/25 bg-blue-500/10 text-blue-300;
     }
 
+    .product-card--green .product-card__badge {
+        @apply border-emerald-500/25 bg-emerald-500/10 text-emerald-300;
+    }
+
     .product-card__audience {
         @apply text-[10px] text-slate-500;
     }
@@ -1020,6 +1038,10 @@
         @apply text-blue-300;
     }
 
+    .product-card--green:hover .product-card__title {
+        @apply text-emerald-300;
+    }
+
     .product-card__desc {
         @apply mt-2 text-sm leading-7 text-slate-400;
     }
@@ -1043,6 +1065,27 @@
     .product-card--orange .product-card__cta { @apply text-bisan-orange; }
     .product-card--purple .product-card__cta { @apply text-purple-400; }
     .product-card--blue .product-card__cta { @apply text-blue-400; }
+    .product-card--green .product-card__cta { @apply text-emerald-400; }
+
+    .product-card__finance-balance {
+        @apply mb-3 rounded-xl border border-white/10 bg-black/20 p-3;
+    }
+
+    .product-card__finance-balance small {
+        @apply block text-[10px] text-slate-400;
+    }
+
+    .product-card__finance-balance strong {
+        @apply mt-1 block text-sm font-bold text-white;
+    }
+
+    .product-card__finance-chart {
+        @apply flex h-16 items-end gap-1.5;
+    }
+
+    .product-card__finance-chart span {
+        @apply flex-1 rounded-t bg-emerald-400/50;
+    }
 
     .product-card:hover .product-card__cta svg {
         transform: translateX(-4px);

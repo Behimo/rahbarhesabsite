@@ -13,7 +13,7 @@
 ])
 
 @php
-    $accentClass = in_array($accent, ['orange', 'purple', 'blue'], true) ? $accent : 'orange';
+    $accentClass = in_array($accent, ['orange', 'purple', 'blue', 'green'], true) ? $accent : 'orange';
     $cardClass = 'product-card product-card--' . $accentClass;
     if ($featured) {
         $cardClass .= ' product-card--featured product-card--horizontal';
@@ -73,6 +73,24 @@
                             <small>قرارداد</small>
                             <div class="product-card__pipeline-card product-card__pipeline-card--done"></div>
                         </div>
+                    </div>
+                </div>
+            @elseif ($visual === 'finance')
+                <div class="product-card__mock product-card__mock--finance" aria-hidden="true">
+                    <div class="product-card__mock-bar">
+                        <span></span><span></span><span></span>
+                        <em>ویلئو · داشبورد</em>
+                    </div>
+                    <div class="product-card__finance-balance">
+                        <small>خالص دارایی</small>
+                        <strong>۱۲۴,۵۰۰,۰۰۰</strong>
+                    </div>
+                    <div class="product-card__finance-chart">
+                        <span style="height: 45%"></span>
+                        <span style="height: 70%"></span>
+                        <span style="height: 55%"></span>
+                        <span style="height: 85%"></span>
+                        <span style="height: 60%"></span>
                     </div>
                 </div>
             @elseif ($visual === 'service')

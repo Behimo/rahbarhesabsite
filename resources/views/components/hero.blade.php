@@ -18,7 +18,7 @@
             <div class="text-center lg:text-right" data-sr="left">
                 <div class="hero-eyebrow mb-6 inline-flex" data-sr="up" data-sr-delay="0">
                     <span class="hero-eyebrow__dot" aria-hidden="true"></span>
-                    <span>{{ $hero['eyebrow'] ?? '+۱۲۰۰ کسب‌وکار · ۳ محصول آماده · پروژه اختصاصی' }}</span>
+                    <span>{{ $hero['eyebrow'] ?? '+۱۲۰۰ کسب‌وکار · ۴ محصول آماده · پروژه اختصاصی' }}</span>
                 </div>
 
                 <h1 class="hero-title mb-6" data-sr="up" data-sr-delay="80">
@@ -39,7 +39,7 @@
                 </h1>
 
                 <p class="hero-lead mx-auto mb-9 max-w-xl lg:mx-0" data-sr="up" data-sr-delay="160">
-                    {{ $hero['lead'] ?? '۳ محصول آماده داریم — یا اگر نیازتان فرق دارد، همان را برایتان می‌سازیم. یک تماس کافی است تا بفهمید کدام راه برای شما بهتر است.' }}
+                    {{ $hero['lead'] ?? '۴ محصول آماده داریم — یا اگر نیازتان فرق دارد، همان را برایتان می‌سازیم. یک تماس کافی است تا بفهمید کدام راه برای شما بهتر است.' }}
                 </p>
 
                 <div class="mb-9 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start" data-sr="up" data-sr-delay="240">
