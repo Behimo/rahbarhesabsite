@@ -11,6 +11,10 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: "18"
+      - name: build-assets
+        run: |
+          npm ci
+          npm run build
       - name: update-chabokan
         env:
           CHABOKAN_TOKEN: ${{ secrets.CHABOKAN_TOKEN }}
