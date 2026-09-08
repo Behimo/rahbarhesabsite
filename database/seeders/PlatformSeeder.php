@@ -1,0 +1,105 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\Course;
+use App\Models\CourseLesson;
+use App\Models\CourseSection;
+use App\Models\ShopProduct;
+use App\Models\User;
+use Illuminate\Database\Seeder;
+
+class PlatformSeeder extends Seeder
+{
+    public function run(): void
+    {
+        User::query()->updateOrCreate(
+            ['email' => 'demo@example.com'],
+            [
+                'name' => 'کاربر نمونه',
+                'password' => 'password',
+                'role' => User::ROLE_USER,
+            ]
+        );
+
+        $instructor = User::query()->updateOrCreate(
+            ['email' => 'instructor@example.com'],
+            [
+                'name' => 'مدرس نمونه',
+                'password' => 'password',
+                'role' => User::ROLE_INSTRUCTOR,
+            ]
+        );
+
+        $product = ShopProduct::query()->updateOrCreate(
+            ['slug' => 'laravel-basics'],
+            [
+                'title' => 'آموزش Laravel از صفر',
+                'subtitle' => 'دوره جامع برای شروع برنامه‌نویسی وب',
+                'description' => 'در این دوره با فریمورک Laravel آشنا می‌شوید و یک پروژه واقعی می‌سازید.',
+                'price' => 0,
+                'type' => ShopProduct::TYPE_COURSE,
+                'is_published' => true,
+                'sort_order' => 1,
+            ]
+        );
+
+        $course = Course::query()->updateOrCreate(
+            ['shop_product_id' => $product->id],
+            [
+                'instructor_id' => $instructor->id,
+                'level' => 'beginner',
+                'duration_minutes' => 120,
+                'what_you_learn' => ['نصب Laravel', 'ساخت CRUD', 'احراز هویت'],
+                'requirements' => ['آشنایی با PHP'],
+            ]
+        );
+
+        $section = CourseSection::query()->updateOrCreate(
+            ['course_id' => $course->id, 'title' => 'مقدمات'],
+            ['sort_order' => 1]
+        );
+
+        CourseLesson::query()->updateOrCreate(
+            ['section_id' => $section->id, 'slug' => 'intro'],
+            [
+                'title' => 'معرفی دوره',
+                'content' => '<p>به دوره Laravel خوش آمدید!</p>',
+                'is_free_preview' => true,
+                'sort_order' => 1,
+            ]
+        );
+
+        CourseLesson::query()->updateOrCreate(
+            ['section_id' => $section->id, 'slug' => 'install'],
+            [
+                'title' => 'نصب Laravel',
+                'content' => '<p>نحوه نصب Laravel با Composer</p>',
+                'sort_order' => 2,
+            ]
+        );
+
+        $paidProduct = ShopProduct::query()->updateOrCreate(
+            ['slug' => 'advanced-laravel'],
+            [
+                'title' => 'Laravel پیشرفته',
+                'subtitle' => 'معماری، تست و بهینه‌سازی',
+                'description' => 'دوره پیشرفته برای توسعه‌دهندگان با تجربه.',
+                'price' => 990000,
+                'type' => ShopProduct::TYPE_COURSE,
+                'is_published' => true,
+                'sort_order' => 2,
+            ]
+        );
+
+        Course::query()->updateOrCreate(
+            ['shop_product_id' => $paidProduct->id],
+            [
+                'instructor_id' => $instructor->id,
+                'level' => 'advanced',
+                'duration_minutes' => 300,
+                'what_you_learn' => ['Repository Pattern', 'Event Sourcing', 'Performance'],
+            ]
+        );
+    }
+}

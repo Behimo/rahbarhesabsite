@@ -34,10 +34,25 @@
       "slug": "admin.products"
     },
     {
+      "url": "admin/courses",
+      "name": "دوره‌های LMS",
+      "icon": "menu-icon tf-icons ti ti-school",
+      "slug": "admin.courses"
+    },
+    {
       "url": "admin/media",
       "name": "رسانه",
       "icon": "menu-icon tf-icons ti ti-photo",
       "slug": "admin.media"
+    },
+    {
+      "menuHeader": "فروشگاه"
+    },
+    {
+      "url": "admin/orders",
+      "name": "سفارش‌ها",
+      "icon": "menu-icon tf-icons ti ti-shopping-cart",
+      "slug": "admin.orders"
     },
     {
       "menuHeader": "ارتباطات"

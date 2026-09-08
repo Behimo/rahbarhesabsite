@@ -12,8 +12,8 @@ use Illuminate\View\View;
 class PageController extends Controller
 {
     private const RESERVED_SLUGS = [
-        'admin', 'blog', 'products', 'contact', 'services', 'about',
-        'why-bisan', 'sitemap.xml', 'robots.txt', 'api',
+        'admin', 'blog', 'products', 'courses', 'cart', 'checkout', 'login', 'register', 'panel',
+        'contact', 'services', 'about', 'why-bisan', 'sitemap.xml', 'robots.txt', 'api',
     ];
 
     public function __construct(private SiteDataService $siteData) {}

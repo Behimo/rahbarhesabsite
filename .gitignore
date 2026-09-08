@@ -65,3 +65,5 @@ public/mockServiceWorker.js
 # Env files
 .env*
 !.env.example
+composer.phar
+besun

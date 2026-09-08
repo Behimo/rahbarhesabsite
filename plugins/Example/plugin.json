@@ -1,0 +1,6 @@
+{
+    "name": "Example Plugin",
+    "slug": "example",
+    "version": "1.0.0",
+    "provider": "Plugins\\Example\\ExamplePluginServiceProvider"
+}

@@ -18,6 +18,7 @@ class SiteDataService
             ['route' => 'products.index', 'label' => 'محصولات'],
             ['route' => 'services', 'label' => 'پروژه اختصاصی'],
             ['route' => 'why-bisan', 'label' => 'چرا بیسان؟'],
+            ['route' => 'courses.index', 'label' => 'دوره‌ها'],
             ['route' => 'blog.index', 'label' => 'بلاگ'],
             ['route' => 'about', 'label' => 'درباره ما'],
             ['route' => 'contact', 'label' => 'تماس'],
@@ -38,7 +39,7 @@ class SiteDataService
             ];
         }
 
-        return $links;
+        return \App\Support\Hook::applyFilters('cms.nav.links', $links);
     }
 
     public function pageContent(string $slug, array $defaults = []): array
