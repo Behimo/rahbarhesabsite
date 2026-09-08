@@ -55,6 +55,12 @@
       "slug": "admin.orders"
     },
     {
+      "url": "admin/users",
+      "name": "کاربران",
+      "icon": "menu-icon tf-icons ti ti-users",
+      "slug": "admin.users"
+    },
+    {
       "menuHeader": "ارتباطات"
     },
     {

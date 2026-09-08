@@ -20,7 +20,7 @@
 
     <form method="POST" action="{{ route('checkout.process') }}">
         @csrf
-        <button type="submit" class="btn-demo w-full justify-center">پرداخت با زرین‌پال</button>
+        <button type="submit" class="btn-demo w-full justify-center">پرداخت با {{ config('cms.payment_gateway') === 'zibal' ? 'زیبال' : 'زرین‌پال' }}</button>
     </form>
 </div>
 @endsection

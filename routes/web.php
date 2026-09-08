@@ -11,7 +11,7 @@ use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\PageController as AdminPageController;
 use App\Http\Controllers\Admin\PostController as AdminPostController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
-use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Panel\DashboardController as PanelDashboardController;
 use App\Http\Controllers\Site\BlogController;
@@ -24,7 +24,12 @@ use App\Http\Controllers\Site\ShopController;
 use App\Http\Controllers\Site\SitemapController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+Route::get('/sitemap_index.xml', [SitemapController::class, 'index'])->name('sitemap.index');
+Route::get('/sitemap.xml', [SitemapController::class, 'legacy'])->name('sitemap');
+Route::get('/post-sitemap.xml', [SitemapController::class, 'posts'])->name('sitemap.posts');
+Route::get('/page-sitemap.xml', [SitemapController::class, 'pages'])->name('sitemap.pages');
+Route::get('/course-sitemap.xml', [SitemapController::class, 'courses'])->name('sitemap.courses');
+Route::get('/product-sitemap.xml', [SitemapController::class, 'products'])->name('sitemap.products');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -55,9 +60,9 @@ Route::get('/checkout/success/{order}', [ShopController::class, 'success'])->nam
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login']);
-    Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login/otp', [AuthController::class, 'sendOtp'])->name('login.otp');
+    Route::get('/login/verify', [AuthController::class, 'showVerify'])->name('login.verify');
+    Route::post('/login/verify', [AuthController::class, 'verifyOtp'])->name('login.verify.submit');
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
@@ -106,6 +111,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('courses/{course}/lessons/{lesson}', [AdminCourseController::class, 'destroyLesson'])->name('courses.lessons.destroy');
         Route::get('orders', [AdminOrderController::class, 'index'])->name('orders.index');
         Route::get('orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
+        Route::resource('users', AdminUserController::class)->except(['show']);
         Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
         Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
         Route::get('messages', [MessageController::class, 'index'])->name('messages.index');

@@ -6,7 +6,7 @@
         <loc>{{ $url['loc'] }}</loc>
         <changefreq>{{ $url['changefreq'] }}</changefreq>
         <priority>{{ $url['priority'] }}</priority>
-        <lastmod>{{ now()->toAtomString() }}</lastmod>
+        <lastmod>{{ $url['lastmod'] ?? now()->toAtomString() }}</lastmod>
     </url>
 @endforeach
 </urlset>

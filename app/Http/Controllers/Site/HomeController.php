@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Site;
 
+use App\Models\ShopProduct;
 use App\Services\HomeContentService;
 use App\Services\SeoService;
 use App\Services\SiteDataService;
@@ -19,6 +20,10 @@ class HomeController extends SiteController
 
     public function index(): View
     {
+        if (config('cms.active_theme') === 'rahbarhesab') {
+            return $this->rahbarHesabHome();
+        }
+
         $home = $this->homeContent->all();
         $seo = $this->seo->forPage('home');
 
@@ -42,6 +47,56 @@ class HomeController extends SiteController
                 $this->seo->organizationSchema(),
                 $this->seo->websiteSchema(),
                 $this->seo->webPageSchema($seo['title'], $seo['description'], route('home')),
+            ],
+        ]);
+    }
+
+    private function rahbarHesabHome(): View
+    {
+        $seo = $this->seo->meta([
+            'title' => 'راهبر حساب | موسسه آموزش حسابداری و خدمات مالی',
+            'description' => 'موسسه آموزش حسابداری راهبر حساب — دوره‌های کاربردی حسابداری و مالیات، خدمات مالی و مالیاتی در سراسر ایران.',
+            'keywords' => 'راهبر حساب, آموزش حسابداری, مالیات, اظهارنامه, حسابداری, rahbarhesab',
+            'og_title' => 'راهبر حساب — خالق رهبران حسابداری',
+        ]);
+
+        $courses = ShopProduct::query()
+            ->published()
+            ->where('type', ShopProduct::TYPE_COURSE)
+            ->with(['course.instructor'])
+            ->orderBy('sort_order')
+            ->take(12)
+            ->get();
+
+        $freeCourses = ShopProduct::query()
+            ->published()
+            ->where('type', ShopProduct::TYPE_COURSE)
+            ->where('price', 0)
+            ->take(6)
+            ->get();
+
+        $faqs = [
+            ['q' => 'هزینه حمل مواد مستقیم در اظهارنامه مالیاتی چگونه ثبت می‌شود؟', 'a' => 'هزینه حمل مواد مستقیم باید در اظهارنامه مالیاتی طبق دستورالعمل سازمان امور مالیاتی ثبت شود.'],
+            ['q' => 'مهلت ارسال اظهارنامه ارزش افزوده چه زمانی است؟', 'a' => 'مهلت ارسال اظهارنامه ارزش افزوده معمولاً یک ماه پس از پایان هر فصل است.'],
+            ['q' => 'آیا دوره‌ها مدرک معتبر دارند؟', 'a' => 'بله، دوره‌های راهبر حساب با مدارک معتبر فنی‌حرفه‌ای و CIP ارائه می‌شوند.'],
+        ];
+
+        return $this->render('pages.home', [
+            'seo' => $seo,
+            'courses' => $courses,
+            'freeCourses' => $freeCourses,
+            'latestPosts' => $this->homeContent->latestPosts(6),
+            'features' => [
+                ['icon' => '🎓', 'title' => '+۲۰ دوره کاربردی', 'desc' => 'آموزش عملی ویژه بازار کار'],
+                ['icon' => '📜', 'title' => 'مدرک معتبر', 'desc' => 'فنی‌حرفه‌ای و CIP'],
+                ['icon' => '💬', 'title' => 'پشتیبانی ۷/۲۴', 'desc' => 'پاسخگویی تخصصی'],
+                ['icon' => '👨‍🏫', 'title' => '+۱۰۰ مشاور', 'desc' => 'خدمات مالی و مالیاتی'],
+            ],
+            'faqs' => $faqs,
+            'structuredData' => [
+                $this->seo->organizationSchema(),
+                $this->seo->websiteSchema(),
+                $this->seo->faqSchema($faqs),
             ],
         ]);
     }

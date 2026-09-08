@@ -12,21 +12,50 @@ class SitemapController extends Controller
 
     public function index(): Response
     {
-        $urls = $this->seo->sitemapUrls();
+        $sitemaps = $this->seo->sitemapIndex();
 
-        $xml = view('sitemap', compact('urls'))->render();
+        $xml = view('sitemap-index', compact('sitemaps'))->render();
 
-        return response($xml, 200, [
-            'Content-Type' => 'application/xml; charset=UTF-8',
-        ]);
+        return response($xml, 200, ['Content-Type' => 'application/xml; charset=UTF-8']);
+    }
+
+    public function legacy(): Response
+    {
+        return $this->posts();
+    }
+
+    public function posts(): Response
+    {
+        return $this->renderSitemap($this->seo->postSitemapUrls());
+    }
+
+    public function pages(): Response
+    {
+        return $this->renderSitemap($this->seo->pageSitemapUrls());
+    }
+
+    public function courses(): Response
+    {
+        return $this->renderSitemap($this->seo->courseSitemapUrls());
+    }
+
+    public function products(): Response
+    {
+        return $this->renderSitemap($this->seo->productSitemapUrls());
     }
 
     public function robots(): Response
     {
-        $content = "User-agent: *\nAllow: /\nDisallow: /admin/\n\nSitemap: ".url('/sitemap.xml');
+        $sitemap = url('/sitemap_index.xml');
+        $content = "User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /panel/\n\nSitemap: {$sitemap}";
 
-        return response($content, 200, [
-            'Content-Type' => 'text/plain; charset=UTF-8',
-        ]);
+        return response($content, 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
+    }
+
+    private function renderSitemap(array $urls): Response
+    {
+        $xml = view('sitemap', compact('urls'))->render();
+
+        return response($xml, 200, ['Content-Type' => 'application/xml; charset=UTF-8']);
     }
 }

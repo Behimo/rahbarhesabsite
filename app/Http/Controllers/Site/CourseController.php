@@ -33,8 +33,9 @@ class CourseController extends SiteController
             ->get();
 
         $seo = $this->seo->meta([
-            'title' => 'دوره‌های آموزشی',
-            'description' => 'دوره‌های آموزشی آنلاین',
+            'title' => 'دوره‌های آموزشی حسابداری | '.config('cms.site_name_fa'),
+            'description' => 'دوره‌های کاربردی حسابداری و مالیات — آموزش عملی ویژه بازار کار ایران.',
+            'keywords' => 'دوره حسابداری, آموزش مالیات, اظهارنامه, راهبر حساب',
         ]);
 
         return $this->render('pages.courses.index', compact('courses', 'seo'));
@@ -53,11 +54,26 @@ class CourseController extends SiteController
         $isEnrolled = auth()->check() && auth()->user()->isEnrolledIn($course);
 
         $seo = $this->seo->meta([
-            'title' => $product->meta_title ?: $product->title,
+            'title' => $product->meta_title ?: ($product->title.' | '.config('cms.site_name_fa')),
             'description' => $product->meta_description ?: $product->description,
+            'keywords' => $product->meta_keywords,
+            'og_image' => $product->featured_image,
         ]);
 
-        return $this->render('pages.courses.show', compact('product', 'course', 'isEnrolled', 'seo'));
+        return $this->render('pages.courses.show', [
+            'product' => $product,
+            'course' => $course,
+            'isEnrolled' => $isEnrolled,
+            'seo' => $seo,
+            'structuredData' => [
+                $this->seo->courseSchema($product, $course),
+                $this->seo->breadcrumbSchema([
+                    ['name' => 'خانه', 'url' => route('home')],
+                    ['name' => 'دوره‌ها', 'url' => route('courses.index')],
+                    ['name' => $product->title, 'url' => route('courses.show', $product->slug)],
+                ]),
+            ],
+        ]);
     }
 
     public function learn(string $slug, ?string $lessonSlug = null): View|RedirectResponse

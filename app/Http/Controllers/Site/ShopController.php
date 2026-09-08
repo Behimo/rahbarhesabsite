@@ -8,7 +8,7 @@ use App\Services\CartService;
 use App\Services\OrderService;
 use App\Services\SeoService;
 use App\Services\SiteDataService;
-use App\Services\ZarinpalService;
+use App\Services\PaymentGatewayManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -20,7 +20,7 @@ class ShopController extends SiteController
         SeoService $seo,
         private CartService $cart,
         private OrderService $orders,
-        private ZarinpalService $zarinpal,
+        private PaymentGatewayManager $payments,
     ) {
         parent::__construct($siteData, $seo);
     }
@@ -100,8 +100,10 @@ class ShopController extends SiteController
             return redirect()->route('checkout.success', $order);
         }
 
+        $gateway = $request->input('gateway', config('cms.payment_gateway', 'zibal'));
+
         try {
-            $paymentUrl = $this->zarinpal->requestPayment($order);
+            $paymentUrl = $this->payments->requestPayment($order, $gateway);
 
             return redirect()->away($paymentUrl);
         } catch (\Throwable $e) {
@@ -111,26 +113,15 @@ class ShopController extends SiteController
 
     public function callback(Request $request): RedirectResponse
     {
-        $authority = $request->query('Authority');
-        $status = $request->query('Status');
+        $gateway = $request->query('gateway', config('cms.payment_gateway', 'zibal'));
 
-        if ($status !== 'OK' || ! $authority) {
-            return redirect()->route('cart.index')->with('error', 'پرداخت لغو شد.');
-        }
+        $payment = $this->payments->verifyCallback($gateway, $request->query());
 
-        $payment = \App\Models\Payment::query()->where('authority', $authority)->first();
-
-        if (! $payment) {
-            return redirect()->route('cart.index')->with('error', 'تراکنش یافت نشد.');
-        }
-
-        $verified = $this->zarinpal->verify($authority, $payment->amount);
-
-        if ($verified) {
+        if ($payment) {
             return redirect()->route('checkout.success', $payment->order);
         }
 
-        return redirect()->route('cart.index')->with('error', 'پرداخت ناموفق بود.');
+        return redirect()->route('cart.index')->with('error', 'پرداخت ناموفق یا لغو شد.');
     }
 
     public function success(\App\Models\Order $order): View|RedirectResponse

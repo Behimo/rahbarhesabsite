@@ -126,6 +126,144 @@ class SeoService
         ];
     }
 
+    public function sitemapIndex(): array
+    {
+        return [
+            ['loc' => url('/post-sitemap.xml'), 'lastmod' => now()->toAtomString()],
+            ['loc' => url('/page-sitemap.xml'), 'lastmod' => now()->toAtomString()],
+            ['loc' => url('/course-sitemap.xml'), 'lastmod' => now()->toAtomString()],
+            ['loc' => url('/product-sitemap.xml'), 'lastmod' => now()->toAtomString()],
+        ];
+    }
+
+    public function postSitemapUrls(): array
+    {
+        $urls = [
+            ['loc' => route('blog.index'), 'priority' => '0.8', 'changefreq' => 'daily'],
+        ];
+
+        foreach (\App\Models\CmsPost::query()->published()->get() as $post) {
+            $urls[] = [
+                'loc' => route('blog.show', $post->slug),
+                'priority' => '0.7',
+                'changefreq' => 'weekly',
+                'lastmod' => $post->updated_at?->toAtomString(),
+            ];
+        }
+
+        return $urls;
+    }
+
+    public function pageSitemapUrls(): array
+    {
+        $urls = [
+            ['loc' => route('home'), 'priority' => '1.0', 'changefreq' => 'daily'],
+            ['loc' => route('courses.index'), 'priority' => '0.9', 'changefreq' => 'daily'],
+            ['loc' => route('about'), 'priority' => '0.7', 'changefreq' => 'monthly'],
+            ['loc' => route('contact'), 'priority' => '0.8', 'changefreq' => 'monthly'],
+        ];
+
+        foreach (\App\Models\CmsPage::query()->published()->get() as $page) {
+            $slug = $page->slug;
+            $route = match ($slug) {
+                'home' => route('home'),
+                'about' => route('about'),
+                'contact' => route('contact'),
+                'services' => route('services'),
+                'why-bisan' => route('why-bisan'),
+                default => $page->is_system ? null : route('pages.show', $page->slug),
+            };
+
+            if ($route) {
+                $urls[] = [
+                    'loc' => $route,
+                    'priority' => '0.6',
+                    'changefreq' => 'monthly',
+                    'lastmod' => $page->updated_at?->toAtomString(),
+                ];
+            }
+        }
+
+        return $urls;
+    }
+
+    public function courseSitemapUrls(): array
+    {
+        $urls = [];
+
+        foreach (\App\Models\ShopProduct::query()->published()->where('type', 'course')->get() as $course) {
+            $urls[] = [
+                'loc' => route('courses.show', $course->slug),
+                'priority' => '0.9',
+                'changefreq' => 'weekly',
+                'lastmod' => $course->updated_at?->toAtomString(),
+            ];
+        }
+
+        return $urls;
+    }
+
+    public function productSitemapUrls(): array
+    {
+        $urls = [
+            ['loc' => route('products.index'), 'priority' => '0.8', 'changefreq' => 'weekly'],
+        ];
+
+        foreach ($this->siteData->products() as $product) {
+            $urls[] = [
+                'loc' => route('products.show', $product['slug']),
+                'priority' => '0.8',
+                'changefreq' => 'weekly',
+            ];
+        }
+
+        return $urls;
+    }
+
+    public function courseSchema(\App\Models\ShopProduct $product, ?\App\Models\Course $course = null): array
+    {
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'Course',
+            'name' => $product->title,
+            'description' => $product->description,
+            'url' => route('courses.show', $product->slug),
+            'inLanguage' => 'fa-IR',
+            'provider' => [
+                '@type' => 'Organization',
+                'name' => config('cms.site_name_fa'),
+                'url' => config('app.url'),
+            ],
+            'offers' => [
+                '@type' => 'Offer',
+                'price' => $product->effectivePrice(),
+                'priceCurrency' => 'IRR',
+                'availability' => 'https://schema.org/InStock',
+            ],
+            'hasCourseInstance' => [
+                '@type' => 'CourseInstance',
+                'courseMode' => 'online',
+                'courseWorkload' => 'PT'.($course?->duration_minutes ?: 60).'M',
+            ],
+        ];
+    }
+
+    public function faqSchema(array $faqs): array
+    {
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'FAQPage',
+            'mainEntity' => collect($faqs)->map(fn ($faq) => [
+                '@type' => 'Question',
+                'name' => $faq['q'] ?? $faq['question'] ?? '',
+                'acceptedAnswer' => [
+                    '@type' => 'Answer',
+                    'text' => $faq['a'] ?? $faq['answer'] ?? '',
+                ],
+            ])->all(),
+        ];
+    }
+
     public function sitemapUrls(): array
     {
         $urls = [

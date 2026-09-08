@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Models\Course;
 use App\Models\ShopProduct;
 use App\Models\User;
-use App\Services\OrderService;
+use App\Services\OtpService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -13,17 +13,21 @@ class PlatformTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_user_can_register_and_login(): void
+    public function test_user_can_login_with_otp(): void
     {
-        $response = $this->post('/register', [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
-        ]);
+        $phone = '09123456789';
 
-        $response->assertRedirect(route('panel.dashboard'));
+        $this->post('/login/otp', ['phone' => $phone, 'name' => 'Test User'])
+            ->assertRedirect(route('login.verify'));
+
+        $code = app(OtpService::class)->peekLatestCode($phone);
+        $this->assertNotNull($code);
+
+        $this->post('/login/verify', ['code' => $code])
+            ->assertRedirect(route('panel.dashboard'));
+
         $this->assertAuthenticated();
+        $this->assertDatabaseHas('users', ['phone' => '09123456789']);
     }
 
     public function test_courses_page_is_accessible(): void
@@ -47,7 +51,7 @@ class PlatformTest extends TestCase
 
     public function test_free_course_enrollment(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['phone' => '09121111111']);
         $product = ShopProduct::query()->create([
             'slug' => 'free-course',
             'title' => 'Free Course',
@@ -89,5 +93,11 @@ class PlatformTest extends TestCase
         $this->assertDatabaseHas('cart_items', [
             'shop_product_id' => $product->id,
         ]);
+    }
+
+    public function test_sitemap_index_is_accessible(): void
+    {
+        $this->get('/sitemap_index.xml')->assertOk();
+        $this->get('/course-sitemap.xml')->assertOk();
     }
 }

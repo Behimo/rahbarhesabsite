@@ -13,16 +13,26 @@ class SiteDataService
 {
     public function navLinks(): array
     {
-        $links = [
-            ['route' => 'home', 'label' => 'خانه'],
-            ['route' => 'products.index', 'label' => 'محصولات'],
-            ['route' => 'services', 'label' => 'پروژه اختصاصی'],
-            ['route' => 'why-bisan', 'label' => 'چرا بیسان؟'],
-            ['route' => 'courses.index', 'label' => 'دوره‌ها'],
-            ['route' => 'blog.index', 'label' => 'بلاگ'],
-            ['route' => 'about', 'label' => 'درباره ما'],
-            ['route' => 'contact', 'label' => 'تماس'],
-        ];
+        if (config('cms.active_theme') === 'rahbarhesab') {
+            $links = [
+                ['route' => 'home', 'label' => 'خانه'],
+                ['route' => 'courses.index', 'label' => 'دوره‌ها'],
+                ['route' => 'blog.index', 'label' => 'بلاگ و اخبار'],
+                ['route' => 'about', 'label' => 'درباره ما'],
+                ['route' => 'contact', 'label' => 'تماس'],
+            ];
+        } else {
+            $links = [
+                ['route' => 'home', 'label' => 'خانه'],
+                ['route' => 'products.index', 'label' => 'محصولات'],
+                ['route' => 'services', 'label' => 'پروژه اختصاصی'],
+                ['route' => 'why-bisan', 'label' => 'چرا بیسان؟'],
+                ['route' => 'courses.index', 'label' => 'دوره‌ها'],
+                ['route' => 'blog.index', 'label' => 'بلاگ'],
+                ['route' => 'about', 'label' => 'درباره ما'],
+                ['route' => 'contact', 'label' => 'تماس'],
+            ];
+        }
 
         $dynamic = CmsPage::query()
             ->published()

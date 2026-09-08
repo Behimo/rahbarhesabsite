@@ -1,0 +1,70 @@
+/* Rahbar Hesab Theme */
+:root {
+    --rh-primary: #0f766e;
+    --rh-primary-dark: #115e59;
+    --rh-accent: #f59e0b;
+    --rh-bg: #f8fafc;
+    --rh-text: #1e293b;
+    --rh-muted: #64748b;
+}
+
+body.rh-theme {
+    font-family: Vazirmatn, Tahoma, sans-serif;
+    background: var(--rh-bg);
+    color: var(--rh-text);
+}
+
+.rh-header {
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+
+.rh-btn-primary {
+    background: var(--rh-primary);
+    color: #fff;
+    border-radius: .75rem;
+    padding: .625rem 1.25rem;
+    font-weight: 600;
+    transition: background .2s;
+}
+
+.rh-btn-primary:hover { background: var(--rh-primary-dark); }
+
+.rh-hero {
+    background: linear-gradient(135deg, #0f766e 0%, #134e4a 50%, #115e59 100%);
+    color: #fff;
+}
+
+.rh-card {
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 4px 20px rgba(15,118,110,.08);
+    border: 1px solid #e2e8f0;
+    transition: transform .2s, box-shadow .2s;
+}
+
+.rh-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(15,118,110,.15);
+}
+
+.rh-badge-discount {
+    background: #fef3c7;
+    color: #b45309;
+    font-size: .75rem;
+    padding: .125rem .5rem;
+    border-radius: 9999px;
+}
+
+.rh-section-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--rh-primary-dark);
+}
+
+.rh-price { color: var(--rh-primary); font-weight: 700; }
+
+.rh-footer {
+    background: #0f172a;
+    color: #cbd5e1;
+}

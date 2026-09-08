@@ -25,9 +25,40 @@ php artisan cms:ensure-admin
 
 | متغیر | توضیح |
 |-------|--------|
-| `CMS_ACTIVE_THEME` | نام قالب فعال (پیش‌فرض: `default`) |
-| `ZARINPAL_MERCHANT_ID` | مرچنت زرین‌پال |
-| `ZARINPAL_SANDBOX` | `true` برای تست |
+| `CMS_ACTIVE_THEME` | قالب فعال (`rahbarhesab` برای راهبر حساب) |
+| `CMS_PAYMENT_GATEWAY` | `zibal` (پیش‌فرض) یا `zarinpal` |
+| `ZIBAL_MERCHANT` | مرچنت زیبال |
+| `IPPANEL_API_KEY` | کلید API پنل پیامک |
+| `IPPANEL_OTP_PATTERN` | کد پترن OTP در IPPanel |
+| `ZARINPAL_MERCHANT_ID` | مرچنت زرین‌پال (اختیاری) |
+
+## احراز هویت
+
+ورود کاربران **فقط با OTP موبایل** (IPPanel):
+- `/login` → ارسال کد
+- `/login/verify` → تأیید و ورود/ثبت‌نام خودکار
+
+## SEO
+
+- Sitemap index: `/sitemap_index.xml` (مثل Rank Math)
+- زیر sitemap: `post-sitemap.xml`, `page-sitemap.xml`, `course-sitemap.xml`, `product-sitemap.xml`
+- Schema.org: Course, FAQ, Breadcrumb, Organization
+
+## قالب راهبر حساب
+
+```
+themes/rahbarhesab/
+  views/pages/home.blade.php
+  views/pages/courses/
+  public/themes/rahbarhesab/theme.css
+```
+
+برای لانچ `rahbarhesab.com`:
+```bash
+CMS_ACTIVE_THEME=rahbarhesab
+APP_URL=https://rahbarhesab.com
+php artisan migrate --seed
+```
 
 ## ساخت قالب سفارشی
 

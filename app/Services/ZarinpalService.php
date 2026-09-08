@@ -7,9 +7,14 @@ use App\Models\Payment;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class ZarinpalService
+class ZarinpalService implements \App\Contracts\PaymentGatewayInterface
 {
     public function __construct(private OrderService $orders) {}
+
+    public function name(): string
+    {
+        return 'zarinpal';
+    }
 
     public function requestPayment(Order $order): string
     {
@@ -29,7 +34,7 @@ class ZarinpalService
         $response = Http::post($baseUrl.'/request.json', [
             'merchant_id' => $merchantId,
             'amount' => $order->total,
-            'callback_url' => route('checkout.callback'),
+            'callback_url' => route('checkout.callback', ['gateway' => 'zarinpal']),
             'description' => 'سفارش '.$order->order_number,
             'metadata' => ['order_id' => $order->id],
         ]);
@@ -55,6 +60,24 @@ class ZarinpalService
             : 'https://www.zarinpal.com/pg/StartPay/';
 
         return $gatewayUrl.$data['authority'];
+    }
+
+    public function verifyCallback(array $query): ?Payment
+    {
+        $authority = $query['Authority'] ?? null;
+        $status = $query['Status'] ?? null;
+
+        if ($status !== 'OK' || ! $authority) {
+            return null;
+        }
+
+        $payment = Payment::query()->where('gateway', 'zarinpal')->where('authority', $authority)->first();
+
+        if (! $payment) {
+            return null;
+        }
+
+        return $this->verify($authority, $payment->amount);
     }
 
     public function verify(string $authority, int $amount): ?Payment
