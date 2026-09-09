@@ -1,79 +1,25 @@
 {
   "menu": [
-    {
-      "menuHeader": "مدیریت محتوا"
-    },
-    {
-      "url": "admin",
-      "name": "داشبورد",
-      "icon": "menu-icon tf-icons ti ti-smart-home",
-      "slug": "admin.dashboard"
-    },
-    {
-      "url": "admin/home",
-      "name": "صفحه اصلی",
-      "icon": "menu-icon tf-icons ti ti-home",
-      "slug": "admin.home"
-    },
-    {
-      "url": "admin/pages",
-      "name": "صفحات",
-      "icon": "menu-icon tf-icons ti ti-file-text",
-      "slug": "admin.pages"
-    },
-    {
-      "url": "admin/posts",
-      "name": "بلاگ",
-      "icon": "menu-icon tf-icons ti ti-article",
-      "slug": "admin.posts"
-    },
-    {
-      "url": "admin/products",
-      "name": "محصولات",
-      "icon": "menu-icon tf-icons ti ti-package",
-      "slug": "admin.products"
-    },
-    {
-      "url": "admin/courses",
-      "name": "دوره‌های LMS",
-      "icon": "menu-icon tf-icons ti ti-school",
-      "slug": "admin.courses"
-    },
-    {
-      "url": "admin/media",
-      "name": "رسانه",
-      "icon": "menu-icon tf-icons ti ti-photo",
-      "slug": "admin.media"
-    },
-    {
-      "menuHeader": "فروشگاه"
-    },
-    {
-      "url": "admin/orders",
-      "name": "سفارش‌ها",
-      "icon": "menu-icon tf-icons ti ti-shopping-cart",
-      "slug": "admin.orders"
-    },
-    {
-      "url": "admin/users",
-      "name": "کاربران",
-      "icon": "menu-icon tf-icons ti ti-users",
-      "slug": "admin.users"
-    },
-    {
-      "menuHeader": "ارتباطات"
-    },
-    {
-      "url": "admin/messages",
-      "name": "پیام‌ها",
-      "icon": "menu-icon tf-icons ti ti-mail",
-      "slug": "admin.messages"
-    },
-    {
-      "url": "admin/settings",
-      "name": "تنظیمات",
-      "icon": "menu-icon tf-icons ti ti-settings",
-      "slug": "admin.settings"
-    }
+    { "menuHeader": "مدیریت محتوا" },
+    { "url": "admin", "name": "داشبورد", "icon": "menu-icon tf-icons ti ti-smart-home", "slug": "admin.dashboard" },
+    { "url": "admin/search", "name": "جستجو", "icon": "menu-icon tf-icons ti ti-search", "slug": "admin.search" },
+    { "url": "admin/home", "name": "صفحه اصلی", "icon": "menu-icon tf-icons ti ti-home", "slug": "admin.home" },
+    { "url": "admin/pages", "name": "صفحات", "icon": "menu-icon tf-icons ti ti-file-text", "slug": "admin.pages" },
+    { "url": "admin/posts", "name": "بلاگ", "icon": "menu-icon tf-icons ti ti-article", "slug": "admin.posts" },
+    { "url": "admin/categories", "name": "دسته‌بندی بلاگ", "icon": "menu-icon tf-icons ti ti-category", "slug": "admin.categories" },
+    { "url": "admin/taxonomies", "name": "Taxonomy", "icon": "menu-icon tf-icons ti ti-tags", "slug": "admin.taxonomies" },
+    { "url": "admin/menus", "name": "منوساز", "icon": "menu-icon tf-icons ti ti-menu-2", "slug": "admin.menus" },
+    { "url": "admin/products", "name": "محصولات", "icon": "menu-icon tf-icons ti ti-package", "slug": "admin.products" },
+    { "url": "admin/courses", "name": "دوره‌های LMS", "icon": "menu-icon tf-icons ti ti-school", "slug": "admin.courses" },
+    { "url": "admin/media", "name": "رسانه", "icon": "menu-icon tf-icons ti ti-photo", "slug": "admin.media" },
+    { "menuHeader": "ظاهر و افزونه" },
+    { "url": "admin/themes", "name": "قالب‌ها", "icon": "menu-icon tf-icons ti ti-palette", "slug": "admin.themes" },
+    { "url": "admin/plugins", "name": "افزونه‌ها", "icon": "menu-icon tf-icons ti ti-plug", "slug": "admin.plugins" },
+    { "menuHeader": "فروشگاه" },
+    { "url": "admin/orders", "name": "سفارش‌ها", "icon": "menu-icon tf-icons ti ti-shopping-cart", "slug": "admin.orders" },
+    { "url": "admin/users", "name": "کاربران", "icon": "menu-icon tf-icons ti ti-users", "slug": "admin.users" },
+    { "menuHeader": "ارتباطات" },
+    { "url": "admin/messages", "name": "پیام‌ها", "icon": "menu-icon tf-icons ti ti-mail", "slug": "admin.messages" },
+    { "url": "admin/settings", "name": "تنظیمات", "icon": "menu-icon tf-icons ti ti-settings", "slug": "admin.settings" }
   ]
 }

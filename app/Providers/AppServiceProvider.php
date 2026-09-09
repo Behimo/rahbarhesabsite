@@ -2,7 +2,13 @@
 
 namespace App\Providers;
 
+use App\Services\BlockRegistry;
+use App\Services\BlockRenderer;
+use App\Services\CacheService;
+use App\Services\MenuService;
 use App\Services\PluginService;
+use App\Services\SpotPlayerService;
+use App\Services\TaxonomyService;
 use App\Services\ThemeService;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
@@ -14,6 +20,12 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(ThemeService::class);
         $this->app->singleton(PluginService::class);
+        $this->app->singleton(BlockRegistry::class);
+        $this->app->singleton(BlockRenderer::class);
+        $this->app->singleton(CacheService::class);
+        $this->app->singleton(MenuService::class);
+        $this->app->singleton(TaxonomyService::class);
+        $this->app->singleton(SpotPlayerService::class);
     }
 
     public function boot(): void

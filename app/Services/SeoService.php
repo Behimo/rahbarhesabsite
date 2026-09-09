@@ -10,9 +10,9 @@ class SeoService
     {
         $defaults = [
             'title' => config('cms.site_name_fa').' | '.config('cms.site_name'),
-            'description' => 'بیسان — ۴ محصول آماده برای فروش و خدمات، یا پروژه اختصاصی. مشاوره رایگان.',
-            'keywords' => 'بیسان, BISAN, CRM, راهبر, نوژارو, نرم‌افزار, ایران',
-            'og_title' => config('cms.site_name_fa').' — نرم‌افزار درست برای رشد کسب‌وکار شما',
+            'description' => 'موسسه آموزش حسابداری راهبر حساب — دوره‌های کاربردی حسابداری و مالیات.',
+            'keywords' => 'راهبر حساب, آموزش حسابداری, مالیات, rahbarhesab',
+            'og_title' => config('cms.site_name_fa').' — خالق رهبران حسابداری',
             'og_image' => $this->absoluteUrl(config('cms.default_og_image')),
             'robots' => 'index, follow',
             'canonical' => url()->current(),
@@ -48,8 +48,8 @@ class SeoService
             'name' => config('cms.site_name'),
             'alternateName' => config('cms.site_name_fa'),
             'url' => config('app.url'),
-            'logo' => $this->absoluteUrl('/images/bisan/logo-full.png'),
-            'description' => '۴ محصول آماده برای فروش و خدمات، یا پروژه اختصاصی برای کسب‌وکار شما',
+            'logo' => $this->absoluteUrl(config('cms.branding.logo', '/images/rahbarhesab/logo-full.png')),
+            'description' => 'موسسه آموزش حسابداری و خدمات مالی راهبر حساب',
             'email' => $contact['email'],
             'sameAs' => array_values($social),
         ];

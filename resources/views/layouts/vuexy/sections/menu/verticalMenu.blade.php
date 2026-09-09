@@ -9,9 +9,9 @@ $configData = Helper::appClasses();
   <div class="app-brand demo">
     <a href="{{ route('admin.dashboard') }}" class="app-brand-link">
       <span class="app-brand-logo demo">
-        @include('_partials.macros',["height"=>20])
+        <img src="{{ asset(\App\Models\CmsSetting::get('site_logo', config('cms.branding.logo'))) }}" alt="{{ config('cms.site_name_fa') }}" style="height: 32px; width: auto; max-width: 140px; object-fit: contain;">
       </span>
-      <span class="app-brand-text demo menu-text fw-bold">{{ config('variables.templateName') }} CMS</span>
+      <span class="app-brand-text demo menu-text fw-bold">{{ config('cms.site_name_fa') }}</span>
     </a>
 
     <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto">

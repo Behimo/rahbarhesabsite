@@ -1,7 +1,7 @@
 <header class="rh-header sticky top-0 z-50">
     <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <a href="{{ route('home') }}" class="flex items-center gap-2">
-            <span class="text-xl font-extrabold text-teal-800">راهبر حساب</span>
+            <img src="{{ \App\Models\CmsSetting::get('site_logo', config('cms.branding.logo')) }}" alt="راهبر حساب" class="h-10 w-auto">
         </a>
 
         <nav class="hidden items-center gap-6 lg:flex">

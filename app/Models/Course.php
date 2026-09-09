@@ -10,7 +10,7 @@ class Course extends Model
 {
     protected $fillable = [
         'shop_product_id', 'instructor_id', 'level', 'duration_minutes',
-        'what_you_learn', 'requirements',
+        'what_you_learn', 'requirements', 'spotplayer_course_id',
     ];
 
     protected function casts(): array

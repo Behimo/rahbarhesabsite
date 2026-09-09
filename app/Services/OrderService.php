@@ -10,6 +10,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\ShopProduct;
 use App\Models\User;
+use App\Jobs\IssueSpotplayerLicenseJob;
 use App\Support\Hook;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -75,7 +76,7 @@ class OrderService
 
     public function enrollUser(User $user, Course $course, ?Order $order = null): CourseEnrollment
     {
-        return CourseEnrollment::query()->firstOrCreate(
+        $enrollment = CourseEnrollment::query()->firstOrCreate(
             ['user_id' => $user->id, 'course_id' => $course->id],
             [
                 'order_id' => $order?->id,
@@ -83,6 +84,14 @@ class OrderService
                 'expires_at' => now()->addMonths(6),
             ]
         );
+
+        if ($course->spotplayer_course_id) {
+            IssueSpotplayerLicenseJob::dispatch($user->id, $course->id, $order?->id);
+        }
+
+        Hook::doAction('course.enrolled', $user, $course, $enrollment);
+
+        return $enrollment;
     }
 
     public function updateCourseProgress(User $user, Course $course): void

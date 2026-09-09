@@ -2,48 +2,27 @@ name: Tests
 
 on:
   push:
-    branches:
-      - master
-      - '*.x'
+    branches: [main, master]
   pull_request:
-  schedule:
-    - cron: '0 0 * * *'
-
-permissions:
-  contents: read
 
 jobs:
-  tests:
+  test:
     runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: true
-      matrix:
-        php: [8.3, 8.4, 8.5]
-
-    name: PHP ${{ matrix.php }}
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
         with:
-          persist-credentials: false
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
-        with:
-          php-version: ${{ matrix.php }}
-          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite
+          php-version: '8.2'
+          extensions: mbstring, pdo_sqlite
           coverage: none
-
       - name: Install Composer dependencies
-        run: composer install --prefer-dist --no-interaction --no-progress
-
-      - name: Copy environment file
-        run: cp .env.example .env
-
-      - name: Generate app key
-        run: php artisan key:generate
-
-      - name: Execute tests
+        run: composer install --no-interaction --prefer-dist
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          touch database/database.sqlite
+      - name: Run migrations
+        run: php artisan migrate --force
+      - name: Run tests
         run: php artisan test

@@ -1,0 +1,24 @@
+@extends('theme::layouts.site')
+
+@section('page')
+<div class="mx-auto max-w-5xl px-4 py-10">
+    <h1 class="mb-6 text-3xl font-extrabold text-slate-800">جستجو</h1>
+    <form class="mb-8">
+        <input name="q" value="{{ $q }}" class="w-full rounded-lg border border-slate-200 px-4 py-2" placeholder="جستجو در سایت...">
+    </form>
+    @if($q)
+        @if($courses->isNotEmpty())
+            <h2 class="mb-3 text-xl font-semibold">دوره‌ها</h2>
+            <ul class="mb-6 space-y-2">@foreach($courses as $c)<li><a href="{{ route('courses.show', $c->slug) }}" class="text-teal-700">{{ $c->title }}</a></li>@endforeach</ul>
+        @endif
+        @if($posts->isNotEmpty())
+            <h2 class="mb-3 text-xl font-semibold">بلاگ</h2>
+            <ul class="mb-6 space-y-2">@foreach($posts as $p)<li><a href="{{ route('blog.show', $p->slug) }}" class="text-teal-700">{{ $p->title }}</a></li>@endforeach</ul>
+        @endif
+        @if($pages->isNotEmpty())
+            <h2 class="mb-3 text-xl font-semibold">صفحات</h2>
+            <ul class="space-y-2">@foreach($pages as $p)<li><a href="{{ route('pages.show', $p->slug) }}" class="text-teal-700">{{ $p->title }}</a></li>@endforeach</ul>
+        @endif
+    @endif
+</div>
+@endsection

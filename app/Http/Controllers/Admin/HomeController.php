@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\CmsPage;
 use App\Services\HomeContentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,8 +13,14 @@ class HomeController extends Controller
 {
     public function __construct(private HomeContentService $homeContent) {}
 
-    public function edit(): View
+    public function edit(): View|\Illuminate\Http\RedirectResponse
     {
+        $homePage = CmsPage::query()->where('slug', 'home')->first();
+
+        if ($homePage) {
+            return redirect()->route('admin.pages.builder', $homePage);
+        }
+
         return view('admin.home.edit', [
             'content' => $this->homeContent->all(),
         ]);

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 class ShopProduct extends Model
 {
@@ -30,6 +31,11 @@ class ShopProduct extends Model
     public function course(): HasOne
     {
         return $this->hasOne(Course::class);
+    }
+
+    public function taxonomyTerms(): MorphToMany
+    {
+        return $this->morphToMany(CmsTaxonomyTerm::class, 'termable', 'cms_termables', 'termable_id', 'term_id');
     }
 
     public function scopePublished($query)

@@ -9,8 +9,10 @@ use App\Models\ShopProduct;
 use App\Services\OrderService;
 use App\Services\SeoService;
 use App\Services\SiteDataService;
+use App\Services\SpotPlayerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use Illuminate\View\View;
 
 class CourseController extends SiteController
@@ -19,16 +21,23 @@ class CourseController extends SiteController
         SiteDataService $siteData,
         SeoService $seo,
         private OrderService $orders,
+        private SpotPlayerService $spotPlayer,
     ) {
         parent::__construct($siteData, $seo);
     }
 
-    public function index(): View
+    public function index(Request $request): View
     {
         $courses = ShopProduct::query()
             ->published()
             ->where('type', ShopProduct::TYPE_COURSE)
-            ->with('course.instructor')
+            ->with(['course.instructor', 'taxonomyTerms'])
+            ->when($request->query('category'), function ($q, $category) {
+                $q->whereHas('taxonomyTerms', fn ($t) => $t->where('slug', $category));
+            })
+            ->when($request->query('q'), function ($q, $search) {
+                $q->where('title', 'like', "%{$search}%");
+            })
             ->orderBy('sort_order')
             ->get();
 
@@ -87,11 +96,6 @@ class CourseController extends SiteController
         $course = $product->course;
         $user = auth()->user();
 
-        if (! $user || ! $user->isEnrolledIn($course)) {
-            return redirect()->route('courses.show', $slug)
-                ->with('error', 'برای مشاهده درس‌ها باید در دوره ثبت‌نام کنید.');
-        }
-
         $allLessons = $course->sections->flatMap->lessons;
         $currentLesson = $lessonSlug
             ? $allLessons->firstWhere('slug', $lessonSlug)
@@ -101,13 +105,89 @@ class CourseController extends SiteController
             return redirect()->route('courses.learn', $slug);
         }
 
-        $progress = LessonProgress::query()
-            ->where('user_id', $user->id)
-            ->whereIn('lesson_id', $allLessons->pluck('id'))
-            ->get()
-            ->keyBy('lesson_id');
+        $canAccess = $user && $user->isEnrolledIn($course);
+        if (! $canAccess && ! $currentLesson->is_free_preview) {
+            return redirect()->route('courses.show', $slug)
+                ->with('error', 'برای مشاهده درس‌ها باید در دوره ثبت‌نام کنید.');
+        }
 
-        return $this->render('pages.courses.learn', compact('product', 'course', 'currentLesson', 'allLessons', 'progress'));
+        $progress = collect();
+        if ($user) {
+            $progress = LessonProgress::query()
+                ->where('user_id', $user->id)
+                ->whereIn('lesson_id', $allLessons->pluck('id'))
+                ->get()
+                ->keyBy('lesson_id');
+        }
+
+        $spotplayerUrl = ($user && $currentLesson->video_provider === 'spotplayer')
+            ? $this->spotPlayer->embedUrl($course, $user, $currentLesson->spotplayer_item_id)
+            : null;
+
+        return $this->render('pages.courses.learn', compact(
+            'product', 'course', 'currentLesson', 'allLessons', 'progress', 'spotplayerUrl', 'canAccess'
+        ));
+    }
+
+    public function previewLesson(string $slug, string $lessonSlug): View|RedirectResponse
+    {
+        $product = ShopProduct::query()
+            ->where('slug', $slug)
+            ->where('type', ShopProduct::TYPE_COURSE)
+            ->with(['course.sections.lessons'])
+            ->firstOrFail();
+
+        $lesson = $product->course->sections->flatMap->lessons->firstWhere('slug', $lessonSlug);
+
+        if (! $lesson?->is_free_preview) {
+            abort(403);
+        }
+
+        return $this->render('pages.courses.preview', [
+            'product' => $product,
+            'lesson' => $lesson,
+        ]);
+    }
+
+    public function downloadLesson(string $slug, string $lessonSlug): RedirectResponse
+    {
+        $product = ShopProduct::query()->where('slug', $slug)->with('course.sections.lessons')->firstOrFail();
+        $course = $product->course;
+        $user = auth()->user();
+
+        if (! $user || ! $user->isEnrolledIn($course)) {
+            abort(403);
+        }
+
+        $lesson = $course->sections->flatMap->lessons->firstWhere('slug', $lessonSlug);
+
+        if (! $lesson?->download_url) {
+            abort(404);
+        }
+
+        $signedUrl = URL::temporarySignedRoute(
+            'courses.lesson.file',
+            now()->addMinutes(30),
+            ['slug' => $slug, 'lessonSlug' => $lessonSlug]
+        );
+
+        return redirect()->to($signedUrl);
+    }
+
+    public function serveLessonFile(Request $request, string $slug, string $lessonSlug): RedirectResponse
+    {
+        if (! $request->hasValidSignature()) {
+            abort(403);
+        }
+
+        $product = ShopProduct::query()->where('slug', $slug)->with('course.sections.lessons')->firstOrFail();
+        $lesson = $product->course->sections->flatMap->lessons->firstWhere('slug', $lessonSlug);
+
+        if (! $lesson?->download_url) {
+            abort(404);
+        }
+
+        return redirect()->away($lesson->download_url);
     }
 
     public function completeLesson(Request $request, string $slug, string $lessonSlug): RedirectResponse

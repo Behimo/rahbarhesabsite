@@ -8,12 +8,15 @@ use App\Models\CourseLesson;
 use App\Models\CourseSection;
 use App\Models\ShopProduct;
 use App\Models\User;
+use App\Services\TaxonomyService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class CourseController extends Controller
 {
+    public function __construct(private TaxonomyService $taxonomy) {}
+
     public function index(): View
     {
         $courses = ShopProduct::query()
@@ -29,10 +32,13 @@ class CourseController extends Controller
     {
         $instructors = User::query()->whereIn('role', [User::ROLE_INSTRUCTOR, User::ROLE_ADMIN])->get();
 
+        $this->taxonomy->ensureDefaults();
+
         return view('admin.courses.form', [
             'product' => new ShopProduct(['type' => ShopProduct::TYPE_COURSE, 'is_published' => false]),
             'course' => new Course,
             'instructors' => $instructors,
+            'terms' => $this->taxonomy->termsFor('course-category'),
         ]);
     }
 
@@ -42,6 +48,7 @@ class CourseController extends Controller
 
         $product = ShopProduct::query()->create($validated['product']);
         $product->course()->create($validated['course']);
+        $this->taxonomy->syncTerms($product, $request->input('term_ids', []));
 
         return redirect()->route('admin.courses.edit', $product)->with('success', 'دوره ایجاد شد.');
     }
@@ -53,10 +60,14 @@ class CourseController extends Controller
         $course->load(['course.sections.lessons']);
         $instructors = User::query()->whereIn('role', [User::ROLE_INSTRUCTOR, User::ROLE_ADMIN])->get();
 
+        $this->taxonomy->ensureDefaults();
+
         return view('admin.courses.form', [
             'product' => $course,
             'course' => $course->course,
             'instructors' => $instructors,
+            'terms' => $this->taxonomy->termsFor('course-category'),
+            'selectedTerms' => $course->taxonomyTerms()->pluck('cms_taxonomy_terms.id')->all(),
         ]);
     }
 
@@ -67,6 +78,7 @@ class CourseController extends Controller
         $validated = $this->validateCourse($request, $course);
         $course->update($validated['product']);
         $course->course->update($validated['course']);
+        $this->taxonomy->syncTerms($course, $request->input('term_ids', []));
 
         return back()->with('success', 'دوره به‌روزرسانی شد.');
     }
@@ -93,6 +105,20 @@ class CourseController extends Controller
         return back()->with('success', 'فصل اضافه شد.');
     }
 
+    public function updateSection(Request $request, ShopProduct $course, CourseSection $section): RedirectResponse
+    {
+        abort_if($section->course_id !== $course->course->id, 404);
+
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:200'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $section->update($validated);
+
+        return back()->with('success', 'فصل به‌روزرسانی شد.');
+    }
+
     public function destroySection(ShopProduct $course, CourseSection $section): RedirectResponse
     {
         abort_if($section->course_id !== $course->course->id, 404);
@@ -110,7 +136,10 @@ class CourseController extends Controller
             'slug' => ['required', 'string', 'max:100', 'alpha_dash'],
             'content' => ['nullable', 'string'],
             'video_url' => ['nullable', 'string', 'max:500'],
-            'video_provider' => ['nullable', 'in:aparat,youtube,vimeo,upload'],
+            'video_provider' => ['nullable', 'in:aparat,youtube,vimeo,upload,spotplayer,download'],
+            'download_url' => ['nullable', 'string', 'max:500'],
+            'spotplayer_course_id' => ['nullable', 'string', 'max:100'],
+            'spotplayer_item_id' => ['nullable', 'string', 'max:100'],
             'duration_seconds' => ['nullable', 'integer', 'min:0'],
             'is_free_preview' => ['nullable', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
@@ -120,6 +149,30 @@ class CourseController extends Controller
         $section->lessons()->create($validated);
 
         return back()->with('success', 'درس اضافه شد.');
+    }
+
+    public function updateLesson(Request $request, ShopProduct $course, CourseLesson $lesson): RedirectResponse
+    {
+        abort_if($lesson->section->course_id !== $course->course->id, 404);
+
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:200'],
+            'slug' => ['required', 'string', 'max:100', 'alpha_dash'],
+            'content' => ['nullable', 'string'],
+            'video_url' => ['nullable', 'string', 'max:500'],
+            'download_url' => ['nullable', 'string', 'max:500'],
+            'video_provider' => ['nullable', 'in:aparat,youtube,vimeo,upload,spotplayer,download'],
+            'spotplayer_course_id' => ['nullable', 'string', 'max:100'],
+            'spotplayer_item_id' => ['nullable', 'string', 'max:100'],
+            'duration_seconds' => ['nullable', 'integer', 'min:0'],
+            'is_free_preview' => ['nullable', 'boolean'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $validated['is_free_preview'] = $request->boolean('is_free_preview');
+        $lesson->update($validated);
+
+        return back()->with('success', 'درس به‌روزرسانی شد.');
     }
 
     public function destroyLesson(ShopProduct $course, CourseLesson $lesson): RedirectResponse
@@ -156,6 +209,7 @@ class CourseController extends Controller
             'duration_minutes' => ['nullable', 'integer', 'min:0'],
             'what_you_learn' => ['nullable', 'string'],
             'requirements' => ['nullable', 'string'],
+            'spotplayer_course_id' => ['nullable', 'string', 'max:100'],
         ]);
 
         $productData['type'] = ShopProduct::TYPE_COURSE;

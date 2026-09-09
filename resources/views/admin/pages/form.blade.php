@@ -50,8 +50,15 @@
                         <input type="checkbox" name="show_in_nav" value="1" class="form-check-input" id="show_in_nav" @checked(old('show_in_nav', $page->show_in_nav))>
                         <label class="form-check-label" for="show_in_nav">نمایش در منو</label>
                     </div>
+                    <div class="form-check">
+                        <input type="checkbox" name="builder_enabled" value="1" class="form-check-input" id="builder_enabled" @checked(old('builder_enabled', $page->builder_enabled))>
+                        <label class="form-check-label" for="builder_enabled">استفاده از صفحه‌ساز</label>
+                    </div>
                 @endif
             </div>
+            @if($page->exists)
+                <a href="{{ route('admin.pages.builder', $page) }}" class="btn btn-outline-primary mt-3">باز کردن صفحه‌ساز</a>
+            @endif
         </div>
     </div>
 

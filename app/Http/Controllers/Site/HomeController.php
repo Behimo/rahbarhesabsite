@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Site;
 
+use App\Models\CmsPage;
 use App\Models\ShopProduct;
+use App\Services\BlockRenderer;
 use App\Services\HomeContentService;
 use App\Services\SeoService;
 use App\Services\SiteDataService;
@@ -20,35 +22,24 @@ class HomeController extends SiteController
 
     public function index(): View
     {
-        if (config('cms.active_theme') === 'rahbarhesab') {
-            return $this->rahbarHesabHome();
+        $homePage = CmsPage::query()->where('slug', 'home')->first();
+
+        if ($homePage?->builder_enabled && ! empty($homePage->builder_content)) {
+            $bodyHtml = app(BlockRenderer::class)->render($homePage->builder_content);
+            $seo = $this->seo->forPage('home');
+
+            return $this->render('pages.cms-content', [
+                'page' => $homePage,
+                'bodyHtml' => $bodyHtml,
+                'seo' => $seo,
+                'structuredData' => [
+                    $this->seo->organizationSchema(),
+                    $this->seo->websiteSchema(),
+                ],
+            ]);
         }
 
-        $home = $this->homeContent->all();
-        $seo = $this->seo->forPage('home');
-
-        return $this->render('pages.home', [
-            'seo' => $seo,
-            'home' => $home,
-            'hero' => $home['hero'],
-            'heroPills' => $home['hero']['pills'] ?? [],
-            'products' => $this->siteData->products()->take(4),
-            'stats' => $home['stats'],
-            'whyBisan' => $home['why_bisan'],
-            'devCapabilities' => $this->siteData->devCapabilities(),
-            'devStats' => $this->siteData->devStats(),
-            'techStack' => $this->siteData->techStack(),
-            'partners' => $home['partners'],
-            'testimonials' => $home['testimonials'],
-            'trustBadges' => $home['trust_badges'],
-            'cta' => $home['cta'],
-            'latestPosts' => $this->homeContent->latestPosts(3),
-            'structuredData' => [
-                $this->seo->organizationSchema(),
-                $this->seo->websiteSchema(),
-                $this->seo->webPageSchema($seo['title'], $seo['description'], route('home')),
-            ],
-        ]);
+        return $this->rahbarHesabHome();
     }
 
     private function rahbarHesabHome(): View
