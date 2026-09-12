@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Site\SiteController;
 use App\Models\User;
 use App\Services\CartService;
 use App\Services\OtpService;
@@ -12,12 +13,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
-class AuthController extends Controller
+class AuthController extends SiteController
 {
     public function __construct(
         private CartService $cart,
         private OtpService $otp,
-    ) {}
+    ) {
+    }
 
     public function showLogin(): View|RedirectResponse
     {
@@ -25,7 +27,7 @@ class AuthController extends Controller
             return redirect()->route('panel.dashboard');
         }
 
-        return view('auth.login');
+        return $this->render('auth.login');
     }
 
     public function sendOtp(Request $request): RedirectResponse
@@ -35,7 +37,7 @@ class AuthController extends Controller
             'name' => ['nullable', 'string', 'max:255'],
         ]);
 
-        if (! PhoneNormalizer::isValidIranMobile($validated['phone'])) {
+        if (!PhoneNormalizer::isValidIranMobile($validated['phone'])) {
             return back()->withErrors(['phone' => 'شماره موبایل معتبر نیست.'])->withInput();
         }
 
@@ -56,7 +58,7 @@ class AuthController extends Controller
 
     public function showVerify(): View|RedirectResponse
     {
-        if (! session('otp_phone')) {
+        if (!session('otp_phone')) {
             return redirect()->route('login');
         }
 
@@ -70,15 +72,15 @@ class AuthController extends Controller
     {
         $phone = session('otp_phone');
 
-        if (! $phone) {
+        if (!$phone) {
             return redirect()->route('login');
         }
 
         $validated = $request->validate([
-            'code' => ['required', 'string', 'size:'.config('otp.length', 6)],
+            'code' => ['required', 'string', 'size:' . config('otp.length', 6)],
         ]);
 
-        if (! $this->otp->verify($phone, $validated['code'])) {
+        if (!$this->otp->verify($phone, $validated['code'])) {
             return back()->withErrors(['code' => 'کد تأیید نامعتبر یا منقضی شده است.']);
         }
 

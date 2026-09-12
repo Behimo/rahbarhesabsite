@@ -24,7 +24,7 @@ class HomeController extends SiteController
     {
         $homePage = CmsPage::query()->where('slug', 'home')->first();
 
-        if ($homePage?->builder_enabled && ! empty($homePage->builder_content)) {
+        if ($homePage?->builder_enabled && !empty($homePage->builder_content)) {
             $bodyHtml = app(BlockRenderer::class)->render($homePage->builder_content);
             $seo = $this->seo->forPage('home');
 

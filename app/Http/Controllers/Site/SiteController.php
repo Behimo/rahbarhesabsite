@@ -7,7 +7,6 @@ use App\Models\CmsPage;
 use App\Services\BlockRenderer;
 use App\Services\SeoService;
 use App\Services\SiteDataService;
-use App\Services\ThemeService;
 use Illuminate\Support\Facades\View;
 use Illuminate\View\View as ViewResponse;
 
@@ -16,20 +15,17 @@ abstract class SiteController extends Controller
     public function __construct(
         protected SiteDataService $siteData,
         protected SeoService $seo,
-    ) {}
+    ) {
+    }
 
     protected function render(string $view, array $data = []): ViewResponse
     {
-        app(ThemeService::class)->registerViews();
-
-        $merged = array_merge($this->siteData->sharedViewData(), $data);
-        $themeView = 'theme::'.$view;
+        $themeView = 'theme::' . $view;
 
         if (View::exists($themeView)) {
-            return view($themeView, $merged);
+            return view($themeView, $data);
         }
-
-        return view($view, $merged);
+        return view($view, $data);
     }
 
     protected function renderSystemPage(string $slug, string $fallbackView, array $data = []): ViewResponse
@@ -37,7 +33,7 @@ abstract class SiteController extends Controller
         $page = CmsPage::query()->where('slug', $slug)->first();
         $seo = $this->seo->forPage($slug, $data['seo'] ?? []);
 
-        if ($page?->builder_enabled && ! empty($page->builder_content)) {
+        if ($page?->builder_enabled && !empty($page->builder_content)) {
             $bodyHtml = app(BlockRenderer::class)->render($page->builder_content);
 
             return $this->render('pages.cms-content', array_merge($data, [

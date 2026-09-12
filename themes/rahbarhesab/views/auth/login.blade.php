@@ -1,4 +1,4 @@
-@extends('layouts.site')
+@extends('theme::layouts.site')
 
 @section('page')
     <div class="mx-auto max-w-md px-4 py-16 sm:px-6">

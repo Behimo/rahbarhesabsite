@@ -13,7 +13,9 @@ use ZipArchive;
 
 class ThemeService
 {
-    public function __construct(private CacheService $cache) {}
+    public function __construct(private CacheService $cache)
+    {
+    }
 
     public function active(): string
     {
@@ -33,12 +35,12 @@ class ThemeService
 
     public function path(?string $theme = null): string
     {
-        return base_path('themes/'.($theme ?? $this->active()));
+        return base_path('themes/' . ($theme ?? $this->active()));
     }
 
     public function view(string $view, array $data = []): \Illuminate\Contracts\View\View
     {
-        $themeView = 'theme::'.$view;
+        $themeView = 'theme::' . $view;
 
         if (View::exists($themeView)) {
             return view($themeView, $data);
@@ -51,8 +53,8 @@ class ThemeService
     {
         $themePath = $this->path();
 
-        if (is_dir($themePath.'/views')) {
-            View::addNamespace('theme', $themePath.'/views');
+        if (is_dir($themePath . '/views')) {
+            View::addNamespace('theme', $themePath . '/views');
         }
     }
 
@@ -60,14 +62,14 @@ class ThemeService
     {
         $themesPath = base_path('themes');
 
-        if (! is_dir($themesPath)) {
+        if (!is_dir($themesPath)) {
             return;
         }
 
         foreach (File::directories($themesPath) as $dir) {
             $manifest = $this->readManifest(basename($dir));
 
-            if (! $manifest) {
+            if (!$manifest) {
                 continue;
             }
 
@@ -92,7 +94,7 @@ class ThemeService
 
     public function activate(string $slug): void
     {
-        if (! is_dir($this->path($slug))) {
+        if (!is_dir($this->path($slug))) {
             throw new \RuntimeException('قالب یافت نشد.');
         }
 
@@ -105,11 +107,11 @@ class ThemeService
 
     public function installFromZip(UploadedFile $file): CmsTheme
     {
-        $tmp = storage_path('app/theme-uploads/'.Str::uuid().'.zip');
+        $tmp = storage_path('app/theme-uploads/' . Str::uuid() . '.zip');
         File::ensureDirectoryExists(dirname($tmp));
         $file->move(dirname($tmp), basename($tmp));
 
-        $extractPath = storage_path('app/theme-uploads/'.Str::uuid());
+        $extractPath = storage_path('app/theme-uploads/' . Str::uuid());
         File::ensureDirectoryExists($extractPath);
 
         $zip = new ZipArchive;
@@ -128,14 +130,14 @@ class ThemeService
         $zip->close();
 
         $manifestPath = $this->findManifest($extractPath);
-        if (! $manifestPath) {
+        if (!$manifestPath) {
             File::deleteDirectory($extractPath);
             throw new \RuntimeException('theme.json یافت نشد.');
         }
 
         $manifest = json_decode(file_get_contents($manifestPath), true);
         $slug = $manifest['slug'] ?? basename(dirname($manifestPath));
-        $target = base_path('themes/'.$slug);
+        $target = base_path('themes/' . $slug);
 
         if (is_dir($target)) {
             File::deleteDirectory($target);
@@ -152,14 +154,14 @@ class ThemeService
 
     public function previewUrl(string $slug): string
     {
-        return url('/?preview_theme='.$slug);
+        return url('/?preview_theme=' . $slug);
     }
 
     private function readManifest(string $slug): ?array
     {
         $path = base_path("themes/{$slug}/theme.json");
 
-        if (! file_exists($path)) {
+        if (!file_exists($path)) {
             return null;
         }
 
@@ -171,13 +173,13 @@ class ThemeService
 
     private function findManifest(string $dir): ?string
     {
-        $direct = $dir.'/theme.json';
+        $direct = $dir . '/theme.json';
         if (file_exists($direct)) {
             return $direct;
         }
 
         foreach (File::directories($dir) as $sub) {
-            $path = $sub.'/theme.json';
+            $path = $sub . '/theme.json';
             if (file_exists($path)) {
                 return $path;
             }
