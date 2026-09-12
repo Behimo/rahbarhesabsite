@@ -14,8 +14,9 @@ class ContactController extends SiteController
         $seo = $this->seo->forPage('contact');
 
         return $this->render('pages.contact', [
-            'seo' => $seo,
-            'faq' => $this->siteData->contactFaq(),
+                    'seo' => $seo,
+                    'contact' => $this->siteData->contact(),
+                    'faq' => $this->siteData->contactFaq(),
             'structuredData' => [
                 $this->seo->breadcrumbSchema([
                     ['name' => 'خانه', 'url' => route('home')],
