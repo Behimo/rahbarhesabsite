@@ -6,9 +6,10 @@ export default defineConfig({
   plugins: [
     laravel({
       input: [
-        // Public site (Tailwind)
-        'resources/css/app.css',
-        'resources/js/app.js',
+              // Public site (Tailwind)
+              'resources/css/app.css',
+              'resources/css/frontend.css',
+              'resources/js/app.js',
 
         // Vuexy admin — core theme
         'resources/css/admin-font.css',

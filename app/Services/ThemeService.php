@@ -14,12 +14,25 @@ use ZipArchive;
 
 class ThemeService
 {
+    /** @var string|null Preview theme slug (active only for current request). */
+    private ?string $preview = null;
+
     public function __construct(private CacheService $cache)
     {
     }
 
+
+    public function setPreview(?string $slug): void
+    {
+        $this->preview = $slug;
+    }
+
     public function active(): string
     {
+        if ($this->preview) {
+            return $this->preview;
+        }
+
         try {
             if (Schema::hasTable('cms_themes')) {
                 $dbTheme = CmsTheme::query()->where('is_active', true)->value('slug');
@@ -39,6 +52,32 @@ class ThemeService
         return base_path('themes/' . ($theme ?? $this->active()));
     }
 
+    public function layoutViewNames(): array
+    {
+        $names = ['layouts.site'];
+
+        if (is_dir($this->path() . '/views/layouts')) {
+            $names[] = 'theme::layouts.site';
+        }
+
+        return $names;
+    }
+
+    /** Register (replace) the active theme's views under the theme:: namespace. */
+    public function registerViews(): void
+    {
+        $themePath = $this->path();
+
+        if (is_dir($themePath . '/views')) {
+            // Replace, not add, so only the active theme's path is registered
+            // (prevents stale namespace entries when switching themes).
+            View::replaceNamespace('theme', $themePath . '/views');
+        }
+    }
+
+    /**
+     * Resolve a view: first the active theme, then the base app view.
+     */
     public function view(string $view, array $data = []): \Illuminate\Contracts\View\View
     {
         $themeView = 'theme::' . $view;
@@ -52,13 +91,10 @@ class ThemeService
         return view($view, $data);
     }
 
-    public function registerViews(): void
+    /** Public URL for a theme asset (relative to public/themes/{slug}/). */
+    public function asset(string $path): string
     {
-        $themePath = $this->path();
-
-        if (is_dir($themePath . '/views')) {
-            View::addNamespace('theme', $themePath . '/views');
-        }
+        return asset('themes/' . $this->active() . '/' . ltrim($path, '/'));
     }
 
     public function discover(): void

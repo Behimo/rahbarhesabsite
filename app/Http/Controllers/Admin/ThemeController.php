@@ -27,9 +27,18 @@ class ThemeController extends Controller
     }
 
     public function activate(string $slug): RedirectResponse
-    {
-        $this->themes->activate($slug);
+        {
+            $this->themes->activate($slug);
 
-        return back()->with('success', 'قالب فعال شد.');
-    }
+            return back()->with('success', 'قالب فعال شد.');
+        }
+
+        public function preview(string $slug): RedirectResponse
+        {
+            if (! is_dir(base_path('themes/' . $slug))) {
+                return back()->with('error', 'قالب یافت نشد.');
+            }
+
+            return redirect()->to($this->themes->previewUrl($slug));
+        }
 }

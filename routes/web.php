@@ -128,6 +128,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('themes', [AdminThemeController::class, 'index'])->name('themes.index');
         Route::post('themes', [AdminThemeController::class, 'store'])->name('themes.store');
         Route::post('themes/{slug}/activate', [AdminThemeController::class, 'activate'])->name('themes.activate');
+        Route::get('themes/{slug}/preview', [AdminThemeController::class, 'preview'])->name('themes.preview');
         Route::get('plugins', [AdminPluginController::class, 'index'])->name('plugins.index');
         Route::post('plugins', [AdminPluginController::class, 'store'])->name('plugins.store');
         Route::post('plugins/{plugin}/toggle', [AdminPluginController::class, 'toggle'])->name('plugins.toggle');

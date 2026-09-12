@@ -11,7 +11,9 @@ class ViewServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        View::composer(['layouts.site', 'theme::layouts.site'], function ($view) {
+        $names = app(ThemeService::class)->layoutViewNames();
+
+        View::composer($names, function ($view) {
             $shared = app(SiteDataService::class)->sharedViewData();
 
             foreach ($shared as $key => $value) {

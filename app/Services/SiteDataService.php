@@ -14,10 +14,10 @@ class SiteDataService
     public function navLinks(): array
     {
         $menuService = app(\App\Services\MenuService::class);
-        $location = config('cms.active_theme') === 'rahbarhesab' ? 'primary' : 'primary';
+        $location = config('cms.menu_locations.primary', 'primary');
         $menuLinks = $menuService->linksForLocation($location);
 
-        if (! empty($menuLinks)) {
+        if (!empty($menuLinks)) {
             $links = collect($menuLinks)->map(function (array $item) {
                 if (isset($item['href'])) {
                     return ['href' => $item['href'], 'label' => $item['label']];
@@ -59,7 +59,7 @@ class SiteDataService
     {
         $page = CmsPage::query()->published()->where('slug', $slug)->first();
 
-        if (! $page || empty($page->content)) {
+        if (!$page || empty($page->content)) {
             return $defaults;
         }
 
@@ -432,7 +432,7 @@ class SiteDataService
             $dbProducts = CmsProduct::query()->published()->orderBy('sort_order')->get();
 
             if ($dbProducts->isNotEmpty()) {
-                return $dbProducts->map(fn (CmsProduct $p) => $this->formatProduct($p));
+                return $dbProducts->map(fn(CmsProduct $p) => $this->formatProduct($p));
             }
 
             return collect();
@@ -497,8 +497,12 @@ class SiteDataService
     public function serviceIndustries(): array
     {
         return [
-            'کلینیک و سلامت', 'آموزش و مشاوره', 'تولید و توزیع',
-            'املاک و ساختمان', 'خدمات مالی', 'فروشگاه آنلاین',
+            'کلینیک و سلامت',
+            'آموزش و مشاوره',
+            'تولید و توزیع',
+            'املاک و ساختمان',
+            'خدمات مالی',
+            'فروشگاه آنلاین',
         ];
     }
 
@@ -561,7 +565,7 @@ class SiteDataService
         $defaults = $this->defaultPageMeta()[$slug] ?? [];
         $page = CmsPage::query()->published()->where('slug', $slug)->first();
 
-        if (! $page) {
+        if (!$page) {
             return $defaults;
         }
 
@@ -596,7 +600,7 @@ class SiteDataService
 
     public function productImageUrl(?string $image): ?string
     {
-        if (! $image) {
+        if (!$image) {
             return null;
         }
 

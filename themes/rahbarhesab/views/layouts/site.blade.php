@@ -29,10 +29,10 @@
     <meta name="twitter:title" content="{{ $seoMeta['og_title'] ?? $seoMeta['title'] ?? '' }}">
     <meta name="twitter:description" content="{{ $seoMeta['description'] ?? '' }}">
 
-    <link rel="icon" href="{{ asset('images/bisan/logo-icon.png') }}">
-    <link rel="alternate" hreflang="fa-IR" href="{{ url()->current() }}">
-    <link rel="stylesheet" href="{{ asset('themes/rahbarhesab/theme.css') }}">
-    @vite(['resources/css/app.css'])
+    <link rel="icon" href="{{ app(\App\Services\ThemeService::class)->asset('og-image.png') }}">
+        <link rel="alternate" hreflang="fa-IR" href="{{ url()->current() }}">
+        <link rel="stylesheet" href="{{ app(\App\Services\ThemeService::class)->asset('theme.css') }}">
+        @vite(['resources/css/frontend.css'])
 
     @if (!empty($structuredData))
         @foreach ($structuredData as $schema)
