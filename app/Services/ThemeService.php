@@ -6,6 +6,7 @@ use App\Models\CmsAuditLog;
 use App\Models\CmsTheme;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
@@ -45,6 +46,8 @@ class ThemeService
         if (View::exists($themeView)) {
             return view($themeView, $data);
         }
+
+        Log::debug("Theme view not found, falling back to base view: {$view}");
 
         return view($view, $data);
     }

@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Log;
+
 class BlockRenderer
 {
     public function __construct(private BlockRegistry $registry) {}
@@ -21,7 +23,8 @@ class BlockRenderer
 
             try {
                 $html .= $this->registry->renderBlock($type, $settings);
-            } catch (\Throwable) {
+            } catch (\Throwable $e) {
+                Log::error('Block render failed: ' . $type, ['error' => $e->getMessage()]);
                 continue;
             }
         }

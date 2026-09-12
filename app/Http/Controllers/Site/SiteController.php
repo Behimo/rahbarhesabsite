@@ -7,7 +7,7 @@ use App\Models\CmsPage;
 use App\Services\BlockRenderer;
 use App\Services\SeoService;
 use App\Services\SiteDataService;
-use Illuminate\Support\Facades\View;
+use App\Services\ThemeService;
 use Illuminate\View\View as ViewResponse;
 
 abstract class SiteController extends Controller
@@ -17,15 +17,9 @@ abstract class SiteController extends Controller
         protected SeoService $seo,
     ) {
     }
-
-    protected function render(string $view, array $data = []): ViewResponse
+protected function render(string $view, array $data = []): ViewResponse
     {
-        $themeView = 'theme::' . $view;
-
-        if (View::exists($themeView)) {
-            return view($themeView, $data);
-        }
-        return view($view, $data);
+        return app(ThemeService::class)->view($view, $data);
     }
 
     protected function renderSystemPage(string $slug, string $fallbackView, array $data = []): ViewResponse
