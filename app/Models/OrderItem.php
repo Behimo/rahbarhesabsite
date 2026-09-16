@@ -7,12 +7,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrderItem extends Model
 {
-    protected $fillable = ['order_id', 'shop_product_id', 'title', 'price', 'quantity'];
+    protected $fillable = ['order_id', 'shop_product_id', 'title', 'price', 'quantity', 'metadata'];
 
     protected function casts(): array
     {
         return [
             'price' => 'integer',
+            'metadata' => 'array',
         ];
     }
 

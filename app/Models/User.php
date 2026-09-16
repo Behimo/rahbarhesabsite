@@ -24,13 +24,19 @@ class User extends Authenticatable
     public const ROLE_ADMIN = 'admin';
 
     protected $fillable = [
-        'name',
-        'email',
-        'phone',
-        'password',
-        'role',
-        'permissions',
-    ];
+            'wp_id',
+            'mobile',
+            'name',
+            'first_name',
+            'last_name',
+            'email',
+            'phone',
+            'password',
+            'is_wp_password',
+            'status',
+            'role',
+            'permissions',
+        ];
 
     protected $hidden = [
         'password',
@@ -42,7 +48,9 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_wp_password' => 'boolean',
             'permissions' => 'array',
+            'last_login_at' => 'datetime',
         ];
     }
 

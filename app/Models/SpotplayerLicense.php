@@ -14,17 +14,21 @@ class SpotplayerLicense extends Model
     public const STATUS_FAILED = 'failed';
 
     protected $fillable = [
-        'user_id', 'course_id', 'order_id', 'license_key',
-        'status', 'api_response', 'issued_at',
-    ];
-
-    protected function casts(): array
-    {
-        return [
-            'api_response' => 'array',
-            'issued_at' => 'datetime',
+            'user_id', 'course_id', 'order_id', 'spot_license_id', 'license_key',
+            'spot_url', 'device_count', 'devices_limit',
+            'status', 'issued_via', 'last_verified_at', 'api_response', 'issued_at',
         ];
-    }
+
+        protected function casts(): array
+        {
+            return [
+                'api_response' => 'array',
+                'issued_at' => 'datetime',
+                'last_verified_at' => 'datetime',
+                'device_count' => 'integer',
+                'devices_limit' => 'integer',
+            ];
+        }
 
     public function user(): BelongsTo
     {

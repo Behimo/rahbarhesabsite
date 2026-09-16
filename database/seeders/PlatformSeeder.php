@@ -2,35 +2,58 @@
 
 namespace Database\Seeders;
 
+use App\Models\Coupon;
 use App\Models\Course;
 use App\Models\CourseLesson;
 use App\Models\CourseSection;
 use App\Models\ShopProduct;
 use App\Models\User;
+use App\Support\PhoneNormalizer;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class PlatformSeeder extends Seeder
 {
     public function run(): void
     {
-        User::query()->updateOrCreate(
-            ['email' => 'demo@example.com'],
+        // 🔹 ۱. Admin کاربر
+        $admin = User::query()->updateOrCreate(
+            ['email' => 'admin@rahbarhesab.ir'],
             [
-                'name' => 'کاربر نمونه',
-                'password' => 'password',
-                'role' => User::ROLE_USER,
+                'name' => 'مدیر اصلی',
+                'mobile' => PhoneNormalizer::toLocal('09120000000'),
+                'phone' => PhoneNormalizer::toLocal('09120000000'),
+                'password' => 'secret123',
+                'role' => User::ROLE_ADMIN,
+                'status' => 'active',
             ]
         );
 
+        // 🔹 ۲. کاربر نمونه
+        $demoUser = User::query()->updateOrCreate(
+            ['email' => 'demo@example.com'],
+            [
+                'name' => 'کاربر نمونه',
+                'mobile' => PhoneNormalizer::toLocal('09121111111'),
+                'phone' => PhoneNormalizer::toLocal('09121111111'),
+                'password' => 'password',
+                'role' => User::ROLE_USER,
+                'status' => 'active',
+            ]
+        );
+
+        // 🔹 ۳. مدرس نمونه
         $instructor = User::query()->updateOrCreate(
             ['email' => 'instructor@example.com'],
             [
                 'name' => 'مدرس نمونه',
                 'password' => 'password',
                 'role' => User::ROLE_INSTRUCTOR,
+                'status' => 'active',
             ]
         );
 
+        // 🔹 ۴. دوره رایگان
         $product = ShopProduct::query()->updateOrCreate(
             ['slug' => 'laravel-basics'],
             [
@@ -79,6 +102,7 @@ class PlatformSeeder extends Seeder
             ]
         );
 
+        // 🔹 ۵. دوره پولی و به‌روزرسانی لایسنس اسپات‌پلیر
         $paidProduct = ShopProduct::query()->updateOrCreate(
             ['slug' => 'advanced-laravel'],
             [
@@ -99,6 +123,35 @@ class PlatformSeeder extends Seeder
                 'level' => 'advanced',
                 'duration_minutes' => 300,
                 'what_you_learn' => ['Repository Pattern', 'Event Sourcing', 'Performance'],
+            ]
+        );
+
+        // 🔹 ۶. ثبت‌نام رایگان کاربر نمونه در دوره رایگان
+        $demoUser->enrollments()->firstOrCreate(
+            ['course_id' => $course->id],
+            [
+                'order_id' => null,
+                'enrolled_at' => now(),
+                'status' => 'active',
+                'source' => 'free',
+                'progress_percent' => 0,
+            ]
+        );
+
+        // 🔹 ۷. کد تخفیف نمونه (تست سیستم کوپن)
+        Coupon::query()->updateOrCreate(
+            ['code' => 'WELCOME10'],
+            [
+                'title' => 'تخفیف خوش‌آمدگویی ۱۰٪',
+                'type' => 'percentage_cart',
+                'value' => 10,
+                'max_discount_amount' => 200000,
+                'min_order_amount' => 500000,
+                'usage_limit_total' => 100,
+                'usage_limit_per_user' => 1,
+                'is_active' => true,
+                'starts_at' => now(),
+                'expires_at' => now()->addYear(),
             ]
         );
     }

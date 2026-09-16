@@ -8,18 +8,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class CourseEnrollment extends Model
 {
     protected $fillable = [
-        'user_id', 'course_id', 'order_id', 'enrolled_at',
-        'progress_percent', 'completed_at', 'expires_at',
-    ];
-
-    protected function casts(): array
-    {
-        return [
-            'enrolled_at' => 'datetime',
-            'completed_at' => 'datetime',
-            'expires_at' => 'datetime',
+            'user_id', 'course_id', 'order_id', 'enrolled_at',
+            'status', 'source', 'progress_percent', 'completed_at', 'expires_at',
         ];
-    }
+
+        protected function casts(): array
+        {
+            return [
+                'enrolled_at' => 'datetime',
+                'completed_at' => 'datetime',
+                'expires_at' => 'datetime',
+            ];
+        }
 
     public function user(): BelongsTo
     {

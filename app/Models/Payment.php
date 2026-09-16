@@ -14,14 +14,18 @@ class Payment extends Model
     public const STATUS_FAILED = 'failed';
 
     protected $fillable = [
-        'order_id', 'gateway', 'authority', 'ref_id', 'amount', 'status', 'gateway_response',
+        'order_id', 'gateway', 'authority', 'ref_id', 'amount', 'status',
+        'card_pan', 'card_hash', 'gateway_payload', 'gateway_response', 'verified_at', 'paid_at', 'error_message',
     ];
 
     protected function casts(): array
     {
         return [
             'amount' => 'integer',
+            'gateway_payload' => 'array',
             'gateway_response' => 'array',
+            'paid_at' => 'datetime',
+            'verified_at' => 'datetime',
         ];
     }
 

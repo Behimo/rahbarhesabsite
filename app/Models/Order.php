@@ -19,8 +19,14 @@ class Order extends Model
 
     protected $fillable = [
         'user_id', 'order_number', 'status', 'subtotal', 'discount',
-        'total', 'currency', 'notes', 'paid_at',
+        'total', 'currency', 'notes', 'paid_at', 'wp_id', 'coupon_id',
+        'coupon_code', 'user_ip', 'user_agent',
     ];
+
+    public function coupon(): BelongsTo
+    {
+        return $this->belongsTo(Coupon::class);
+    }
 
     protected function casts(): array
     {
