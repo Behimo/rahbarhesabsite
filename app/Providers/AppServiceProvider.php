@@ -18,6 +18,8 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        require_once app_path('Support/helpers.php');
+
         $this->app->singleton(ThemeService::class);
         $this->app->singleton(PluginService::class);
         $this->app->singleton(BlockRegistry::class);

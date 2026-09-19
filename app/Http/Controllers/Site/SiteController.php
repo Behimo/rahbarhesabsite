@@ -17,9 +17,13 @@ abstract class SiteController extends Controller
         protected SeoService $seo,
     ) {
     }
-protected function render(string $view, array $data = []): ViewResponse
+
+    protected function render(string $view, array $data = []): ViewResponse
     {
-        return app(ThemeService::class)->view($view, $data);
+        return app(ThemeService::class)->view($view, array_merge(
+            $this->siteData->sharedViewData(),
+            $data
+        ));
     }
 
     protected function renderSystemPage(string $slug, string $fallbackView, array $data = []): ViewResponse

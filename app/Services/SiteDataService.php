@@ -18,23 +18,45 @@ class SiteDataService
         $menuLinks = $menuService->linksForLocation($location);
 
         if (!empty($menuLinks)) {
-            $links = collect($menuLinks)->map(function (array $item) {
-                if (isset($item['href'])) {
-                    return ['href' => $item['href'], 'label' => $item['label']];
-                }
-
-                return $item;
-            })->all();
-
-            return \App\Support\Hook::applyFilters('cms.nav.links', $links);
+            return \App\Support\Hook::applyFilters('cms.nav.links', $this->normalizeNavLinks($menuLinks));
         }
 
         $links = [
-            ['route' => 'home', 'label' => 'خانه'],
-            ['route' => 'courses.index', 'label' => 'دوره‌ها'],
-            ['route' => 'blog.index', 'label' => 'بلاگ و اخبار'],
-            ['route' => 'about', 'label' => 'درباره ما'],
-            ['route' => 'contact', 'label' => 'تماس'],
+            ['route' => 'home', 'label' => 'صفحه اصلی'],
+            [
+                'route' => 'courses.index',
+                'label' => 'دوره آموزش حسابداری',
+                'children' => [
+                    ['route' => 'courses.index', 'label' => 'همه دوره‌ها'],
+                ],
+            ],
+            [
+                'route' => 'blog.index',
+                'label' => 'منابع حسابداری',
+                'children' => [
+                    ['route' => 'blog.index', 'label' => 'مقالات حسابداری'],
+                ],
+            ],
+            [
+                'route' => 'about',
+                'label' => 'خدمات مشاوره مالیاتی',
+                'children' => [
+                    ['route' => 'about', 'label' => 'مشاوره مالیاتی'],
+                    ['route' => 'about', 'label' => 'مشاوره حسابداری'],
+                ],
+            ],
+            [
+                'route' => 'courses.index',
+                'label' => 'محصولات سامانه مودیان',
+            ],
+            [
+                'route' => 'contact',
+                'label' => 'ارتباط با ما',
+                'children' => [
+                    ['route' => 'contact', 'label' => 'تماس با ما'],
+                    ['route' => 'about', 'label' => 'درباره ما'],
+                ],
+            ],
         ];
 
         $dynamic = CmsPage::query()
@@ -78,8 +100,14 @@ class SiteDataService
     public function contact(): array
     {
         return [
-            'email' => CmsSetting::get('contact_email', config('cms.contact_email')),
-            'phone' => CmsSetting::get('contact_phone', config('cms.contact_phone')),
+            'email' => CmsSetting::get('contact_email', config('cms.contact_email') ?: 'info@rahbarhesab.com'),
+            'phone' => CmsSetting::get('contact_phone', config('cms.contact_phone') ?: '02191020105'),
+            'phone_display' => CmsSetting::get('contact_phone_display', '۰۲۱-۹۱۰۲۰۱۰۵'),
+            'mobile' => CmsSetting::get('contact_mobile', '09333658333'),
+            'mobile_display' => CmsSetting::get('contact_mobile_display', '۰۹۳۳۳۶۵۸۳۳۳'),
+            'instagram' => CmsSetting::get('social_instagram', config('cms.social.instagram')),
+            'telegram' => CmsSetting::get('social_telegram', config('cms.social.telegram')),
+            'linkedin' => CmsSetting::get('social_linkedin', config('cms.social.linkedin')),
         ];
     }
 
@@ -586,10 +614,52 @@ class SiteDataService
 
     public function sharedViewData(): array
     {
+        $cartCount = 0;
+
+        try {
+            $cartCount = app(CartService::class)->count();
+        } catch (\Throwable) {
+            // Cart tables may not exist during install.
+        }
+
         return [
             'navLinks' => $this->navLinks(),
             'contact' => $this->contact(),
+            'cartCount' => $cartCount,
         ];
+    }
+
+    private function normalizeNavLinks(array $items): array
+    {
+        return collect($items)->map(function (array $item) {
+            $href = $item['href'] ?? $item['url'] ?? null;
+            $children = [];
+
+            foreach ($item['children'] ?? [] as $child) {
+                $children[] = [
+                    'label' => $child['label'] ?? '',
+                    'href' => $child['href'] ?? $child['url'] ?? '#',
+                    'target' => $child['target'] ?? '_self',
+                ];
+            }
+
+            $link = [
+                'label' => $item['label'] ?? '',
+                'href' => $href,
+                'target' => $item['target'] ?? '_self',
+            ];
+
+            if (isset($item['route'])) {
+                $link['route'] = $item['route'];
+                $link['params'] = $item['params'] ?? [];
+            }
+
+            if ($children !== []) {
+                $link['children'] = $children;
+            }
+
+            return $link;
+        })->all();
     }
 
     public function clearCache(): void

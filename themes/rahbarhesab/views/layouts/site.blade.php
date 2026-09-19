@@ -29,10 +29,10 @@
     <meta name="twitter:title" content="{{ $seoMeta['og_title'] ?? $seoMeta['title'] ?? '' }}">
     <meta name="twitter:description" content="{{ $seoMeta['description'] ?? '' }}">
 
-    <link rel="icon" href="{{ app(\App\Services\ThemeService::class)->asset('og-image.png') }}">
-        <link rel="alternate" hreflang="fa-IR" href="{{ url()->current() }}">
-        <link rel="stylesheet" href="{{ app(\App\Services\ThemeService::class)->asset('theme.css') }}">
-        @vite(['resources/css/frontend.css'])
+    <link rel="icon" href="{{ theme_asset('images/logorahbarhesab.webp') }}">
+    <link rel="alternate" hreflang="fa-IR" href="{{ url()->current() }}">
+    <link rel="stylesheet" href="{{ theme_asset('style.css') }}">
+    <link rel="stylesheet" href="{{ theme_asset('theme.css') }}">
 
     @if (!empty($structuredData))
         @foreach ($structuredData as $schema)
@@ -41,16 +41,16 @@
     @endif
     @stack('head')
 </head>
-<body class="rh-theme min-h-screen">
+<body class="rh-theme">
     @include('theme::components.navbar', ['navLinks' => $navLinks ?? []])
 
-    <main>
+    <main @unless (request()->routeIs('home')) class="rh-inner-page" @endunless>
         @yield('page')
     </main>
 
     @include('theme::components.footer', ['contact' => $contact ?? []])
 
-    @vite(['resources/js/app.js'])
+    <script src="{{ theme_asset('script.js') }}"></script>
     @stack('scripts')
 </body>
 </html>

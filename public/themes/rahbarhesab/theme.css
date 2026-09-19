@@ -1,5 +1,6 @@
 /* Rahbar Hesab Theme */
 :root {
+    --purple: #643abc;
     --rh-primary: #0f766e;
     --rh-primary-dark: #115e59;
     --rh-accent: #f59e0b;
@@ -67,4 +68,82 @@ body.rh-theme {
 .rh-footer {
     background: #0f172a;
     color: #cbd5e1;
+}
+
+.course-image:not(.free-course-cover):not(:has(img)) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 180px;
+    padding: 24px;
+    background: linear-gradient(135deg, #361e50 0%, #643abc 100%);
+    color: #fff;
+    text-align: center;
+    font-weight: 800;
+}
+
+.course-image span {
+    padding: 0 16px;
+    line-height: 1.8;
+}
+
+.rh-inner-page {
+    width: min(1100px, calc(100% - 40px));
+    margin: 32px auto 80px;
+}
+
+.rh-inner-page h1 {
+    margin: 0 0 20px;
+    font-size: 28px;
+    font-weight: 800;
+    color: #242027;
+}
+
+.rh-inner-page h2,
+.rh-inner-page h3 {
+    margin: 24px 0 12px;
+    font-weight: 700;
+    color: #361e50;
+}
+
+.rh-inner-page p,
+.rh-inner-page li {
+    line-height: 1.9;
+}
+
+.rh-inner-page a {
+    color: #643abc;
+}
+
+.rh-inner-page input,
+.rh-inner-page textarea,
+.rh-inner-page select {
+    width: 100%;
+    max-width: 520px;
+    padding: 10px 14px;
+    border: 1px solid #eae7ec;
+    border-radius: 10px;
+    background: #fff;
+}
+
+.rh-inner-page .rh-card {
+    background: #fff;
+    border: 1px solid #eae7ec;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 8px 24px rgba(54, 30, 80, 0.06);
+}
+
+.rh-inner-page .rh-btn-primary,
+.rh-inner-page button[type="submit"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 18px;
+    border: 0;
+    border-radius: 12px;
+    background: #643abc;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
 }
