@@ -53,7 +53,7 @@
                 <div class="list-group list-group-flush" id="block-palette">
                     @foreach($blocks as $block)
                         <button type="button" class="list-group-item list-group-item-action d-flex align-items-center gap-2" data-add-block="{{ $block['type'] }}">
-                            <i class="ti ti-plus text-primary"></i>
+                            <i class="ti ti-layout-grid-add text-success"></i>
                             {{ $block['label'] }}
                         </button>
                     @endforeach

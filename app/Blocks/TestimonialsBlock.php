@@ -30,7 +30,7 @@ class TestimonialsBlock extends AbstractBlock
 
     public function render(array $settings): string
     {
-        return $this->view('blocks.testimonials', [
+        return $this->blockView('testimonials', [
             'title' => $settings['title'] ?? '',
             'items' => $settings['items'] ?? [],
         ]);

@@ -6,6 +6,7 @@ use App\Models\CmsAdmin;
 use App\Models\CmsCategory;
 use App\Models\CmsPage;
 use App\Models\CmsPost;
+use App\Services\HomePageDefaults;
 use App\Services\SiteDataService;
 use Illuminate\Database\Seeder;
 
@@ -24,28 +25,33 @@ class CmsSeeder extends Seeder
         );
 
         $siteData = app(SiteDataService::class);
+        $homeDefaults = app(HomePageDefaults::class);
 
         foreach ($siteData->rahbarPageMeta() as $slug => $meta) {
-            CmsPage::query()->updateOrCreate(
-                ['slug' => $slug],
-                [
-                    'title' => $meta['title'],
-                    'meta_title' => $meta['title'],
-                    'meta_description' => $meta['description'],
-                    'meta_keywords' => $meta['keywords'] ?? null,
-                    'robots' => 'index, follow',
-                    'is_published' => true,
-                    'is_system' => true,
-                    'template' => 'system',
-                    'status' => 'published',
-                    'sort_order' => match ($slug) {
-                        'home' => 1,
-                        'about' => 2,
-                        'contact' => 3,
-                        default => 99,
-                    },
-                ]
-            );
+            $payload = [
+                'title' => $meta['title'],
+                'meta_title' => $meta['title'],
+                'meta_description' => $meta['description'],
+                'meta_keywords' => $meta['keywords'] ?? null,
+                'robots' => 'index, follow',
+                'is_published' => true,
+                'is_system' => true,
+                'template' => 'system',
+                'status' => 'published',
+                'sort_order' => match ($slug) {
+                    'home' => 1,
+                    'about' => 2,
+                    'contact' => 3,
+                    default => 99,
+                },
+            ];
+
+            if ($slug === 'home') {
+                $payload['builder_enabled'] = true;
+                $payload['builder_content'] = $homeDefaults->builderContent();
+            }
+
+            CmsPage::query()->updateOrCreate(['slug' => $slug], $payload);
         }
 
         $category = CmsCategory::query()->updateOrCreate(

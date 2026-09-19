@@ -1,12 +1,12 @@
 @extends('theme::layouts.site')
 
 @section('page')
-<div class="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-    @if(!empty($page?->title))
-        <h1 class="mb-8 text-3xl font-extrabold text-slate-800">{{ $page->title }}</h1>
-    @endif
-    <div class="cms-page-content prose max-w-none">
-        {!! $bodyHtml ?? '' !!}
+@if(!empty($page?->title))
+<section class="bg-teal-800 py-10 text-white">
+    <div class="mx-auto max-w-5xl px-4 text-center sm:px-6">
+        <h1 class="text-3xl font-extrabold">{{ $page->title }}</h1>
     </div>
-</div>
+</section>
+@endif
+{!! $bodyHtml ?? '' !!}
 @endsection

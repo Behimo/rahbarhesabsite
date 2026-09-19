@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Site;
 use App\Http\Controllers\Controller;
 use App\Models\CmsPage;
 use App\Services\BlockRenderer;
+use App\Services\PageBuilderService;
 use App\Services\SeoService;
 use App\Services\SiteDataService;
 use App\Services\ThemeService;
@@ -30,11 +31,14 @@ abstract class SiteController extends Controller
     {
         $page = CmsPage::query()->where('slug', $slug)->first();
         $seo = $this->seo->forPage($slug, $data['seo'] ?? []);
+        $pageBuilder = app(PageBuilderService::class);
+        $builderContent = $pageBuilder->resolveContent($page, $slug);
 
-        if ($page?->builder_enabled && !empty($page->builder_content)) {
-            $bodyHtml = app(BlockRenderer::class)->render($page->builder_content);
+        if ($pageBuilder->shouldRenderBuilder($page, $slug)) {
+            $bodyHtml = app(BlockRenderer::class)->render($builderContent, $data);
+            $view = $pageBuilder->usesFullWidthLayout($page, $slug) ? 'pages.sections' : 'pages.cms-content';
 
-            return $this->render('pages.cms-content', array_merge($data, [
+            return $this->render($view, array_merge($data, [
                 'page' => $page,
                 'bodyHtml' => $bodyHtml,
                 'seo' => $seo,

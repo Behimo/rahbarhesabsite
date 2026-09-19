@@ -25,7 +25,7 @@ class ImageBlock extends AbstractBlock
 
     public function render(array $settings): string
     {
-        return $this->view('blocks.image', [
+        return $this->blockView('image', [
             'src' => $settings['src'] ?? '',
             'alt' => $settings['alt'] ?? '',
             'caption' => $settings['caption'] ?? '',

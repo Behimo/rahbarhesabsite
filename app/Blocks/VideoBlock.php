@@ -24,7 +24,7 @@ class VideoBlock extends AbstractBlock
 
     public function render(array $settings): string
     {
-        return $this->view('blocks.video', [
+        return $this->blockView('video', [
             'provider' => $settings['provider'] ?? 'aparat',
             'url' => $settings['url'] ?? '',
         ]);

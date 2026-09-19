@@ -6,10 +6,16 @@ use Illuminate\Support\Facades\Log;
 
 class BlockRenderer
 {
-    public function __construct(private BlockRegistry $registry) {}
+    public function __construct(
+        private BlockRegistry $registry,
+        private PageRenderContext $context,
+    ) {}
 
-    public function render(array $builderContent): string
+    /** @param  array<string, mixed>  $contextData */
+    public function render(array $builderContent, array $contextData = []): string
     {
+        $this->context->set($contextData);
+
         $blocks = $builderContent['blocks'] ?? [];
         $html = '';
 

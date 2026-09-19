@@ -4,5 +4,17 @@
     "version": "1.0.0",
     "description": "قالب موسسه آموزش حسابداری راهبر حساب — rahbarhesab.com",
     "author": "Bisan",
-    "site_url": "https://rahbarhesab.com"
+    "site_url": "https://rahbarhesab.com",
+    "blocks": [
+        "hero",
+        "features",
+        "feature-split",
+        "courses",
+        "faq",
+        "posts",
+        "text",
+        "cta",
+        "columns",
+        "html"
+    ]
 }

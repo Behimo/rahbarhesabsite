@@ -13,29 +13,46 @@ class CoursesBlock extends AbstractBlock
 
     public function label(): string
     {
-        return 'لیست دوره‌ها';
+        return 'کاروسل دوره‌ها';
     }
 
     public function schema(): array
     {
         return [
-            'title' => ['type' => 'text', 'label' => 'عنوان', 'default' => 'دوره‌های آموزشی'],
-            'limit' => ['type' => 'number', 'label' => 'تعداد', 'default' => 4],
+            'title' => ['type' => 'text', 'label' => 'عنوان', 'default' => 'جدیدترین دوره های ما'],
+            'section_id' => ['type' => 'text', 'label' => 'شناسه HTML', 'default' => 'latestCourses'],
+            'section_class' => ['type' => 'text', 'label' => 'کلاس CSS', 'default' => ''],
+            'limit' => ['type' => 'number', 'label' => 'تعداد', 'default' => 12],
+            'filter' => ['type' => 'select', 'label' => 'فیلتر', 'options' => ['latest' => 'جدیدترین', 'free' => 'رایگان'], 'default' => 'latest'],
         ];
     }
 
     public function render(array $settings): string
     {
-        $courses = ShopProduct::query()
+        $filter = $settings['filter'] ?? 'latest';
+        $limit = (int) ($settings['limit'] ?? 12);
+
+        $query = ShopProduct::query()
             ->published()
             ->where('type', ShopProduct::TYPE_COURSE)
-            ->with('course')
-            ->orderBy('sort_order')
-            ->limit((int) ($settings['limit'] ?? 4))
-            ->get();
+            ->with(['course.instructor'])
+            ->orderBy('sort_order');
 
-        return $this->view('blocks.courses', [
-            'title' => $settings['title'] ?? 'دوره‌های آموزشی',
+        if ($filter === 'free') {
+            $query->where('price', 0);
+        }
+
+        $courses = $query->limit($limit)->get();
+
+        if ($filter === 'free' && $courses->isEmpty()) {
+            return '';
+        }
+
+        return $this->blockView('courses', [
+            'title' => $settings['title'] ?? 'جدیدترین دوره های ما',
+            'sectionId' => $settings['section_id'] ?? 'latestCourses',
+            'sectionClass' => $settings['section_class'] ?? '',
+            'isFree' => $filter === 'free',
             'courses' => $courses,
         ]);
     }

@@ -32,7 +32,7 @@ class ProductsBlock extends AbstractBlock
             ->limit((int) ($settings['limit'] ?? 4))
             ->get();
 
-        return $this->view('blocks.products', [
+        return $this->blockView('products', [
             'title' => $settings['title'] ?? 'محصولات',
             'products' => $products,
         ]);

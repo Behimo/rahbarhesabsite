@@ -23,7 +23,7 @@ class HtmlBlock extends AbstractBlock
 
     public function render(array $settings): string
     {
-        return $this->view('blocks.html', [
+        return $this->blockView('html', [
             'html' => $settings['html'] ?? '',
         ]);
     }

@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Services\BlockRegistry;
 use App\Services\BlockRenderer;
 use App\Services\CacheService;
+use App\Services\PageBuilderService;
+use App\Services\PageRenderContext;
 use App\Services\MenuService;
 use App\Services\PluginService;
 use App\Services\SpotPlayerService;
@@ -24,6 +26,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(PluginService::class);
         $this->app->singleton(BlockRegistry::class);
         $this->app->singleton(BlockRenderer::class);
+        $this->app->singleton(PageRenderContext::class);
+        $this->app->singleton(PageBuilderService::class);
         $this->app->singleton(CacheService::class);
         $this->app->singleton(MenuService::class);
         $this->app->singleton(TaxonomyService::class);

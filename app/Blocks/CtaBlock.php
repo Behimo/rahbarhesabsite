@@ -25,7 +25,7 @@ class CtaBlock extends AbstractBlock
 
     public function render(array $settings): string
     {
-        return $this->view('blocks.cta', [
+        return $this->blockView('cta', [
             'title' => $settings['title'] ?? '',
             'text' => $settings['text'] ?? 'بیشتر بدانید',
             'url' => $settings['url'] ?? '#',

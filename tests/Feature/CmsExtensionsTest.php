@@ -38,6 +38,18 @@ class CmsExtensionsTest extends TestCase
         $this->assertStringContainsString('Test Hero', $html);
     }
 
+    public function test_theme_block_renders_hero_with_rahbarhesab_partial(): void
+    {
+        $html = app(BlockRenderer::class)->render([
+            'blocks' => [
+                ['type' => 'hero', 'settings' => ['eyebrow' => 'Custom About Title']],
+            ],
+        ]);
+
+        $this->assertStringContainsString('Custom About Title', $html);
+        $this->assertStringContainsString('rahbar-about', $html);
+    }
+
     public function test_page_builder_save_via_form(): void
     {
         $admin = CmsAdmin::query()->create([

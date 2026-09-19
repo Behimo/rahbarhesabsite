@@ -1,7 +1,7 @@
 <section class="news-guides-section" id="latestNewsGuides">
     <div class="news-guides-container">
         <div class="news-guides-header">
-            <h2>اخبار و بخشنامه های جدید</h2>
+            <h2>{{ $sectionTitle ?? 'اخبار و بخشنامه های جدید' }}</h2>
         </div>
 
         <div class="news-guides-grid">

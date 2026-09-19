@@ -28,7 +28,7 @@ class StatsBlock extends AbstractBlock
 
     public function render(array $settings): string
     {
-        return $this->view('blocks.stats', [
+        return $this->blockView('stats', [
             'items' => $settings['items'] ?? [],
         ]);
     }

@@ -23,7 +23,7 @@ class TextBlock extends AbstractBlock
 
     public function render(array $settings): string
     {
-        return $this->view('blocks.text', [
+        return $this->blockView('text', [
             'content' => $settings['content'] ?? '',
         ]);
     }

@@ -6,6 +6,8 @@ use App\Contracts\BlockInterface;
 use App\Blocks\ColumnsBlock;
 use App\Blocks\CoursesBlock;
 use App\Blocks\CtaBlock;
+use App\Blocks\FeatureSplitBlock;
+use App\Blocks\FeaturesBlock;
 use App\Blocks\FaqBlock;
 use App\Blocks\HeroBlock;
 use App\Blocks\HtmlBlock;
@@ -48,6 +50,7 @@ class BlockRegistry
                 'label' => $block->label(),
                 'schema' => $block->schema(),
                 'defaults' => $block->defaultSettings(),
+                'group' => method_exists($block, 'group') ? $block->group() : 'general',
             ];
         })->values()->all();
     }
@@ -119,6 +122,8 @@ class BlockRegistry
             VideoBlock::class,
             CtaBlock::class,
             ColumnsBlock::class,
+            FeaturesBlock::class,
+            FeatureSplitBlock::class,
             FaqBlock::class,
             StatsBlock::class,
             TestimonialsBlock::class,

@@ -11,9 +11,9 @@ class BlogController extends SiteController
     public function index(Request $request): View
     {
         $seo = $this->seo->meta([
-            'title' => 'بلاگ بیسان | مقالات و راهنماها',
-            'description' => 'مقالات، راهنماها و نکات کاربردی درباره CRM، مدیریت کسب‌وکار و نرم‌افزار.',
-            'keywords' => 'بلاگ بیسان, CRM, مدیریت فروش, نرم‌افزار',
+            'title' => 'بلاگ راهبر حساب | مقالات و راهنماها',
+            'description' => 'مقالات، راهنماها و بخشنامه‌های حسابداری، مالیات و خدمات مالی.',
+            'keywords' => 'بلاگ راهبر حساب, حسابداری, مالیات, آموزش',
         ]);
 
         $posts = CmsPost::query()
@@ -43,7 +43,7 @@ class BlogController extends SiteController
         $post->increment('views');
 
         $seo = $this->seo->meta([
-            'title' => $post->meta_title ?: ($post->title.' | بلاگ بیسان'),
+            'title' => $post->meta_title ?: ($post->title.' | بلاگ راهبر حساب'),
             'description' => $post->meta_description ?: $post->excerpt,
             'keywords' => $post->meta_keywords,
             'og_title' => $post->meta_title ?: $post->title,

@@ -67,7 +67,7 @@ class ColumnsBlock extends AbstractBlock
             return ['sections' => $sections];
         })->all();
 
-        return $this->view('blocks.columns', [
+        return $this->blockView('columns', [
             'columns' => $rendered,
         ]);
     }
@@ -118,4 +118,4 @@ class ColumnsBlock extends AbstractBlock
         ];
     }
 }
-
+
