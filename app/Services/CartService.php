@@ -62,10 +62,16 @@ class CartService
     public function clear(): void
     {
         if (Auth::check()) {
-            CartItem::query()->where('user_id', Auth::id())->delete();
+            $this->clearForUser((int) Auth::id());
         } else {
             CartItem::query()->where('session_id', session()->getId())->delete();
         }
+    }
+
+    public function clearForUser(int $userId): void
+    {
+        CartItem::query()->where('user_id', $userId)->delete();
+        app(CouponService::class)->forget();
     }
 
     public function mergeGuestCart(int $userId): void

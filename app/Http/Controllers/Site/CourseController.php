@@ -10,6 +10,7 @@ use App\Services\OrderService;
 use App\Services\SeoService;
 use App\Services\SiteDataService;
 use App\Services\SpotPlayerService;
+use App\Services\TaxonomyService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
@@ -26,8 +27,10 @@ class CourseController extends SiteController
         parent::__construct($siteData, $seo);
     }
 
-    public function index(Request $request): View
+    public function index(Request $request, TaxonomyService $taxonomy): View
     {
+        $type = $request->query('type');
+
         $courses = ShopProduct::query()
             ->published()
             ->where('type', ShopProduct::TYPE_COURSE)
@@ -36,10 +39,17 @@ class CourseController extends SiteController
                 $q->whereHas('taxonomyTerms', fn ($t) => $t->where('slug', $category));
             })
             ->when($request->query('q'), function ($q, $search) {
-                $q->where('title', 'like', "%{$search}%");
+                $q->where(function ($inner) use ($search) {
+                    $inner->where('title', 'like', "%{$search}%")
+                        ->orWhere('subtitle', 'like', "%{$search}%");
+                });
             })
+            ->when($type === 'free', fn ($q) => $q->whereRaw('COALESCE(sale_price, price) = 0'))
+            ->when($type === 'paid', fn ($q) => $q->whereRaw('COALESCE(sale_price, price) > 0'))
             ->orderBy('sort_order')
             ->get();
+
+        $categories = $taxonomy->termsFor('course-category');
 
         $seo = $this->seo->meta([
             'title' => 'دوره‌های آموزشی حسابداری | '.config('cms.site_name_fa'),
@@ -47,7 +57,7 @@ class CourseController extends SiteController
             'keywords' => 'دوره حسابداری, آموزش مالیات, اظهارنامه, راهبر حساب',
         ]);
 
-        return $this->render('pages.courses.index', compact('courses', 'seo'));
+        return $this->render('pages.courses.index', compact('courses', 'categories', 'seo'));
     }
 
     public function show(string $slug): View

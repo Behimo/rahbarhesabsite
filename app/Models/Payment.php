@@ -14,7 +14,7 @@ class Payment extends Model
     public const STATUS_FAILED = 'failed';
 
     protected $fillable = [
-        'order_id', 'gateway', 'authority', 'ref_id', 'amount', 'status',
+        'order_id', 'user_id', 'gateway', 'authority', 'ref_id', 'amount', 'status',
         'card_pan', 'card_hash', 'gateway_payload', 'gateway_response', 'verified_at', 'paid_at', 'error_message',
     ];
 
@@ -32,5 +32,15 @@ class Payment extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function isSuccessful(): bool
+    {
+        return $this->status === self::STATUS_SUCCESS;
     }
 }

@@ -24,19 +24,21 @@ class User extends Authenticatable
     public const ROLE_ADMIN = 'admin';
 
     protected $fillable = [
-            'wp_id',
-            'mobile',
-            'name',
-            'first_name',
-            'last_name',
-            'email',
-            'phone',
-            'password',
-            'is_wp_password',
-            'status',
-            'role',
-            'permissions',
-        ];
+        'wp_id',
+        'mobile',
+        'mobile_verified_at',
+        'name',
+        'first_name',
+        'last_name',
+        'email',
+        'phone',
+        'password',
+        'is_wp_password',
+        'status',
+        'role',
+        'permissions',
+        'last_login_at',
+    ];
 
     protected $hidden = [
         'password',
@@ -47,6 +49,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'mobile_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_wp_password' => 'boolean',
             'permissions' => 'array',
@@ -105,28 +108,69 @@ class User extends Authenticatable
         return $this->enrollments()
             ->where('course_id', $course->id)
             ->where(function ($q) {
+                $q->whereNull('status')->orWhere('status', CourseEnrollment::STATUS_ACTIVE);
+            })
+            ->where(function ($q) {
                 $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
             })
             ->exists();
     }
 
-    public static function findOrCreateByPhone(string $phone, ?string $name = null): self
+    public function isBlocked(): bool
+    {
+        return in_array($this->status, ['banned', 'suspended'], true);
+    }
+
+    public function markLoggedIn(): void
+    {
+        $this->forceFill(['last_login_at' => now()])->save();
+    }
+
+    public function syncPhone(string $phone): void
+    {
+        $local = \App\Support\PhoneNormalizer::toLocal($phone);
+
+        $this->forceFill([
+            'phone' => $local,
+            'mobile' => $local,
+        ])->save();
+    }
+
+    public static function findByPhone(string $phone): ?self
     {
         $local = \App\Support\PhoneNormalizer::toLocal($phone);
         $e164 = \App\Support\PhoneNormalizer::toE164($phone);
 
-        $user = static::query()->where('phone', $local)->orWhere('phone', $e164)->first();
+        return static::query()
+            ->where('phone', $local)
+            ->orWhere('phone', $e164)
+            ->orWhere('mobile', $local)
+            ->orWhere('mobile', $e164)
+            ->first();
+    }
+
+    public static function findOrCreateByPhone(string $phone, ?string $name = null): self
+    {
+        $local = \App\Support\PhoneNormalizer::toLocal($phone);
+
+        $user = static::findByPhone($phone);
 
         if ($user) {
+            if (! $user->mobile) {
+                $user->forceFill(['mobile' => $local])->save();
+            }
+
             return $user;
         }
 
         return static::query()->create([
             'name' => $name ?: 'کاربر '.substr($local, -4),
             'phone' => $local,
+            'mobile' => $local,
             'email' => null,
             'password' => Str::random(32),
             'role' => self::ROLE_USER,
+            'status' => 'active',
         ]);
     }
 }

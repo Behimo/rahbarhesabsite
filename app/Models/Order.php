@@ -53,9 +53,19 @@ class Order extends Model
         return $this->hasOne(Payment::class)->latestOfMany();
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
     public function isPaid(): bool
     {
         return $this->status === self::STATUS_PAID;
+    }
+
+    public function canRetryPayment(): bool
+    {
+        return in_array($this->status, [self::STATUS_PENDING, self::STATUS_FAILED], true) && $this->total > 0;
     }
 
     public static function generateOrderNumber(): string

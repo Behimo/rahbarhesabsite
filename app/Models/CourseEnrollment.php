@@ -7,10 +7,24 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CourseEnrollment extends Model
 {
+    public const STATUS_ACTIVE = 'active';
+
+    public const STATUS_EXPIRED = 'expired';
+
+    public const STATUS_REVOKED = 'revoked';
+
+    public const SOURCE_PURCHASE = 'purchase';
+
+    public const SOURCE_FREE = 'free';
+
+    public const SOURCE_GIFT = 'gift';
+
+    public const SOURCE_MANUAL = 'manual';
+
     protected $fillable = [
-            'user_id', 'course_id', 'order_id', 'enrolled_at',
-            'status', 'source', 'progress_percent', 'completed_at', 'expires_at',
-        ];
+        'user_id', 'course_id', 'order_id', 'enrolled_at',
+        'status', 'source', 'progress_percent', 'completed_at', 'expires_at',
+    ];
 
         protected function casts(): array
         {
@@ -38,6 +52,10 @@ class CourseEnrollment extends Model
 
     public function isActive(): bool
     {
+        if ($this->status === self::STATUS_REVOKED || $this->status === self::STATUS_EXPIRED) {
+            return false;
+        }
+
         if ($this->expires_at && $this->expires_at->isPast()) {
             return false;
         }

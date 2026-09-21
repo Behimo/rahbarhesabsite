@@ -109,18 +109,17 @@
 body {
   margin: 0;
   direction: rtl;
-  font-family: Tahoma, Arial, sans-serif;
+  font-family: var(--rh-font, 'Vazirmatn Variable', 'Vazirmatn', Tahoma, sans-serif);
   background: #f5f5f5;
   color: var(--text);
 }
 
-/* Diba is temporarily disabled; the project font remains available for later use. */
 body,
 button,
 input,
 textarea,
 select {
-  font-family: Tahoma, Arial, sans-serif !important;
+  font-family: var(--rh-font, 'Vazirmatn Variable', 'Vazirmatn', Tahoma, sans-serif) !important;
 }
 
 a {
@@ -292,7 +291,7 @@ input {
 
 .contact-content {
   direction: rtl;
-  font-family: Tahoma, Arial, sans-serif !important;
+  font-family: var(--rh-font, 'Vazirmatn Variable', 'Vazirmatn', Tahoma, sans-serif) !important;
 
   display: flex;
   flex-direction: column;
@@ -930,7 +929,7 @@ input {
 
   direction: rtl;
 
-  font-family: Tahoma, Arial, sans-serif;
+  font-family: var(--rh-font, 'Vazirmatn Variable', 'Vazirmatn', Tahoma, sans-serif);
 
   border-top: 1px solid #ededed;
 }
@@ -1485,7 +1484,7 @@ input {
 
   direction: rtl;
 
-  font-family: Tahoma, Arial, sans-serif;
+  font-family: var(--rh-font, 'Vazirmatn Variable', 'Vazirmatn', Tahoma, sans-serif);
 
   border-top: 1px solid #ededed;
 }
@@ -2074,7 +2073,7 @@ input {
 
   direction: rtl;
 
-  font-family: Tahoma, Arial, sans-serif;
+  font-family: var(--rh-font, 'Vazirmatn Variable', 'Vazirmatn', Tahoma, sans-serif);
 }
 
 /* =========================================
@@ -2703,7 +2702,7 @@ input {
 
   overflow: hidden;
 
-  font-family: Tahoma, Arial, sans-serif;
+  font-family: var(--rh-font, 'Vazirmatn Variable', 'Vazirmatn', Tahoma, sans-serif);
 }
 
 /* container */
@@ -3094,7 +3093,7 @@ input {
 
   overflow: hidden;
 
-  font-family: Tahoma, Arial, sans-serif;
+  font-family: var(--rh-font, 'Vazirmatn Variable', 'Vazirmatn', Tahoma, sans-serif);
 }
 
 .courses-carousel-container {
@@ -3246,29 +3245,41 @@ input {
 .course-content {
   height: calc(100% - 179px);
 
-  padding: 19px 12px 14px;
+  padding: 14px 14px 16px;
 
   display: flex;
 
   flex-direction: column;
+
+  gap: 10px;
+
+  text-align: right;
 }
 
 .course-title {
-  display: block;
+  display: -webkit-box;
 
-  min-height: 45px;
+  margin: 0;
+
+  min-height: 0;
+
+  overflow: hidden;
+
+  -webkit-box-orient: vertical;
+
+  -webkit-line-clamp: 2;
 
   color: #484349;
 
   text-decoration: none;
 
-  text-align: center;
+  text-align: right;
 
   font-size: 14px;
 
   font-weight: 900;
 
-  line-height: 1.9;
+  line-height: 1.65;
 
   transition: color 0.2s ease;
 }
@@ -3282,13 +3293,11 @@ input {
 ===================================== */
 
 .course-info {
-  margin-top: 20px;
-
   display: flex;
 
   flex-direction: column;
 
-  gap: 7px;
+  gap: 6px;
 }
 
 .course-info-item {
@@ -3328,73 +3337,71 @@ input {
 ===================================== */
 
 .course-price {
-  min-height: 45px;
-
   margin-top: auto;
+
+  padding-top: 12px;
 
   display: flex;
 
-  align-items: flex-end;
+  align-items: center;
 
-  justify-content: flex-start;
+  justify-content: flex-end;
 
-  position: relative;
+  gap: 10px;
+}
+
+.course-price.has-discount {
+  justify-content: space-between;
+}
+
+.course-price-payable {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 6px;
 }
 
 .current-price {
   color: #494449;
 
-  font-size: 12px;
+  font-size: 13px;
 
   font-weight: 900;
 
   white-space: nowrap;
 }
 
-.price-values {
-  width: 100%;
+.course-price-old {
+  color: #8a858b;
 
-  display: flex;
-
-  align-items: center;
-
-  justify-content: space-between;
-
-  gap: 6px;
-}
-
-.price-values del {
-  color: #2f2b30;
-
-  font-size: 10px;
+  font-size: 11px;
 
   font-weight: 700;
+
+  white-space: nowrap;
+
+  text-decoration: line-through;
 
   text-decoration-color: #e10024;
 
   text-decoration-thickness: 2px;
 }
 
-.discount-badge {
-  position: absolute;
-
-  left: -12px;
-
-  bottom: -14px;
-
-  min-width: 38px;
-
-  height: 28px;
-
-  padding: 0 8px;
-
-  border-radius: 10px 10px 0 0;
-
-  display: flex;
+.discount-percent {
+  display: inline-flex;
 
   align-items: center;
 
   justify-content: center;
+
+  min-width: 34px;
+
+  height: 22px;
+
+  padding: 0 7px;
+
+  border-radius: 6px;
 
   background: var(--course-red);
 
@@ -3403,6 +3410,8 @@ input {
   font-size: 11px;
 
   font-weight: 900;
+
+  white-space: nowrap;
 }
 
 /* =====================================
@@ -3591,7 +3600,7 @@ input {
 
   overflow: hidden;
 
-  font-family: Tahoma, Arial, sans-serif;
+  font-family: var(--rh-font, 'Vazirmatn Variable', 'Vazirmatn', Tahoma, sans-serif);
 }
 
 /* =========================================
@@ -4227,7 +4236,7 @@ input {
 
   overflow: hidden;
 
-  font-family: Tahoma, Arial, sans-serif;
+  font-family: var(--rh-font, 'Vazirmatn Variable', 'Vazirmatn', Tahoma, sans-serif);
 }
 
 /* =========================================
@@ -4661,7 +4670,7 @@ input {
 
   direction: rtl;
 
-  font-family: Tahoma, Arial, sans-serif;
+  font-family: var(--rh-font, 'Vazirmatn Variable', 'Vazirmatn', Tahoma, sans-serif);
 }
 
 /* =========================================
@@ -5043,7 +5052,7 @@ input {
     #ffffff 100%
   );
 
-  font-family: Tahoma, Arial, sans-serif;
+  font-family: var(--rh-font, 'Vazirmatn Variable', 'Vazirmatn', Tahoma, sans-serif);
 }
 
 /* =========================================
@@ -5540,7 +5549,7 @@ input {
 
   overflow: hidden;
 
-  font-family: Tahoma, Arial, sans-serif;
+  font-family: var(--rh-font, 'Vazirmatn Variable', 'Vazirmatn', Tahoma, sans-serif);
 }
 
 /* =========================================
@@ -6176,7 +6185,7 @@ input {
 
   direction: rtl;
 
-  font-family: Tahoma, Arial, sans-serif;
+  font-family: var(--rh-font, 'Vazirmatn Variable', 'Vazirmatn', Tahoma, sans-serif);
 }
 
 /* =========================================
@@ -6777,7 +6786,7 @@ input {
 
   direction: rtl;
 
-  font-family: Tahoma, Arial, sans-serif;
+  font-family: var(--rh-font, 'Vazirmatn Variable', 'Vazirmatn', Tahoma, sans-serif);
 }
 
 /* =========================================
@@ -7203,7 +7212,7 @@ input {
 
   direction: rtl;
 
-  font-family: Tahoma, Arial, sans-serif;
+  font-family: var(--rh-font, 'Vazirmatn Variable', 'Vazirmatn', Tahoma, sans-serif);
 }
 
 /* =========================================
@@ -7450,7 +7459,7 @@ input {
 
   color: var(--footer-dark);
 
-  font-family: Tahoma, Arial, sans-serif;
+  font-family: var(--rh-font, 'Vazirmatn Variable', 'Vazirmatn', Tahoma, sans-serif);
 }
 
 .rahbar-footer-container {

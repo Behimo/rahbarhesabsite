@@ -31,8 +31,14 @@
 
     <link rel="icon" href="{{ theme_asset('images/logorahbarhesab.webp') }}">
     <link rel="alternate" hreflang="fa-IR" href="{{ url()->current() }}">
-    <link rel="stylesheet" href="{{ theme_asset('style.css') }}">
-    <link rel="stylesheet" href="{{ theme_asset('theme.css') }}">
+    @php
+        $themePublic = public_path('themes/' . config('cms.active_theme', 'rahbarhesab'));
+        $themeVer = fn (string $file) => file_exists($themePublic . '/' . $file) ? filemtime($themePublic . '/' . $file) : time();
+    @endphp
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="stylesheet" href="{{ theme_asset('fonts.css') }}?v={{ $themeVer('fonts.css') }}">
+    <link rel="stylesheet" href="{{ theme_asset('style.css') }}?v={{ $themeVer('style.css') }}">
+    <link rel="stylesheet" href="{{ theme_asset('theme.css') }}?v={{ $themeVer('theme.css') }}">
 
     @if (!empty($structuredData))
         @foreach ($structuredData as $schema)
@@ -44,7 +50,7 @@
 <body class="rh-theme">
     @include('theme::components.navbar', ['navLinks' => $navLinks ?? []])
 
-    <main @unless (request()->routeIs('home')) class="rh-inner-page" @endunless>
+    <main @class(['rh-inner-page' => ! request()->routeIs(['home', 'courses.index'])])>
         @yield('page')
     </main>
 
