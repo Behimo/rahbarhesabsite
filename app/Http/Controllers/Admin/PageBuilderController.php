@@ -84,11 +84,11 @@ class PageBuilderController extends Controller
     {
         return view('admin.pages.revisions', [
             'page' => $page,
-            'revisions' => $page->revisions()->latest()->limit(20)->get(),
+            'revisions' => $page->revisions()->with('admin')->latest()->limit(20)->get(),
         ]);
     }
 
-    public function restore(CmsPage $page, CmsPageRevision $revision): JsonResponse
+    public function restore(CmsPage $page, CmsPageRevision $revision): JsonResponse|RedirectResponse
     {
         abort_unless($revision->page_id === $page->id, 404);
 
@@ -99,6 +99,10 @@ class PageBuilderController extends Controller
 
         $this->cache->flushContent();
 
-        return response()->json(['success' => true]);
+        if (request()->expectsJson()) {
+            return response()->json(['success' => true]);
+        }
+
+        return redirect()->route('admin.pages.builder', $page)->with('success', 'نسخه بازگردانی شد.');
     }
 }

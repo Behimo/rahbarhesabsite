@@ -37,7 +37,12 @@ class DashboardController extends Controller
             ->latest('enrolled_at')
             ->get();
 
-        return view('panel.courses', compact('enrollments'));
+        $licenses = \App\Models\SpotplayerLicense::query()
+            ->where('user_id', auth()->id())
+            ->get()
+            ->keyBy('course_id');
+
+        return view('panel.courses', compact('enrollments', 'licenses'));
     }
 
     public function orders(): View
@@ -60,8 +65,17 @@ class DashboardController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'first_name' => ['nullable', 'string', 'max:100'],
+            'last_name' => ['nullable', 'string', 'max:100'],
+            'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
         ]);
+
+        if (! empty($validated['phone'])) {
+            $local = \App\Support\PhoneNormalizer::toLocal($validated['phone']);
+            $validated['phone'] = $local;
+            $validated['mobile'] = $local;
+        }
 
         auth()->user()->update($validated);
 

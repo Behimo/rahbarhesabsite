@@ -11,13 +11,23 @@
 @else
     <div class="grid gap-4 md:grid-cols-2">
         @foreach ($enrollments as $enrollment)
+            @php
+                $license = $licenses[$enrollment->course_id] ?? null;
+            @endphp
             <div class="rounded-xl border border-white/10 bg-white/5 p-5">
                 <h3 class="mb-2 font-semibold text-white">{{ $enrollment->course->product->title }}</h3>
                 <div class="mb-3 h-2 rounded-full bg-white/10">
                     <div class="h-2 rounded-full bg-orange-500" style="width: {{ $enrollment->progress_percent }}%"></div>
                 </div>
-                <p class="mb-4 text-sm text-gray-400">{{ $enrollment->progress_percent }}% تکمیل شده</p>
-                <a href="{{ route('courses.learn', $enrollment->course->product->slug) }}" class="text-orange-400 hover:underline">ادامه یادگیری →</a>
+                <p class="mb-2 text-sm text-gray-400">{{ $enrollment->progress_percent }}% تکمیل شده</p>
+                <p class="mb-2 text-xs text-gray-500">منبع: {{ $enrollment->source }} — وضعیت: {{ $enrollment->status }}</p>
+                @if ($license)
+                    <p class="mb-2 text-xs text-gray-300">لایسنس: <span dir="ltr">{{ $license->license_key ?: $license->status }}</span></p>
+                    @if ($license->spot_url)
+                        <a href="{{ $license->spot_url }}" target="_blank" class="mb-3 inline-block text-sm text-teal-300 hover:underline">باز کردن در اسپات‌پلیر</a>
+                    @endif
+                @endif
+                <a href="{{ route('courses.learn', $enrollment->course->product->slug) }}" class="block text-orange-400 hover:underline">ادامه یادگیری →</a>
             </div>
         @endforeach
     </div>

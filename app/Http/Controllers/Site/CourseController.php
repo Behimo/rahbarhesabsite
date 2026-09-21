@@ -241,7 +241,7 @@ class CourseController extends SiteController
             return redirect()->route('login')->with('error', 'برای ثبت‌نام در دوره رایگان وارد شوید.');
         }
 
-        $this->orders->enrollUser(auth()->user(), $product->course);
+        $this->orders->enrollUser(auth()->user(), $product->course, null, \App\Models\CourseEnrollment::SOURCE_FREE);
 
         return redirect()->route('courses.learn', $slug)->with('success', 'ثبت‌نام در دوره انجام شد.');
     }

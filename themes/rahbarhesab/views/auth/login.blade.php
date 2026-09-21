@@ -24,6 +24,18 @@
                 </div>
                 <button type="submit" class="btn-demo w-full justify-center">ارسال کد تأیید</button>
             </form>
+
+            <div class="my-6 border-t border-white/10 pt-6">
+                <p class="mb-4 text-sm text-gray-400">ورود با ایمیل یا موبایل و رمز عبور</p>
+                <form method="POST" action="{{ route('login.password') }}" class="space-y-4">
+                    @csrf
+                    <input type="text" name="login" value="{{ old('login') }}" required dir="ltr" placeholder="ایمیل یا موبایل"
+                        class="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white">
+                    <input type="password" name="password" required placeholder="رمز عبور"
+                        class="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white">
+                    <button type="submit" class="w-full rounded-xl border border-white/20 px-4 py-3 text-white hover:bg-white/10">ورود با رمز عبور</button>
+                </form>
+            </div>
         </div>
     </div>
 @endsection

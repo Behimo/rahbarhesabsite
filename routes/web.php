@@ -1,7 +1,8 @@
 <?php
 
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
-use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Admin\CouponController as AdminCouponController;
+use App\Http\Controllers\Admin\RedirectController as AdminRedirectController;
 use App\Http\Controllers\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\HomeController as AdminHomeController;
@@ -102,11 +103,15 @@ Route::controller(ShopController::class)->group(function () {
     Route::put('/cart/{item}', 'updateCart')->name('cart.update');
     Route::delete('/cart/{item}', 'removeFromCart')->name('cart.remove');
 
+    Route::post('/cart/coupon', 'applyCoupon')->name('cart.coupon');
+    Route::delete('/cart/coupon', 'removeCoupon')->name('cart.coupon.remove');
+
     Route::get('/checkout/callback', 'callback')->name('checkout.callback');
 
     Route::middleware('auth')->group(function () {
         Route::get('/checkout', 'checkout')->name('checkout.index');
         Route::post('/checkout', 'processCheckout')->name('checkout.process');
+        Route::post('/checkout/{order}/retry', 'retryPayment')->name('checkout.retry');
         Route::get('/checkout/success/{order}', 'success')->name('checkout.success');
     });
 });
@@ -119,6 +124,7 @@ Route::controller(ShopController::class)->group(function () {
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login/otp', [AuthController::class, 'sendOtp'])->name('login.otp');
+    Route::post('/login/password', [AuthController::class, 'loginPassword'])->name('login.password');
     Route::get('/login/verify', [AuthController::class, 'showVerify'])->name('login.verify');
     Route::post('/login/verify', [AuthController::class, 'verifyOtp'])->name('login.verify.submit');
 });
@@ -250,6 +256,20 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::controller(AdminOrderController::class)->prefix('orders')->name('orders.')->group(function () {
             Route::get('/', 'index')->name('index');
             Route::get('/{order}', 'show')->name('show');
+            Route::post('/{order}/mark-paid', 'markPaid')->name('mark-paid');
+            Route::post('/{order}/retry-licenses', 'retryLicenses')->name('retry-licenses');
+            Route::post('/enroll', 'enroll')->name('enroll');
+            Route::post('/enrollments/{enrollment}/revoke', 'revokeEnrollment')->name('enrollments.revoke');
+        });
+
+        Route::resource('coupons', AdminCouponController::class)->except(['show']);
+
+        Route::controller(AdminRedirectController::class)->prefix('redirects')->name('redirects.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{redirect}', 'update')->name('update');
+            Route::delete('/{redirect}', 'destroy')->name('destroy');
+            Route::post('/import', 'import')->name('import');
         });
 
         Route::resource('users', AdminUserController::class)->except(['show']);

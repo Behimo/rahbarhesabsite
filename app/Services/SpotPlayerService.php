@@ -19,12 +19,23 @@ class SpotPlayerService
     {
         $license = SpotplayerLicense::query()->firstOrCreate(
             ['user_id' => $user->id, 'course_id' => $course->id],
-            ['order_id' => $orderId, 'status' => SpotplayerLicense::STATUS_PENDING]
+            [
+                'order_id' => $orderId,
+                'status' => SpotplayerLicense::STATUS_PENDING,
+                'devices_limit' => (int) config('cms.spotplayer.devices_limit', 2),
+                'issued_via' => $orderId ? 'purchase' : 'manual',
+            ]
         );
+
+        if ($orderId && ! $license->order_id) {
+            $license->update(['order_id' => $orderId]);
+        }
 
         if ($license->status === SpotplayerLicense::STATUS_ISSUED && $license->license_key) {
             return $license;
         }
+
+        $license->update(['status' => SpotplayerLicense::STATUS_PENDING]);
 
         if (! $this->isConfigured() || ! $course->spotplayer_course_id) {
             $license->update(['status' => SpotplayerLicense::STATUS_FAILED]);
@@ -39,17 +50,30 @@ class SpotPlayerService
             ])->post(rtrim(config('cms.spotplayer.base_url'), '/').'/licenses', [
                 'course_id' => $course->spotplayer_course_id,
                 'user_name' => $user->name,
-                'user_phone' => $user->phone,
+                'user_phone' => $user->mobile ?: $user->phone,
                 'user_email' => $user->email,
+                'watermark' => ['texts' => [['text' => $user->mobile ?: $user->phone]]],
             ]);
 
             if ($response->successful()) {
-                $data = $response->json();
+                $data = $response->json() ?? [];
+                $key = $data['license_key'] ?? $data['key'] ?? $data['license'] ?? null;
+                $spotUrl = $data['url'] ?? $data['spot_url'] ?? $data['link'] ?? null;
+
+                if (! $spotUrl && $key) {
+                    $spotUrl = rtrim(config('cms.spotplayer.player_url', 'https://app.spotplayer.ir'), '/').'/?license='.$key;
+                }
+
                 $license->update([
-                    'license_key' => $data['license_key'] ?? $data['key'] ?? null,
-                    'status' => SpotplayerLicense::STATUS_ISSUED,
+                    'license_key' => $key,
+                    'spot_license_id' => $data['_id'] ?? $data['id'] ?? $license->spot_license_id,
+                    'spot_url' => $spotUrl,
+                    'devices_limit' => (int) ($data['devices'] ?? $data['devices_limit'] ?? config('cms.spotplayer.devices_limit', 2)),
+                    'device_count' => (int) ($data['device_count'] ?? 0),
+                    'status' => $key ? SpotplayerLicense::STATUS_ISSUED : SpotplayerLicense::STATUS_FAILED,
                     'api_response' => $data,
-                    'issued_at' => now(),
+                    'issued_at' => $key ? now() : null,
+                    'last_verified_at' => now(),
                 ]);
             } else {
                 $license->update([
@@ -60,6 +84,8 @@ class SpotPlayerService
         } catch (\Throwable $e) {
             Log::error('SpotPlayer license error', ['error' => $e->getMessage()]);
             $license->update(['status' => SpotplayerLicense::STATUS_FAILED]);
+
+            return $license->fresh();
         }
 
         return $license->fresh();
@@ -72,6 +98,10 @@ class SpotPlayerService
             ->where('course_id', $course->id)
             ->where('status', SpotplayerLicense::STATUS_ISSUED)
             ->first();
+
+        if ($license?->spot_url && ! $itemId) {
+            return $license->spot_url;
+        }
 
         if (! $license?->license_key) {
             return null;

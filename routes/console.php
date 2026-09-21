@@ -9,3 +9,5 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('cms:publish-scheduled')->everyMinute();
+Schedule::command('otp:prune-logs')->dailyAt('03:15');
+Schedule::command('queue:prune-failed --hours=168')->weekly();

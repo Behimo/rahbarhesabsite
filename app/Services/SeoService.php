@@ -29,10 +29,10 @@ class SeoService
     public function forProduct(array $product): array
     {
         return $this->meta([
-            'title' => $product['meta_title'] ?? ($product['title'].' | محصولات بیسان'),
+            'title' => $product['meta_title'] ?? ($product['title'].' | '.config('cms.site_name_fa')),
             'description' => $product['meta_description'] ?? $product['description'],
-            'keywords' => $product['meta_keywords'] ?? $product['title'].', بیسان, نرم‌افزار',
-            'og_title' => $product['meta_title'] ?? $product['title'].' — بیسان',
+            'keywords' => $product['meta_keywords'] ?? $product['title'].', راهبر حساب, آموزش حسابداری',
+            'og_title' => $product['meta_title'] ?? $product['title'].' — '.config('cms.site_name_fa'),
             'og_image' => isset($product['og_image']) ? $this->absoluteUrl($product['og_image']) : null,
         ]);
     }

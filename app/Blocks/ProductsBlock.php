@@ -2,7 +2,7 @@
 
 namespace App\Blocks;
 
-use App\Models\CmsProduct;
+use App\Models\ShopProduct;
 
 class ProductsBlock extends AbstractBlock
 {
@@ -26,8 +26,8 @@ class ProductsBlock extends AbstractBlock
 
     public function render(array $settings): string
     {
-        $products = CmsProduct::query()
-            ->where('is_published', true)
+        $products = ShopProduct::query()
+            ->published()
             ->orderBy('sort_order')
             ->limit((int) ($settings['limit'] ?? 4))
             ->get();

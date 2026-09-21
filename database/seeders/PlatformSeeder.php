@@ -62,8 +62,8 @@ class PlatformSeeder extends Seeder
                 'description' => 'در این دوره با فریمورک Laravel آشنا می‌شوید و یک پروژه واقعی می‌سازید.',
                 'price' => 0,
                 'type' => ShopProduct::TYPE_COURSE,
-                'is_published' => true,
-                'sort_order' => 1,
+                'is_published' => false,
+                'sort_order' => 99,
             ]
         );
 
@@ -111,8 +111,8 @@ class PlatformSeeder extends Seeder
                 'description' => 'دوره پیشرفته برای توسعه‌دهندگان با تجربه.',
                 'price' => 990000,
                 'type' => ShopProduct::TYPE_COURSE,
-                'is_published' => true,
-                'sort_order' => 2,
+                'is_published' => false,
+                'sort_order' => 100,
             ]
         );
 

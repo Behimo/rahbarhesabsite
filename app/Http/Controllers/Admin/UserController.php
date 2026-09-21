@@ -83,6 +83,7 @@ class UserController extends Controller
         ]);
 
         $validated['phone'] = PhoneNormalizer::toLocal($validated['phone']);
+        $validated['mobile'] = $validated['phone'];
 
         if (! PhoneNormalizer::isValidIranMobile($validated['phone'])) {
             abort(422, 'شماره موبایل معتبر نیست.');

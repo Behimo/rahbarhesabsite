@@ -42,6 +42,8 @@
             <span class="text-xl font-bold text-slate-800">{{ number_format($subtotal) }} تومان</span>
         </div>
 
+        @include('components.cart-totals')
+
         <div class="mt-6 text-center">
             <a href="{{ route('checkout.index') }}" class="rh-btn-primary inline-flex">تسویه حساب</a>
         </div>

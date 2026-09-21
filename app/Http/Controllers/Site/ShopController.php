@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Site;
 
 use App\Models\CartItem;
+use App\Models\Order;
 use App\Models\ShopProduct;
+use App\Models\SpotplayerLicense;
 use App\Services\CartService;
+use App\Services\CouponService;
 use App\Services\OrderService;
+use App\Services\PaymentGatewayManager;
 use App\Services\SeoService;
 use App\Services\SiteDataService;
-use App\Services\PaymentGatewayManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -21,18 +24,16 @@ class ShopController extends SiteController
         private CartService $cart,
         private OrderService $orders,
         private PaymentGatewayManager $payments,
+        private CouponService $coupons,
     ) {
         parent::__construct($siteData, $seo);
     }
 
     public function cart(): View
     {
-        $items = $this->cart->items();
-        $subtotal = $this->cart->subtotal();
-
-        $seo = $this->seo->meta(['title' => 'سبد خرید']);
-
-        return $this->render('pages.shop.cart', compact('items', 'subtotal', 'seo'));
+        return $this->render('pages.shop.cart', $this->cartViewData() + [
+            'seo' => $this->seo->meta(['title' => 'سبد خرید']),
+        ]);
     }
 
     public function addToCart(ShopProduct $product): RedirectResponse
@@ -41,8 +42,12 @@ class ShopController extends SiteController
             return back()->with('error', 'محصول در دسترس نیست.');
         }
 
-        if ($product->isCourse() && auth()->check() && auth()->user()->isEnrolledIn($product->course)) {
-            return back()->with('error', 'شما قبلاً در این دوره ثبت‌نام کرده‌اید.');
+        if (auth()->check()) {
+            foreach ($product->relatedCourses() as $course) {
+                if (auth()->user()->isEnrolledIn($course)) {
+                    return back()->with('error', 'شما قبلاً در این دوره ثبت‌نام کرده‌اید.');
+                }
+            }
         }
 
         $this->cart->add($product);
@@ -66,6 +71,33 @@ class ShopController extends SiteController
         return back()->with('success', 'از سبد خرید حذف شد.');
     }
 
+    public function applyCoupon(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'code' => ['required', 'string', 'max:50'],
+        ]);
+
+        try {
+            $this->coupons->apply(
+                $validated['code'],
+                $this->cart->items(),
+                $this->cart->subtotal(),
+                auth()->user()
+            );
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', 'کد تخفیف اعمال شد.');
+    }
+
+    public function removeCoupon(): RedirectResponse
+    {
+        $this->coupons->forget();
+
+        return back()->with('success', 'کد تخفیف حذف شد.');
+    }
+
     public function checkout(): View|RedirectResponse
     {
         if (! auth()->check()) {
@@ -76,12 +108,9 @@ class ShopController extends SiteController
             return redirect()->route('cart.index')->with('error', 'سبد خرید خالی است.');
         }
 
-        $items = $this->cart->items();
-        $subtotal = $this->cart->subtotal();
-
-        $seo = $this->seo->meta(['title' => 'تسویه حساب']);
-
-        return $this->render('pages.shop.checkout', compact('items', 'subtotal', 'seo'));
+        return $this->render('pages.shop.checkout', $this->cartViewData() + [
+            'seo' => $this->seo->meta(['title' => 'تسویه حساب']),
+        ]);
     }
 
     public function processCheckout(Request $request): RedirectResponse
@@ -90,12 +119,18 @@ class ShopController extends SiteController
             return redirect()->route('login');
         }
 
-        $order = $this->orders->createFromCart(auth()->user());
-        $this->cart->clear();
+        try {
+            $order = $this->orders->createFromCart(
+                auth()->user(),
+                $request->ip(),
+                (string) $request->userAgent()
+            );
+        } catch (\RuntimeException $e) {
+            return redirect()->route('cart.index')->with('error', $e->getMessage());
+        }
 
         if ($order->total <= 0) {
-            $order->update(['status' => Order::STATUS_PAID, 'paid_at' => now()]);
-            $this->orders->fulfill($order);
+            $this->orders->markPaid($order);
 
             return redirect()->route('checkout.success', $order);
         }
@@ -111,6 +146,26 @@ class ShopController extends SiteController
         }
     }
 
+    public function retryPayment(Request $request, Order $order): RedirectResponse
+    {
+        abort_unless($order->user_id === auth()->id(), 403);
+
+        if (! $order->canRetryPayment()) {
+            return redirect()->route('panel.orders')->with('error', 'این سفارش قابل پرداخت مجدد نیست.');
+        }
+
+        $gateway = $request->input('gateway', config('cms.payment_gateway', 'zibal'));
+
+        try {
+            $order->update(['status' => Order::STATUS_PENDING]);
+            $paymentUrl = $this->payments->requestPayment($order, $gateway);
+
+            return redirect()->away($paymentUrl);
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
     public function callback(Request $request): RedirectResponse
     {
         $gateway = $request->query('gateway', config('cms.payment_gateway', 'zibal'));
@@ -121,16 +176,36 @@ class ShopController extends SiteController
             return redirect()->route('checkout.success', $payment->order);
         }
 
-        return redirect()->route('cart.index')->with('error', 'پرداخت ناموفق یا لغو شد.');
+        return redirect()->route('cart.index')->with('error', 'پرداخت ناموفق یا لغو شد. سبد خرید شما حفظ شده است.');
     }
 
-    public function success(\App\Models\Order $order): View|RedirectResponse
+    public function success(Order $order): View|RedirectResponse
     {
         if ($order->user_id !== auth()->id()) {
             abort(403);
         }
 
-        return $this->render('pages.shop.success', compact('order'));
+        $order->load(['items.product.course', 'payment']);
+
+        $licenses = SpotplayerLicense::query()
+            ->with('course.product')
+            ->where('user_id', $order->user_id)
+            ->where('order_id', $order->id)
+            ->get();
+
+        return $this->render('pages.shop.success', compact('order', 'licenses'));
+    }
+
+    /** @return array<string, mixed> */
+    private function cartViewData(): array
+    {
+        $items = $this->cart->items();
+        $subtotal = $this->cart->subtotal();
+        $coupon = $this->coupons->applied(auth()->user());
+        $discount = $coupon ? $this->coupons->discountFor($coupon, $items) : 0;
+        $total = max(0, $subtotal - $discount);
+
+        return compact('items', 'subtotal', 'coupon', 'discount', 'total');
     }
 
     private function authorizeCartItem(CartItem $item): void

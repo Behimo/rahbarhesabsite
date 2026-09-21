@@ -43,14 +43,6 @@ class FeatureSplitBlock extends AbstractBlock
     {
         $layout = $settings['layout'] ?? 'app';
 
-        if ($layout === 'experiences' && ! file_exists(public_path('themes/rahbarhesab/images/experience-1.jpg'))) {
-            return '';
-        }
-
-        if ($layout === 'partners' && ! file_exists(public_path('themes/rahbarhesab/images/partner-sepidar.png'))) {
-            return '';
-        }
-
         return $this->blockView('feature-split', [
             'layout' => $layout,
             'appDownloadUrl' => $settings['cta_url'] ?? '#',

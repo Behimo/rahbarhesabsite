@@ -33,6 +33,7 @@
             <a href="{{ route('pages.show', $page->slug) }}" target="_blank" class="btn btn-outline-secondary">مشاهده صفحه</a>
         @endif
         <a href="{{ route('admin.pages.edit', $page) }}" class="btn btn-outline-secondary">تنظیمات صفحه</a>
+        <a href="{{ route('admin.pages.revisions', $page) }}" class="btn btn-outline-secondary">تاریخچه</a>
     </div>
 </div>
 

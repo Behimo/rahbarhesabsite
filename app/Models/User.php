@@ -72,6 +72,11 @@ class User extends Authenticatable
         return $this->hasMany(CartItem::class);
     }
 
+    public function licenses(): HasMany
+    {
+        return $this->hasMany(SpotplayerLicense::class);
+    }
+
     public function isAdmin(): bool
     {
         return $this->role === self::ROLE_ADMIN;

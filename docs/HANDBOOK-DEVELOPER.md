@@ -1,7 +1,8 @@
 # راهنمای فنی پروژه — برای برنامه‌نویس تیم
 
-> آخرین به‌روزرسانی: شهریور ۱۴۰۵  
-> مخاطب: کسی که قراره روی کد کار کنه، نه کسی که فقط پنل رو می‌بینه.
+> آخرین به‌روزرسانی: ۲۱ سپتامبر ۲۰۲۶  
+> مخاطب: کسی که قراره روی کد کار کنه، نه کسی که فقط پنل رو می‌بینه.  
+> جریان خرید/کوپن/اسپات/مهاجرت وردپرس با جزئیات: `docs/SHOP-PAYMENTS-AND-MIGRATION.md`
 
 ---
 
@@ -69,13 +70,15 @@ routes/web.php      ← همه routeهای وب
 |---|-----------|------------|
 | Guard | `cms` | `web` |
 | Model | `CmsAdmin` | `User` |
-| ورود | ایمیل + رمز | فقط OTP موبایل |
+| ورود | ایمیل + رمز | OTP موبایل (مسیر اصلی) + رمز اختیاری `POST /login/password` |
 | URL | `/admin/*` | `/login`, `/panel/*` |
 | Middleware | `cms.admin`, `cms.permission` | `auth` |
 
 ادمین‌ها توی جدول `cms_admins` هستن. کاربران عادی توی `users`. این دو تا به هم ربط ندارن.
 
-کاربر سایت با شماره موبایل ثبت‌نام/ورود می‌کنه (`Auth\AuthController`). OTP از IPPanel می‌ره (`config/otp.php`). اگه `IPPANEL_API_KEY` خالی باشه، کد توی log می‌افته — برای dev خوبه، production نه.
+کاربر سایت با شماره موبایل ثبت‌نام/ورود می‌کنه (`Auth\AuthController`). OTP از IPPanel می‌ره (`config/otp.php`) و ارسال روی `SendOtpSmsJob` است. اگه `IPPANEL_API_KEY` خالی باشه، کد توی log می‌افته — برای dev خوبه، production نه.
+
+کد OTP فعلاً در جدول `otp_verifications` است نه Redis. Throttle با Cache است (۳ ارسال / ۲ دقیقه per phone). ورود رمز برای کاربران مهاجرت‌شده: `POST /login/password` — هش Phpass در موفقیت به Bcrypt ارتقا می‌یابد.
 
 ---
 
@@ -90,7 +93,9 @@ routes/web.php      ← همه routeهای وب
 | صفحه‌ساز | `/admin/pages/{page}/builder` | `PageBuilderController` |
 | بلاگ | `/admin/posts` | `PostController` |
 | دوره‌ها | `/admin/courses` | `CourseController` |
-| سفارش‌ها | `/admin/orders` | `OrderController` |
+| سفارش‌ها | `/admin/orders` | `OrderController` — پرداخت دستی، صدور لایسنس، enroll، revoke |
+| کد تخفیف | `/admin/coupons` | `CouponController` |
+| ریدایرکت | `/admin/redirects` | `RedirectController` |
 | منوها | `/admin/menus` | `MenuController` |
 | قالب‌ها | `/admin/themes` | `ThemeController` |
 | افزونه‌ها | `/admin/plugins` | `PluginController` |
@@ -359,7 +364,7 @@ Hook::addAction('cms.blocks.boot', fn ($registry) => $registry->register(...));
 
 **ویدیو:** provider توی lesson — `aparat`, `youtube`, `vimeo`, `upload`, `spotplayer`, `download`
 
-**SpotPlayer:** `SpotPlayerService` + `IssueSpotplayerLicenseJob` (queue). API key: `SPOTPLAYER_API_KEY`.
+**SpotPlayer:** `SpotPlayerService` + `IssueSpotplayerLicenseJob` (`$tries=3`، backoff ۳۰/۱۲۰/۳۰۰). API key: `SPOTPLAYER_API_KEY`. اگر `spotplayer_course_id` خالی باشد جاب کاری نمی‌کند. صدور مجدد از صفحه سفارش ادمین.
 
 **پیشرفت:** `LessonProgress` — POST `/courses/{slug}/lessons/{lessonSlug}/complete`
 
@@ -369,18 +374,31 @@ Hook::addAction('cms.blocks.boot', fn ($registry) => $registry->register(...));
 
 ## فروشگاه و پرداخت
 
-**Gateway پیش‌فرض:** Zibal (`CMS_PAYMENT_GATEWAY=zibal`)
+جزئیات کامل (تومان/ریال، قفل کال‌بک، کوپن، اسپات، ETL): `docs/SHOP-PAYMENTS-AND-MIGRATION.md`
+
+**واحد پول:** دیتابیس و نمایش **تومان**. درگاه **ریال** — `Money::tomanToRials()` (×۱۰). قاطی نکن.
+
+**Gateway پیش‌فرض:** Zibal (`CMS_PAYMENT_GATEWAY=zibal`) — سندباکس: `ZIBAL_MERCHANT=zibal`
 
 **جایگزین:** Zarinpal — `ZARINPAL_MERCHANT_ID`, `ZARINPAL_SANDBOX`
 
 **Flow:**
 1. `/cart` — `CartService` (session/guest)
-2. `/checkout` — نیاز به login
-3. redirect به درگاه
-4. `/checkout/callback` — verify
-5. `OrderService::fulfill()` — enrollment + SpotPlayer
+2. کوپن اختیاری — `POST /cart/coupon` (`CouponService`، سشن `cart.coupon_code`)
+3. `/checkout` — نیاز به login
+4. `OrderService::createFromCart` سپس redirect به درگاه — سبد هنوز پاک نمی‌شود
+5. `/checkout/callback` — `Cache::lock('payment:verify:{id}')` + verify
+6. `OrderService::markPaid()` — قفل ردیف سفارش، usage کوپن، fulfill، **بعد** پاک کردن سبد
+7. enrollment + `IssueSpotplayerLicenseJob` (۳ تلاش)
+8. اگر pending ماند: `POST /checkout/{order}/retry` از `/panel/orders`
 
-**قیمت:** integer (ریال/تومان — یکدست نگه دار)، `effectivePrice()` = sale_price ?? price
+**قیمت:** integer تومان؛ `effectivePrice()` = sale_price ?? price
+
+**ادمین سفارش** (`/admin/orders/{id}`): mark-paid، retry-licenses، enroll دستی/هدیه، revoke.
+
+**پنل کاربر:** `/panel/courses` لایسنس اسپات + لینک اپ؛ `/panel/orders` فاکتور و پرداخت مجدد.
+
+بدون `php artisan queue:work` لایسنس اسپات در پروداکشن صادر نمی‌شود.
 
 ---
 
@@ -411,6 +429,13 @@ Middleware: `api.token` (`EnsureApiToken`)
 | `cms:ensure-admin` | ساخت/آپدیت ادمین از `.env` |
 | `cms:publish-scheduled` | انتشار زمان‌بندی‌شده — **هر دقیقه scheduler** |
 | `cms:refresh-brand` | مهاجرت برندینگ قدیمی Bisan → Rahbar |
+| `otp:prune-logs` | پاکسازی لاگ OTP — **روزانه scheduler** |
+| `wp:migrate-users` | ETL کاربران وردپرس (بکاپ `WP_DB_*`) |
+| `wp:migrate-courses` | ETL محصولات/دوره‌ها + ریدایرکت `/product/{slug}` |
+| `wp:migrate-orders` | ETL سفارش completed/processing + enrollment |
+| `wp:migrate-audit` | مقایسه تعداد WP vs لوکال |
+
+همه `wp:migrate-*` فلگ `--dry-run` دارند. ترتیب: users → courses → orders → audit. **فقط روی بکاپ، نه دیتابیس لایو.** `php artisan migrate` این کار را نمی‌کند.
 
 **Scheduler** (`routes/console.php`):
 
@@ -422,11 +447,13 @@ php artisan schedule:work
 * * * * * cd /path && php artisan schedule:run
 ```
 
-**Queue** (SpotPlayer و کارهای سنگین):
+**Queue** (SpotPlayer، SMS OTP، کارهای سنگین):
 
 ```bash
-php artisan queue:work
+php artisan queue:work --tries=3
 ```
+
+`QUEUE_CONNECTION=database` مگر Redis ست شود. Horizon نصب نشده.
 
 ---
 
@@ -438,13 +465,26 @@ CMS_ADMIN_EMAIL=admin@rahbarhesab.ir
 CMS_ADMIN_PASSWORD=...
 CMS_API_TOKEN=...
 
+CMS_ENROLLMENT_MONTHS=12
+
 CMS_PAYMENT_GATEWAY=zibal
-ZIBAL_MERCHANT=...
+ZIBAL_MERCHANT=zibal
+# ZARINPAL_MERCHANT_ID=
+# ZARINPAL_SANDBOX=true
 
-IPPANEL_API_KEY=...
-IPPANEL_OTP_PATTERN=...
+IPPANEL_API_KEY=
+IPPANEL_OTP_PATTERN=
 
-SPOTPLAYER_API_KEY=...
+SPOTPLAYER_API_KEY=
+
+# فقط بکاپ وردپرس — نه دیتابیس لایو
+# WP_DB_HOST=127.0.0.1
+# WP_DB_DATABASE=
+# WP_DB_USERNAME=
+# WP_DB_PASSWORD=
+# WP_DB_PREFIX=wp_
+
+QUEUE_CONNECTION=database
 ```
 
 بقیه توی `config/cms.php` و `config/otp.php` map شدن.
@@ -502,7 +542,7 @@ Health: `/up`
 `IPPANEL_API_KEY` خالیه → log. pattern code درسته؟
 
 **۴. دوره بعد خرید enroll نمی‌شه**  
-callback پرداخت، `OrderService::fulfill()`, queue worker.
+callback پرداخت، `OrderService::markPaid()` / `fulfill()`, و **queue worker**. سبد فقط بعد از پرداخت موفق خالی می‌شود؛ اگر درگاه را بستی سبد باید پر بماند.
 
 **۵. بلوک nested توی columns رندر نمی‌شه**  
 `ColumnsBlock::render()` از `BlockRegistry` استفاده می‌کنه. type نامعتبر silent fail می‌کنه (try/catch).
@@ -523,6 +563,9 @@ role توی `cms_admins` — `Permission::roleDefaults()`.
 | صفحه‌ساز UI | `resources/views/admin/pages/builder.blade.php` |
 | Hook | `app/Support/Hook.php` |
 | سفارش | `app/Services/OrderService.php` |
+| کوپن | `app/Services/CouponService.php` |
+| تومان/ریال | `app/Support/Money.php` |
+| خرید/اسپات/WP | `docs/SHOP-PAYMENTS-AND-MIGRATION.md` |
 | قالب | `app/Services/ThemeService.php` |
 | منوی ادمین | `resources/menu/verticalMenu.json` |
 
@@ -532,10 +575,10 @@ role توی `cms_admins` — `Permission::roleDefaults()`.
 
 ۱. Laravel معمولیه — MVC + Service layer.  
 ۲. CMS شبیه WP: theme, plugin, block, hook.  
-۳. دو auth جدا: cms admin vs user OTP.  
-۴. LMS روی ShopProduct + Course سوار شده.  
+۳. دو auth جدا: cms admin vs user OTP (+ رمز اختیاری برای مهاجرت وردپرس).  
+۴. LMS روی ShopProduct + Course سوار شده. قیمت تومان است؛ درگاه ریال.  
 ۵. صفحه‌ساز JSON توی `builder_content` — ColumnsBlock nested داره.  
-۶. قبل deploy: build, migrate, scheduler, queue, env.
+۶. قبل deploy: build, migrate, scheduler, queue worker, env (مرچنت، IPPanel، SpotPlayer).
 
 سؤال داشتی اول `routes/web.php` و `config/cms.php` رو باز کن. نصف جواب‌ها اونجاست.
 

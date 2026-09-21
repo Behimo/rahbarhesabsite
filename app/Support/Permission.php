@@ -82,6 +82,8 @@ class Permission
             'admin.home.*' => self::MANAGE_PAGES,
             'admin.categories.*' => self::MANAGE_TAXONOMIES,
             'admin.products.*' => self::MANAGE_POSTS,
+            'admin.coupons.*' => self::MANAGE_ORDERS,
+            'admin.redirects.*' => self::MANAGE_SETTINGS,
         ];
     }
 }

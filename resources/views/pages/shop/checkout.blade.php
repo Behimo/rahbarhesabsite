@@ -14,11 +14,12 @@
     </div>
 
     <div class="mb-6 flex justify-between rounded-xl border border-orange-500/30 bg-orange-500/10 p-4">
-        <span class="font-semibold text-white">مبلغ قابل پرداخت</span>
-        <span class="text-xl font-bold text-orange-400">{{ number_format($subtotal) }} تومان</span>
+        <span class="font-semibold text-white">جمع</span>
+        <span class="text-orange-200">{{ number_format($subtotal) }} تومان</span>
     </div>
+    @include('components.cart-totals')
 
-    <form method="POST" action="{{ route('checkout.process') }}">
+    <form method="POST" action="{{ route('checkout.process') }}" class="mt-6">
         @csrf
         <button type="submit" class="btn-demo w-full justify-center">پرداخت با {{ config('cms.payment_gateway') === 'zibal' ? 'زیبال' : 'زرین‌پال' }}</button>
     </form>

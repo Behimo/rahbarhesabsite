@@ -110,7 +110,21 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             // 'encrypt' => env('DB_ENCRYPT', 'yes'),
-            // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
+            'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
+        ],
+
+        'wordpress' => [
+            'driver' => 'mysql',
+            'host' => env('WP_DB_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('WP_DB_PORT', env('DB_PORT', '3306')),
+            'database' => env('WP_DB_DATABASE'),
+            'username' => env('WP_DB_USERNAME', env('DB_USERNAME', 'root')),
+            'password' => env('WP_DB_PASSWORD', env('DB_PASSWORD', '')),
+            'charset' => env('WP_DB_CHARSET', 'utf8mb4'),
+            'collation' => env('WP_DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => env('WP_DB_PREFIX', 'wp_'),
+            'prefix_indexes' => true,
+            'strict' => false,
         ],
 
     ],

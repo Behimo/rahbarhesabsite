@@ -18,11 +18,13 @@
     </div>
 
     <div class="rh-card mb-6 flex justify-between border-teal-200 bg-teal-50 p-4">
-        <span class="font-semibold text-slate-800">مبلغ قابل پرداخت</span>
-        <span class="text-xl font-bold text-teal-700">{{ number_format($subtotal) }} تومان</span>
+        <span class="font-semibold text-slate-800">جمع</span>
+        <span class="text-slate-700">{{ number_format($subtotal) }} تومان</span>
     </div>
 
-    <form method="POST" action="{{ route('checkout.process') }}">
+    @include('components.cart-totals')
+
+    <form method="POST" action="{{ route('checkout.process') }}" class="mt-6">
         @csrf
         <button type="submit" class="rh-btn-primary w-full justify-center">پرداخت با {{ config('cms.payment_gateway') === 'zibal' ? 'زیبال' : 'زرین‌پال' }}</button>
     </form>

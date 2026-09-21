@@ -35,6 +35,13 @@ return [
         'api_key' => env('SPOTPLAYER_API_KEY'),
         'base_url' => env('SPOTPLAYER_BASE_URL', 'https://api.spotplayer.ir'),
         'player_url' => env('SPOTPLAYER_PLAYER_URL', 'https://app.spotplayer.ir'),
+        'devices_limit' => (int) env('SPOTPLAYER_DEVICES_LIMIT', 2),
+    ],
+
+    'enrollment_months' => (int) env('CMS_ENROLLMENT_MONTHS', 12),
+
+    'wordpress' => [
+        'prefix' => env('WP_DB_PREFIX', 'wp_'),
     ],
 
     'branding' => [

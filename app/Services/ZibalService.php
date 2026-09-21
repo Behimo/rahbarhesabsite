@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Contracts\PaymentGatewayInterface;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Support\Money;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -20,18 +22,18 @@ class ZibalService implements PaymentGatewayInterface
     public function requestPayment(Order $order): string
     {
         if ($order->total <= 0) {
-            $order->update(['status' => Order::STATUS_PAID, 'paid_at' => now()]);
-            $this->orders->fulfill($order);
+            $this->orders->markPaid($order);
 
             return route('checkout.success', $order);
         }
 
         $merchant = config('cms.zibal.merchant');
         $baseUrl = rtrim(config('cms.zibal.base_url', 'https://gateway.zibal.ir'), '/');
+        $amountRials = Money::tomanToRials((int) $order->total);
 
         $response = Http::post($baseUrl.'/v1/request', [
             'merchant' => $merchant,
-            'amount' => $order->total,
+            'amount' => $amountRials,
             'callbackUrl' => route('checkout.callback', ['gateway' => 'zibal']),
             'description' => 'سفارش '.$order->order_number,
             'orderId' => $order->order_number,
@@ -47,10 +49,12 @@ class ZibalService implements PaymentGatewayInterface
 
         Payment::query()->create([
             'order_id' => $order->id,
+            'user_id' => $order->user_id,
             'gateway' => 'zibal',
             'authority' => (string) $trackId,
             'amount' => $order->total,
             'status' => Payment::STATUS_PENDING,
+            'gateway_payload' => ['amount_rial' => $amountRials],
             'gateway_response' => $response->json(),
         ]);
 
@@ -62,7 +66,7 @@ class ZibalService implements PaymentGatewayInterface
         $trackId = $query['trackId'] ?? null;
         $success = ($query['success'] ?? null) == '1';
 
-        if (! $trackId || ! $success) {
+        if (! $trackId) {
             return null;
         }
 
@@ -72,35 +76,75 @@ class ZibalService implements PaymentGatewayInterface
             return null;
         }
 
-        $baseUrl = rtrim(config('cms.zibal.base_url', 'https://gateway.zibal.ir'), '/');
-
-        $response = Http::post($baseUrl.'/v1/verify', [
-            'merchant' => config('cms.zibal.merchant'),
-            'trackId' => $trackId,
-        ]);
-
-        $result = $response->json('result');
-
-        if ($result === 100) {
-            $payment->update([
-                'status' => Payment::STATUS_SUCCESS,
-                'ref_id' => (string) $response->json('refNumber'),
-                'gateway_response' => $response->json(),
-            ]);
-
-            $order = $payment->order;
-            $order->update(['status' => Order::STATUS_PAID, 'paid_at' => now()]);
-            $this->orders->fulfill($order);
-
+        if ($payment->isSuccessful() && $payment->order?->isPaid()) {
             return $payment;
         }
 
-        $payment->update([
-            'status' => Payment::STATUS_FAILED,
-            'gateway_response' => $response->json(),
-        ]);
-        $payment->order->update(['status' => Order::STATUS_FAILED]);
+        if (! $success) {
+            $payment->update([
+                'status' => Payment::STATUS_FAILED,
+                'error_message' => 'پرداخت توسط کاربر لغو شد.',
+                'gateway_payload' => $query,
+            ]);
+            $payment->order?->update(['status' => Order::STATUS_FAILED]);
 
-        return null;
+            return null;
+        }
+
+        $lock = Cache::lock('payment:verify:'.$payment->id, 30);
+
+        if (! $lock->get()) {
+            usleep(250000);
+            $payment->refresh();
+
+            return $payment->isSuccessful() ? $payment : null;
+        }
+
+        try {
+            $payment->refresh();
+
+            if ($payment->isSuccessful() && $payment->order?->isPaid()) {
+                return $payment;
+            }
+
+            $baseUrl = rtrim(config('cms.zibal.base_url', 'https://gateway.zibal.ir'), '/');
+            $response = Http::post($baseUrl.'/v1/verify', [
+                'merchant' => config('cms.zibal.merchant'),
+                'trackId' => $trackId,
+            ]);
+
+            $result = $response->json('result');
+            $payload = $response->json();
+
+            // 100 = first verify, 201 = already verified
+            if (in_array($result, [100, 201], true)) {
+                $payment->update([
+                    'status' => Payment::STATUS_SUCCESS,
+                    'ref_id' => (string) ($payload['refNumber'] ?? $payment->ref_id),
+                    'card_pan' => $payload['cardNumber'] ?? $payment->card_pan,
+                    'card_hash' => $payload['cardHash'] ?? $payment->card_hash,
+                    'user_id' => $payment->user_id ?: $payment->order?->user_id,
+                    'gateway_response' => $payload,
+                    'verified_at' => now(),
+                    'paid_at' => now(),
+                    'error_message' => null,
+                ]);
+
+                $this->orders->markPaid($payment->order);
+
+                return $payment->fresh('order');
+            }
+
+            $payment->update([
+                'status' => Payment::STATUS_FAILED,
+                'gateway_response' => $payload,
+                'error_message' => (string) ($payload['message'] ?? 'تأیید پرداخت ناموفق بود.'),
+            ]);
+            $payment->order?->update(['status' => Order::STATUS_FAILED]);
+
+            return null;
+        } finally {
+            $lock->release();
+        }
     }
 }

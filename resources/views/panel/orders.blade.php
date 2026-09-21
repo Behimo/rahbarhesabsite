@@ -5,6 +5,10 @@
 @section('content')
 <h1 class="mb-6 text-2xl font-bold text-white">سفارش‌ها</h1>
 
+@if (session('error'))
+    <div class="mb-4 rounded-lg bg-red-500/20 p-3 text-red-200">{{ session('error') }}</div>
+@endif
+
 @if ($orders->isEmpty())
     <p class="text-gray-400">سفارشی ثبت نشده است.</p>
 @else
@@ -16,6 +20,7 @@
                     <th class="px-4 py-3 text-start">مبلغ</th>
                     <th class="px-4 py-3 text-start">وضعیت</th>
                     <th class="px-4 py-3 text-start">تاریخ</th>
+                    <th class="px-4 py-3 text-start"></th>
                 </tr>
             </thead>
             <tbody>
@@ -29,6 +34,14 @@
                             </span>
                         </td>
                         <td class="px-4 py-3 text-gray-400">{{ $order->created_at->format('Y/m/d') }}</td>
+                        <td class="px-4 py-3">
+                            @if ($order->canRetryPayment())
+                                <form method="POST" action="{{ route('checkout.retry', $order) }}">
+                                    @csrf
+                                    <button class="text-orange-400 hover:underline">پرداخت مجدد</button>
+                                </form>
+                            @endif
+                        </td>
                     </tr>
                 @endforeach
             </tbody>
