@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\Admin\CouponController as AdminCouponController;
-use App\Http\Controllers\Admin\RedirectController as AdminRedirectController;
 use App\Http\Controllers\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\HomeController as AdminHomeController;
@@ -16,6 +15,7 @@ use App\Http\Controllers\Admin\PageController as AdminPageController;
 use App\Http\Controllers\Admin\PluginController as AdminPluginController;
 use App\Http\Controllers\Admin\PostController as AdminPostController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Admin\RedirectController as AdminRedirectController;
 use App\Http\Controllers\Admin\SearchController as AdminSearchController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Admin\TaxonomyController as AdminTaxonomyController;
@@ -142,6 +142,7 @@ Route::prefix('panel')->name('panel.')->middleware('auth')->controller(PanelDash
     Route::get('/orders', 'orders')->name('orders');
     Route::get('/profile', 'profile')->name('profile');
     Route::put('/profile', 'updateProfile')->name('profile.update');
+    Route::put('/profile/password', 'updatePassword')->name('profile.password');
 });
 
 /*

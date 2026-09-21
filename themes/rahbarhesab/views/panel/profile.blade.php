@@ -1,4 +1,4 @@
-@extends('layouts.panel')
+@extends('theme::layouts.panel')
 
 @section('title', 'پروفایل')
 
@@ -7,8 +7,8 @@
     $lastName = old('last_name', $user->last_name);
     $phone = old('phone', $user->mobile ?: $user->phone);
     $email = old('email', $user->email);
-    $identityErrors = $errors->default;
-    $passwordErrors = $errors->password;
+    $identityErrors = $errors->getBag('default');
+    $passwordErrors = $errors->getBag('password');
     $roleLabels = [
         'user' => 'هنرجو',
         'instructor' => 'مدرس',
@@ -84,8 +84,6 @@
                     role="alert"
                     tabindex="-1"
                     aria-labelledby="profile-error-title"
-                    x-data
-                    x-init="$nextTick(() => $el.focus())"
                 >
                     <h4 id="profile-error-title">یک مشکل در مشخصات وجود دارد</h4>
                     <ul>
@@ -190,13 +188,7 @@
             </div>
         </form>
 
-        <form
-            method="POST"
-            action="{{ route('panel.profile.password') }}"
-            class="profile-chapter profile-chapter--security"
-            x-data="{ showPassword: false, showConfirm: false }"
-            novalidate
-        >
+        <form method="POST" action="{{ route('panel.profile.password') }}" class="profile-chapter profile-chapter--security" novalidate>
             @csrf
             @method('PUT')
 
@@ -212,8 +204,6 @@
                     role="alert"
                     tabindex="-1"
                     aria-labelledby="profile-password-error-title"
-                    x-data
-                    x-init="$nextTick(() => $el.focus())"
                 >
                     <h4 id="profile-password-error-title">رمز عبور ذخیره نشد</h4>
                     <ul>
@@ -232,7 +222,7 @@
                             <input
                                 id="field-password"
                                 class="profile-input @if ($passwordErrors->has('password')) profile-input--invalid @endif"
-                                :type="showPassword ? 'text' : 'password'"
+                                type="password"
                                 name="password"
                                 autocomplete="new-password"
                                 minlength="8"
@@ -243,12 +233,13 @@
                             <button
                                 type="button"
                                 class="profile-secret__toggle"
-                                @click="showPassword = !showPassword"
-                                :aria-pressed="showPassword.toString()"
-                                :aria-label="showPassword ? 'پنهان کردن رمز' : 'نمایش رمز'"
+                                data-secret-toggle
+                                aria-controls="field-password"
+                                aria-pressed="false"
+                                aria-label="نمایش رمز"
                             >
-                                <svg x-show="!showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12z"/><circle cx="12" cy="12" r="3"/></svg>
-                                <svg x-show="showPassword" x-cloak viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M9.88 9.88A3 3 0 0012 15a3 3 0 002.12-.88M6.6 6.6C4.5 8.04 3 12 3 12s3.75 6.75 9.75 6.75c1.7 0 3.23-.4 4.5-1.05M17.4 17.4C19.5 15.96 21 12 21 12s-3.75-6.75-9.75-6.75c-.7 0-1.37.07-2 .2"/></svg>
+                                <svg data-icon-show viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <svg data-icon-hide hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M9.88 9.88A3 3 0 0012 15a3 3 0 002.12-.88M6.6 6.6C4.5 8.04 3 12 3 12s3.75 6.75 9.75 6.75c1.7 0 3.23-.4 4.5-1.05M17.4 17.4C19.5 15.96 21 12 21 12s-3.75-6.75-9.75-6.75c-.7 0-1.37.07-2 .2"/></svg>
                             </button>
                         </div>
                         <p id="hint-password" class="profile-help">حداقل ۸ کاراکتر. می‌توانید رمز را از مدیر رمز عبور جای‌گذاری کنید.</p>
@@ -265,7 +256,7 @@
                             <input
                                 id="field-password_confirmation"
                                 class="profile-input @if ($passwordErrors->has('password_confirmation')) profile-input--invalid @endif"
-                                :type="showConfirm ? 'text' : 'password'"
+                                type="password"
                                 name="password_confirmation"
                                 autocomplete="new-password"
                                 minlength="8"
@@ -275,12 +266,13 @@
                             <button
                                 type="button"
                                 class="profile-secret__toggle"
-                                @click="showConfirm = !showConfirm"
-                                :aria-pressed="showConfirm.toString()"
-                                :aria-label="showConfirm ? 'پنهان کردن تکرار رمز' : 'نمایش تکرار رمز'"
+                                data-secret-toggle
+                                aria-controls="field-password_confirmation"
+                                aria-pressed="false"
+                                aria-label="نمایش تکرار رمز"
                             >
-                                <svg x-show="!showConfirm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12z"/><circle cx="12" cy="12" r="3"/></svg>
-                                <svg x-show="showConfirm" x-cloak viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M9.88 9.88A3 3 0 0012 15a3 3 0 002.12-.88M6.6 6.6C4.5 8.04 3 12 3 12s3.75 6.75 9.75 6.75c1.7 0 3.23-.4 4.5-1.05M17.4 17.4C19.5 15.96 21 12 21 12s-3.75-6.75-9.75-6.75c-.7 0-1.37.07-2 .2"/></svg>
+                                <svg data-icon-show viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <svg data-icon-hide hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M9.88 9.88A3 3 0 0012 15a3 3 0 002.12-.88M6.6 6.6C4.5 8.04 3 12 3 12s3.75 6.75 9.75 6.75c1.7 0 3.23-.4 4.5-1.05M17.4 17.4C19.5 15.96 21 12 21 12s-3.75-6.75-9.75-6.75c-.7 0-1.37.07-2 .2"/></svg>
                             </button>
                         </div>
                         @if ($passwordErrors->has('password_confirmation'))
@@ -297,3 +289,22 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.querySelectorAll('[data-secret-toggle]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var input = document.getElementById(button.getAttribute('aria-controls'));
+            if (!input) return;
+            var show = input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            button.classList.toggle('is-revealed', show);
+            button.setAttribute('aria-pressed', show ? 'true' : 'false');
+            button.setAttribute('aria-label', show ? 'پنهان کردن رمز' : (input.id === 'field-password_confirmation' ? 'نمایش تکرار رمز' : 'نمایش رمز'));
+        });
+    });
+
+    var summary = document.getElementById('profile-password-error-summary') || document.getElementById('profile-error-summary');
+    if (summary) summary.focus();
+</script>
+@endpush

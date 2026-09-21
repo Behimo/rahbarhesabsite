@@ -9,11 +9,9 @@ use App\Services\OtpService;
 use App\Services\SeoService;
 use App\Services\SiteDataService;
 use App\Support\PhoneNormalizer;
-use App\Support\WordpressPassword;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
 class AuthController extends SiteController
@@ -131,7 +129,7 @@ class AuthController extends SiteController
             ->orWhere('mobile', PhoneNormalizer::toLocal($login))
             ->first();
 
-        if (! $user || ! $this->passwordMatches($user, $validated['password'])) {
+        if (! $user || ! $user->passwordMatches($validated['password'])) {
             return back()->withErrors(['login' => 'اطلاعات ورود نادرست است.'])->withInput();
         }
 
@@ -161,16 +159,5 @@ class AuthController extends SiteController
         $request->session()->regenerateToken();
 
         return redirect()->route('home');
-    }
-
-    private function passwordMatches(User $user, string $plain): bool
-    {
-        $hash = (string) $user->getRawOriginal('password');
-
-        if ($user->is_wp_password || WordpressPassword::isWordpressHash($hash)) {
-            return WordpressPassword::check($plain, $hash);
-        }
-
-        return Hash::check($plain, $hash);
     }
 }

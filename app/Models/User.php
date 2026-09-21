@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use App\Support\Permission;
+use App\Support\PhoneNormalizer;
+use App\Support\WordpressPassword;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class User extends Authenticatable
@@ -126,6 +129,32 @@ class User extends Authenticatable
         return in_array($this->status, ['banned', 'suspended'], true);
     }
 
+    public function displayName(): string
+    {
+        $full = trim(($this->first_name ?? '').' '.($this->last_name ?? ''));
+
+        return $full !== '' ? $full : (string) $this->name;
+    }
+
+    public function initials(): string
+    {
+        $first = mb_substr(trim((string) ($this->first_name ?: $this->name)), 0, 1);
+        $last = mb_substr(trim((string) $this->last_name), 0, 1);
+
+        return $last !== '' ? $first.$last : ($first !== '' ? $first : 'ر');
+    }
+
+    public function passwordMatches(string $plain): bool
+    {
+        $hash = (string) $this->getRawOriginal('password');
+
+        if ($this->is_wp_password || WordpressPassword::isWordpressHash($hash)) {
+            return WordpressPassword::check($plain, $hash);
+        }
+
+        return Hash::check($plain, $hash);
+    }
+
     public function markLoggedIn(): void
     {
         $this->forceFill(['last_login_at' => now()])->save();
@@ -133,7 +162,7 @@ class User extends Authenticatable
 
     public function syncPhone(string $phone): void
     {
-        $local = \App\Support\PhoneNormalizer::toLocal($phone);
+        $local = PhoneNormalizer::toLocal($phone);
 
         $this->forceFill([
             'phone' => $local,
@@ -143,8 +172,8 @@ class User extends Authenticatable
 
     public static function findByPhone(string $phone): ?self
     {
-        $local = \App\Support\PhoneNormalizer::toLocal($phone);
-        $e164 = \App\Support\PhoneNormalizer::toE164($phone);
+        $local = PhoneNormalizer::toLocal($phone);
+        $e164 = PhoneNormalizer::toE164($phone);
 
         return static::query()
             ->where('phone', $local)
@@ -156,7 +185,7 @@ class User extends Authenticatable
 
     public static function findOrCreateByPhone(string $phone, ?string $name = null): self
     {
-        $local = \App\Support\PhoneNormalizer::toLocal($phone);
+        $local = PhoneNormalizer::toLocal($phone);
 
         $user = static::findByPhone($phone);
 

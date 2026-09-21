@@ -6,7 +6,7 @@
         <aside class="lg:col-span-1">
             <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <div class="mb-4 border-b border-white/10 pb-4">
-                    <p class="font-semibold text-white">{{ auth()->user()->name }}</p>
+                    <p class="font-semibold text-white">{{ auth()->user()->displayName() }}</p>
                     <p class="text-sm text-gray-400">{{ auth()->user()->email }}</p>
                 </div>
                 <nav class="space-y-1">

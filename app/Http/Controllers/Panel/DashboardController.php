@@ -2,12 +2,19 @@
 
 namespace App\Http\Controllers\Panel;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\Site\SiteController;
 use App\Models\CourseEnrollment;
 use App\Models\Order;
+use App\Models\SpotplayerLicense;
+use App\Models\User;
+use App\Support\PhoneNormalizer;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
-class DashboardController extends Controller
+class DashboardController extends SiteController
 {
     public function index(): View
     {
@@ -26,7 +33,7 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        return view('panel.dashboard', compact('enrollments', 'orders'));
+        return $this->render('panel.dashboard', compact('enrollments', 'orders'));
     }
 
     public function courses(): View
@@ -37,12 +44,12 @@ class DashboardController extends Controller
             ->latest('enrolled_at')
             ->get();
 
-        $licenses = \App\Models\SpotplayerLicense::query()
+        $licenses = SpotplayerLicense::query()
             ->where('user_id', auth()->id())
             ->get()
             ->keyBy('course_id');
 
-        return view('panel.courses', compact('enrollments', 'licenses'));
+        return $this->render('panel.courses', compact('enrollments', 'licenses'));
     }
 
     public function orders(): View
@@ -53,32 +60,90 @@ class DashboardController extends Controller
             ->latest()
             ->paginate(10);
 
-        return view('panel.orders', compact('orders'));
+        return $this->render('panel.orders', compact('orders'));
     }
 
     public function profile(): View
     {
-        return view('panel.profile', ['user' => auth()->user()]);
+        $user = auth()->user();
+
+        return $this->render('panel.profile', [
+            'user' => $user,
+            'enrollmentsCount' => CourseEnrollment::query()->where('user_id', $user->id)->count(),
+            'ordersCount' => Order::query()->where('user_id', $user->id)->count(),
+        ]);
     }
 
-    public function updateProfile(\Illuminate\Http\Request $request): \Illuminate\Http\RedirectResponse
+    public function updateProfile(Request $request): RedirectResponse
     {
+        $user = $request->user();
+
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'first_name' => ['nullable', 'string', 'max:100'],
+            'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['nullable', 'string', 'max:100'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:20'],
+            'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'phone' => ['required', 'string', 'max:20'],
+        ], [
+            'first_name.required' => 'نام را وارد کنید.',
+            'email.email' => 'ایمیل را درست وارد کنید.',
+            'email.unique' => 'این ایمیل قبلاً ثبت شده است.',
+            'phone.required' => 'شماره موبایل را وارد کنید.',
         ]);
 
-        if (! empty($validated['phone'])) {
-            $local = \App\Support\PhoneNormalizer::toLocal($validated['phone']);
-            $validated['phone'] = $local;
-            $validated['mobile'] = $local;
+        $phone = PhoneNormalizer::toLocal($validated['phone']);
+
+        if (! PhoneNormalizer::isValidIranMobile($phone)) {
+            throw ValidationException::withMessages([
+                'phone' => 'شماره موبایل باید ۱۱ رقم و با ۰۹ شروع شود.',
+            ]);
         }
 
-        auth()->user()->update($validated);
+        $phoneTaken = User::query()
+            ->where('id', '!=', $user->id)
+            ->where(function ($query) use ($phone) {
+                $query->where('phone', $phone)->orWhere('mobile', $phone);
+            })
+            ->exists();
 
-        return back()->with('success', 'پروفایل به‌روزرسانی شد.');
+        if ($phoneTaken) {
+            throw ValidationException::withMessages([
+                'phone' => 'این شماره موبایل قبلاً ثبت شده است.',
+            ]);
+        }
+
+        $email = filled($validated['email']) ? $validated['email'] : null;
+        $phoneChanged = $phone !== ($user->mobile ?: $user->phone);
+        $emailChanged = $email !== $user->email;
+
+        $user->update([
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'] ?: null,
+            'name' => trim($validated['first_name'].' '.($validated['last_name'] ?? '')),
+            'email' => $email,
+            'phone' => $phone,
+            'mobile' => $phone,
+            'mobile_verified_at' => $phoneChanged ? null : $user->mobile_verified_at,
+            'email_verified_at' => $emailChanged ? null : $user->email_verified_at,
+        ]);
+
+        return back()->with('success', 'مشخصات پرونده ذخیره شد.');
+    }
+
+    public function updatePassword(Request $request): RedirectResponse
+    {
+        $validated = $request->validateWithBag('password', [
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ], [
+            'password.required' => 'رمز جدید را وارد کنید.',
+            'password.min' => 'رمز جدید باید حداقل ۸ کاراکتر باشد.',
+            'password.confirmed' => 'تکرار رمز با رمز جدید یکی نیست.',
+        ]);
+
+        $request->user()->forceFill([
+            'password' => $validated['password'],
+            'is_wp_password' => false,
+        ])->save();
+
+        return back()->with('success', 'رمز عبور به‌روزرسانی شد.');
     }
 }
