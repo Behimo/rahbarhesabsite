@@ -71,7 +71,7 @@ class AuthController extends SiteController
             return redirect()->route('login');
         }
 
-        return view('auth.verify-otp', [
+        return $this->render('auth.verify-otp', [
             'phone' => session('otp_phone'),
             'devCode' => $this->otp->peekLatestCode(session('otp_phone')),
         ]);

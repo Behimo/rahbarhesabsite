@@ -114,7 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-/*سکشن دوم*/
+/*Ø³Ú©Ø´Ù Ø¯ÙÙ*/
 document.addEventListener("DOMContentLoaded", () => {
   const aboutSection = document.querySelector(".rahbar-about");
 
@@ -144,7 +144,7 @@ document.addEventListener("DOMContentLoaded", () => {
   observer.observe(aboutSection);
 });
 
-/*سکشن سوم*/
+/*Ø³Ú©Ø´Ù Ø³ÙÙ*/
 
 document.addEventListener("DOMContentLoaded", () => {
   const appSection = document.querySelector(".rahbar-app-section");
@@ -152,7 +152,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!appSection) return;
 
   /* ======================================
-       نمایش نرم سکشن هنگام اسکرول
+       ÙÙØ§ÛØ´ ÙØ±Ù Ø³Ú©Ø´Ù ÙÙÚ¯Ø§Ù Ø§Ø³Ú©Ø±ÙÙ
     ====================================== */
 
   const appObserver = new IntersectionObserver(
@@ -182,15 +182,15 @@ document.addEventListener("DOMContentLoaded", () => {
   if (downloadButton) {
     downloadButton.addEventListener("click", (event) => {
       /*
-                وقتی لینک دانلود اپ آماده بود،
-                href خود دکمه را تغییر بده.
+                ÙÙØªÛ ÙÛÙÚ© Ø¯Ø§ÙÙÙØ¯ Ø§Ù¾ Ø¢ÙØ§Ø¯Ù Ø¨ÙØ¯Ø
+                href Ø®ÙØ¯ Ø¯Ú©ÙÙ Ø±Ø§ ØªØºÛÛØ± Ø¨Ø¯Ù.
 
-                مثال:
+                ÙØ«Ø§Ù:
 
                 href="/download-app"
 
-                در آن صورت این قسمت JS
-                را می‌توانی کامل حذف کنی.
+                Ø¯Ø± Ø¢Ù ØµÙØ±Øª Ø§ÛÙ ÙØ³ÙØª JS
+                Ø±Ø§ ÙÛâØªÙØ§ÙÛ Ú©Ø§ÙÙ Ø­Ø°Ù Ú©ÙÛ.
                 */
 
       const href = downloadButton.getAttribute("href");
@@ -202,7 +202,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-/* سکشن چهارم*/
+/* Ø³Ú©Ø´Ù ÚÙØ§Ø±Ù*/
 
 document.addEventListener("DOMContentLoaded", () => {
   const benefitsSection = document.querySelector(".rahbar-benefits");
@@ -228,7 +228,7 @@ document.addEventListener("DOMContentLoaded", () => {
   benefitsObserver.observe(benefitsSection);
 });
 
-//سکشن پنجم
+//Ø³Ú©Ø´Ù Ù¾ÙØ¬Ù
 
 document.addEventListener("DOMContentLoaded", () => {
   const sliders = document.querySelectorAll(".courses-carousel-section");
@@ -254,7 +254,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let isDragging = false;
 
   /* ============================
-           تعداد کارت‌های قابل نمایش
+           ØªØ¹Ø¯Ø§Ø¯ Ú©Ø§Ø±ØªâÙØ§Û ÙØ§Ø¨Ù ÙÙØ§ÛØ´
         ============================ */
 
   function getVisibleCards() {
@@ -276,7 +276,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ============================
-           اندازه حرکت هر کارت
+           Ø§ÙØ¯Ø§Ø²Ù Ø­Ø±Ú©Øª ÙØ± Ú©Ø§Ø±Øª
         ============================ */
 
   function getStep() {
@@ -294,7 +294,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ============================
-           محدودیت Index
+           ÙØ­Ø¯ÙØ¯ÛØª Index
         ============================ */
 
   function getMaxIndex() {
@@ -319,9 +319,9 @@ document.addEventListener("DOMContentLoaded", () => {
       : "none";
 
     /*
-            Track به صورت LTR ساخته شده،
-            پس برای دیدن کارت‌های بعدی
-            به سمت چپ حرکت می‌کند.
+            Track Ø¨Ù ØµÙØ±Øª LTR Ø³Ø§Ø®ØªÙ Ø´Ø¯ÙØ
+            Ù¾Ø³ Ø¨Ø±Ø§Û Ø¯ÛØ¯Ù Ú©Ø§Ø±ØªâÙØ§Û Ø¨Ø¹Ø¯Û
+            Ø¨Ù Ø³ÙØª ÚÙ¾ Ø­Ø±Ú©Øª ÙÛâÚ©ÙØ¯.
             */
 
     track.style.transform = `translateX(-${move}px)`;
@@ -466,7 +466,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* ============================
-           جلوگیری از Drag شدن عکس
+           Ø¬ÙÙÚ¯ÛØ±Û Ø§Ø² Drag Ø´Ø¯Ù Ø¹Ú©Ø³
         ============================ */
 
   slider.querySelectorAll("img").forEach((image) => {
@@ -479,7 +479,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-/*سکشن ششم*/
+/*Ø³Ú©Ø´Ù Ø´Ø´Ù*/
 
 document.addEventListener("DOMContentLoaded", () => {
   const financeSection = document.querySelector(".rahbar-finance-section");
@@ -505,7 +505,7 @@ document.addEventListener("DOMContentLoaded", () => {
   financeObserver.observe(financeSection);
 });
 
-// سکش faq
+// Ø³Ú©Ø´ faq
 
 document.addEventListener("DOMContentLoaded", () => {
   const faqSection = document.querySelector("#popularFaqs");
@@ -755,7 +755,7 @@ document.addEventListener("DOMContentLoaded", () => {
   updateSlider(false);
 });
 
-//سکشنnews-guides-section
+//Ø³Ú©Ø´Ùnews-guides-section
 
 document.addEventListener("DOMContentLoaded", () => {
   const section = document.querySelector(".news-guides-section");
@@ -781,7 +781,7 @@ document.addEventListener("DOMContentLoaded", () => {
   observer.observe(section);
 });
 
-/*سکشن rahbar-system-section*/
+/*Ø³Ú©Ø´Ù rahbar-system-section*/
 
 document.addEventListener("DOMContentLoaded", () => {
   const systemSection = document.querySelector(".rahbar-system-section");
@@ -807,7 +807,7 @@ document.addEventListener("DOMContentLoaded", () => {
   systemObserver.observe(systemSection);
 });
 
-/*سکشن rahbar-instagram-section*/
+/*Ø³Ú©Ø´Ù rahbar-instagram-section*/
 
 document.addEventListener("DOMContentLoaded", () => {
   const instagramSection = document.querySelector(".rahbar-instagram-section");
@@ -833,7 +833,7 @@ document.addEventListener("DOMContentLoaded", () => {
   instagramObserver.observe(instagramSection);
 });
 
-//سکشن
+//Ø³Ú©Ø´Ù
 document.addEventListener("DOMContentLoaded", () => {
   const mentorSection = document.querySelector(".mentor-section");
 
@@ -858,7 +858,7 @@ document.addEventListener("DOMContentLoaded", () => {
   mentorObserver.observe(mentorSection);
 });
 
-//سکشن
+//Ø³Ú©Ø´Ù
 
 document.addEventListener("DOMContentLoaded", () => {
   const experienceSection = document.querySelector(
@@ -886,9 +886,9 @@ document.addEventListener("DOMContentLoaded", () => {
   experienceObserver.observe(experienceSection);
 });
 
-/*سکشن rahbar-partners-section*/
+/*Ø³Ú©Ø´Ù rahbar-partners-section*/
 
-/*فوتر*/
+/*ÙÙØªØ±*/
 
 document.addEventListener("DOMContentLoaded", () => {
   const backToTop = document.getElementById("footerBackToTop");
@@ -901,4 +901,87 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
   }
+});
+
+/* Auth - tabs, password reveal, submit feedback */
+document.addEventListener('DOMContentLoaded', () => {
+  const roots = document.querySelectorAll('[data-rh-auth]');
+  if (!roots.length) return;
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  roots.forEach((root) => {
+    const tabs = root.querySelectorAll('[data-auth-tab]');
+    const panels = root.querySelectorAll('[data-auth-panel]');
+
+    const activateTab = (name) => {
+      tabs.forEach((tab) => {
+        const active = tab.getAttribute('data-auth-tab') === name;
+        tab.classList.toggle('is-active', active);
+        tab.setAttribute('aria-selected', active ? 'true' : 'false');
+        tab.tabIndex = active ? 0 : -1;
+      });
+
+      panels.forEach((panel) => {
+        const active = panel.getAttribute('data-auth-panel') === name;
+        panel.classList.toggle('is-active', active);
+        if (active) {
+          panel.removeAttribute('hidden');
+        } else {
+          panel.setAttribute('hidden', '');
+        }
+      });
+
+      root.setAttribute('data-active-tab', name);
+    };
+
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        activateTab(tab.getAttribute('data-auth-tab'));
+      });
+
+      tab.addEventListener('keydown', (event) => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        const list = Array.from(tabs);
+        const index = list.indexOf(tab);
+        let next = index;
+        if (event.key === 'ArrowLeft') next = (index + 1) % list.length;
+        if (event.key === 'ArrowRight') next = (index - 1 + list.length) % list.length;
+        if (event.key === 'Home') next = 0;
+        if (event.key === 'End') next = list.length - 1;
+        list[next].focus();
+        activateTab(list[next].getAttribute('data-auth-tab'));
+      });
+    });
+
+    root.querySelectorAll('[data-password-toggle]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const wrap = button.closest('.rh-auth__secret');
+        const input = wrap ? wrap.querySelector('input') : null;
+        if (!input) return;
+
+        const show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        button.classList.toggle('is-revealed', show);
+        button.setAttribute('aria-pressed', show ? 'true' : 'false');
+        button.setAttribute('aria-label', show ? 'مخفی کردن رمز عبور' : 'نمایش رمز عبور');
+      });
+    });
+
+    root.querySelectorAll('[data-auth-form]').forEach((form) => {
+      form.addEventListener('submit', () => {
+        const submit = form.querySelector('[data-auth-submit]');
+        if (!submit || submit.disabled) return;
+
+        const label = submit.querySelector('[data-auth-submit-label]');
+        const spinner = submit.querySelector('[data-auth-spinner]');
+        submit.disabled = true;
+        submit.setAttribute('aria-busy', 'true');
+        if (label) label.textContent = 'در حال ارسال…';
+        if (spinner) spinner.hidden = false;
+        if (reduceMotion && spinner) spinner.style.animation = 'none';
+      });
+    });
+  });
 });

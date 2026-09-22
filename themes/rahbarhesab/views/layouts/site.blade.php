@@ -50,7 +50,7 @@
 <body class="rh-theme">
     @include('theme::components.navbar', ['navLinks' => $navLinks ?? []])
 
-    <main @class(['rh-inner-page' => ! request()->routeIs(['home', 'courses.index', 'panel.*'])])>
+    <main @class(['rh-inner-page' => ! request()->routeIs(['home', 'courses.index', 'panel.*', 'login', 'login.verify'])])>
         @yield('page')
     </main>
 

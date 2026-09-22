@@ -1,35 +1,35 @@
-@extends('layouts.site')
+@extends('layouts.app')
 
-@section('page')
-<div class="mx-auto max-w-md px-4 py-16 sm:px-6">
-    <div class="rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur">
-        <h1 class="mb-2 text-2xl font-bold text-white">تأیید کد</h1>
-        <p class="mb-6 text-sm text-gray-400">کد ارسال‌شده به {{ $phone }} را وارد کنید</p>
+@section('content')
+@php $otpLength = (int) config('otp.length', 6); @endphp
 
-        @if (session('success'))
-            <div class="mb-4 rounded-lg bg-green-500/20 p-3 text-sm text-green-200">{{ session('success') }}</div>
-        @endif
-        @if ($errors->any())
-            <div class="mb-4 rounded-lg bg-red-500/20 p-3 text-sm text-red-200">{{ $errors->first() }}</div>
-        @endif
+<section class="mx-auto max-w-md px-4 py-16" data-rh-auth>
+    <h1 class="mb-2 text-2xl font-bold">تأیید کد</h1>
+    <p class="mb-6 text-sm text-slate-600">کد ارسال‌شده به <span dir="ltr">{{ $phone }}</span> را وارد کنید</p>
 
-        @if ($devCode && app()->environment('local', 'testing'))
-            <div class="mb-4 rounded-lg bg-amber-500/20 p-3 text-sm text-amber-200">کد تست: {{ $devCode }}</div>
-        @endif
+    @if (session('success'))
+        <div class="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-800" role="status">{{ session('success') }}</div>
+    @endif
+    @if ($errors->any())
+        <div class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">{{ $errors->first() }}</div>
+    @endif
+    @if (!empty($devCode) && app()->environment('local', 'testing'))
+        <div class="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800" role="status">کد تست: <strong dir="ltr">{{ $devCode }}</strong></div>
+    @endif
 
-        <form method="POST" action="{{ route('login.verify.submit') }}" class="space-y-4">
-            @csrf
-            <div>
-                <label class="mb-1 block text-sm text-gray-300">کد {{ config('otp.length', 6) }} رقمی</label>
-                <input type="text" name="code" inputmode="numeric" maxlength="{{ config('otp.length', 6) }}" required dir="ltr"
-                    class="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-center text-2xl tracking-widest text-white focus:border-orange-500 focus:outline-none">
-            </div>
-            <button type="submit" class="btn-demo w-full justify-center">ورود</button>
-        </form>
+    <form method="POST" action="{{ route('login.verify.submit') }}" class="space-y-4" data-auth-form>
+        @csrf
+        <div>
+            <label for="fallback-code" class="mb-1 block text-sm font-medium">کد {{ $otpLength }} رقمی</label>
+            <input id="fallback-code" type="text" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="{{ $otpLength }}" required dir="ltr" class="w-full rounded-xl border px-4 py-3 text-center text-2xl tracking-widest">
+        </div>
+        <button type="submit" class="w-full rounded-xl bg-violet-700 px-4 py-3 font-semibold text-white" data-auth-submit>
+            <span data-auth-submit-label>تأیید و ورود</span>
+        </button>
+    </form>
 
-        <p class="mt-6 text-center text-sm text-gray-400">
-            <a href="{{ route('login') }}" class="text-orange-400 hover:underline">تغییر شماره موبایل</a>
-        </p>
-    </div>
-</div>
+    <p class="mt-6 text-center text-sm">
+        <a href="{{ route('login') }}" class="font-semibold text-violet-700 underline">تغییر شماره موبایل</a>
+    </p>
+</section>
 @endsection
