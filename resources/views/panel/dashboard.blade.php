@@ -23,12 +23,12 @@
 @else
     <div class="panel-list">
         @foreach ($enrollments as $enrollment)
-            <a href="{{ route('courses.learn', $enrollment->course->product->slug) }}" class="panel-list__item">
+            <a href="{{ route('courses.show', $enrollment->course->product->slug) }}" class="panel-list__item">
                 <div>
                     <p class="panel-list__title">{{ $enrollment->course->product->title }}</p>
                     <p class="panel-muted">پیشرفت: {{ fa_digits($enrollment->progress_percent ?? 0) }}٪</p>
                 </div>
-                <span class="panel-list__action">ادامه</span>
+                <span class="panel-list__action">دسترسی</span>
             </a>
         @endforeach
     </div>

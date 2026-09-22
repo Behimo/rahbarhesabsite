@@ -186,31 +186,38 @@
                 @endif
             </div>
 
-            <aside class="course-detail-aside" aria-label="ثبت‌نام در دوره">
+            <aside class="course-detail-aside" aria-label="{{ $isEnrolled ? 'دسترسی دوره' : 'ثبت‌نام در دوره' }}">
                 <div class="course-detail-buy">
-                    <div class="course-detail-buy-price">
-                        @if ($isFree)
-                            <span class="course-detail-price-current is-free">رایگان</span>
-                        @elseif ($hasDiscount)
-                            <del class="course-detail-price-old">{{ fa_digits(number_format($product->price)) }} تومان</del>
-                            <div class="course-detail-price-row">
-                                <span class="course-detail-price-current">{{ fa_digits(number_format($product->sale_price)) }} تومان</span>
-                                <span class="course-detail-price-off">٪{{ fa_digits($discountPercent) }}</span>
-                            </div>
-                        @else
-                            <span class="course-detail-price-current">{{ fa_digits(number_format($product->effectivePrice())) }} تومان</span>
-                        @endif
-                    </div>
-
                     @if ($isEnrolled)
-                        <a href="{{ route('courses.learn', $product->slug) }}" class="course-detail-cta">ادامه یادگیری</a>
-                    @elseif ($isFree)
-                        <a href="{{ route('courses.enroll-free', $product->slug) }}" class="course-detail-cta">ثبت‌نام رایگان</a>
+                        @include('theme::partials.course-access', [
+                            'product' => $product,
+                            'course' => $course,
+                            'license' => $license ?? null,
+                            'spotUrl' => $spotUrl ?? null,
+                        ])
                     @else
-                        <form method="POST" action="{{ route('cart.add', $product) }}">
-                            @csrf
-                            <button type="submit" class="course-detail-cta">افزودن به سبد خرید</button>
-                        </form>
+                        <div class="course-detail-buy-price">
+                            @if ($isFree)
+                                <span class="course-detail-price-current is-free">رایگان</span>
+                            @elseif ($hasDiscount)
+                                <del class="course-detail-price-old">{{ fa_digits(number_format($product->price)) }} تومان</del>
+                                <div class="course-detail-price-row">
+                                    <span class="course-detail-price-current">{{ fa_digits(number_format($product->sale_price)) }} تومان</span>
+                                    <span class="course-detail-price-off">٪{{ fa_digits($discountPercent) }}</span>
+                                </div>
+                            @else
+                                <span class="course-detail-price-current">{{ fa_digits(number_format($product->effectivePrice())) }} تومان</span>
+                            @endif
+                        </div>
+
+                        @if ($isFree)
+                            <a href="{{ route('courses.enroll-free', $product->slug) }}" class="course-detail-cta">ثبت‌نام رایگان</a>
+                        @else
+                            <form method="POST" action="{{ route('cart.add', $product) }}">
+                                @csrf
+                                <button type="submit" class="course-detail-cta">افزودن به سبد خرید</button>
+                            </form>
+                        @endif
                     @endif
 
                     <ul class="course-detail-buy-facts">
@@ -240,7 +247,7 @@
                         @endif
                         <li>
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L4 7V12C4 16.5 7.4 20.4 12 21C16.6 20.4 20 16.5 20 12V7L12 3Z" /><path d="M9.5 12L11.2 13.7L14.8 10" /></svg>
-                            <span>دسترسی دائمی پس از ثبت‌نام</span>
+                            <span>{{ $isEnrolled ? 'پخش از طریق اسپات‌پلیر' : 'دسترسی دائمی پس از ثبت‌نام' }}</span>
                         </li>
                     </ul>
                 </div>
@@ -248,23 +255,51 @@
         </div>
     </div>
 
-    <div class="course-detail-mobile-cta" aria-label="ثبت‌نام سریع">
-        <div class="course-detail-mobile-cta-price">
-            @if ($isFree)
-                <strong>رایگان</strong>
-            @else
-                <strong>{{ fa_digits(number_format($product->effectivePrice())) }} تومان</strong>
-            @endif
-        </div>
+    <div class="course-detail-mobile-cta" aria-label="{{ $isEnrolled ? 'دسترسی سریع' : 'ثبت‌نام سریع' }}">
         @if ($isEnrolled)
-            <a href="{{ route('courses.learn', $product->slug) }}" class="course-detail-cta course-detail-cta--compact">ادامه یادگیری</a>
-        @elseif ($isFree)
-            <a href="{{ route('courses.enroll-free', $product->slug) }}" class="course-detail-cta course-detail-cta--compact">ثبت‌نام رایگان</a>
+            @php
+                $mobileSpotUrl = $spotUrl ?? null;
+                $mobileIssued = ($license->status ?? null) === 'issued' && filled($mobileSpotUrl);
+                $mobileFailed = ($license->status ?? null) === 'failed';
+                $mobileHasSpot = filled($course->spotplayer_course_id ?? null);
+            @endphp
+            <div class="course-detail-mobile-cta-price">
+                @if ($mobileIssued)
+                    <strong>آماده تماشا</strong>
+                @elseif ($mobileFailed)
+                    <strong>نیاز به پیگیری</strong>
+                @elseif ($mobileHasSpot)
+                    <strong>در حال آماده‌سازی</strong>
+                @else
+                    <strong>ثبت‌نام شدید</strong>
+                @endif
+            </div>
+            @if ($mobileIssued)
+                <a href="{{ $mobileSpotUrl }}" class="course-detail-cta course-detail-cta--compact" target="_blank" rel="noopener noreferrer">اسپات‌پلیر</a>
+            @elseif ($mobileFailed || $mobileHasSpot)
+                <form method="POST" action="{{ route('courses.license.refresh', $product->slug) }}">
+                    @csrf
+                    <button type="submit" class="course-detail-cta course-detail-cta--compact">بررسی دوباره</button>
+                </form>
+            @else
+                <a href="{{ route('panel.courses') }}" class="course-detail-cta course-detail-cta--compact">دوره‌های من</a>
+            @endif
         @else
-            <form method="POST" action="{{ route('cart.add', $product) }}">
-                @csrf
-                <button type="submit" class="course-detail-cta course-detail-cta--compact">افزودن به سبد</button>
-            </form>
+            <div class="course-detail-mobile-cta-price">
+                @if ($isFree)
+                    <strong>رایگان</strong>
+                @else
+                    <strong>{{ fa_digits(number_format($product->effectivePrice())) }} تومان</strong>
+                @endif
+            </div>
+            @if ($isFree)
+                <a href="{{ route('courses.enroll-free', $product->slug) }}" class="course-detail-cta course-detail-cta--compact">ثبت‌نام رایگان</a>
+            @else
+                <form method="POST" action="{{ route('cart.add', $product) }}">
+                    @csrf
+                    <button type="submit" class="course-detail-cta course-detail-cta--compact">افزودن به سبد</button>
+                </form>
+            @endif
         @endif
     </div>
 </section>

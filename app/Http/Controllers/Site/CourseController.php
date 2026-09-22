@@ -6,6 +6,7 @@ use App\Models\Course;
 use App\Models\CourseLesson;
 use App\Models\LessonProgress;
 use App\Models\ShopProduct;
+use App\Models\SpotplayerLicense;
 use App\Services\OrderService;
 use App\Services\SeoService;
 use App\Services\SiteDataService;
@@ -70,7 +71,22 @@ class CourseController extends SiteController
             ->firstOrFail();
 
         $course = $product->course;
-        $isEnrolled = auth()->check() && auth()->user()->isEnrolledIn($course);
+        $user = auth()->user();
+        $isEnrolled = $user && $user->isEnrolledIn($course);
+
+        $license = null;
+        $spotUrl = null;
+
+        if ($isEnrolled && $course) {
+            $license = SpotplayerLicense::query()
+                ->where('user_id', $user->id)
+                ->where('course_id', $course->id)
+                ->first();
+
+            if ($license?->status === SpotplayerLicense::STATUS_ISSUED) {
+                $spotUrl = $license->spot_url ?: $this->spotPlayer->embedUrl($course, $user);
+            }
+        }
 
         $seo = $this->seo->meta([
             'title' => $product->meta_title ?: ($product->title.' | '.config('cms.site_name_fa')),
@@ -83,6 +99,8 @@ class CourseController extends SiteController
             'product' => $product,
             'course' => $course,
             'isEnrolled' => $isEnrolled,
+            'license' => $license,
+            'spotUrl' => $spotUrl,
             'seo' => $seo,
             'structuredData' => [
                 $this->seo->courseSchema($product, $course),
@@ -93,6 +111,38 @@ class CourseController extends SiteController
                 ]),
             ],
         ]);
+    }
+
+    public function refreshLicense(string $slug): RedirectResponse
+    {
+        $product = ShopProduct::query()
+            ->where('slug', $slug)
+            ->where('type', ShopProduct::TYPE_COURSE)
+            ->with('course')
+            ->firstOrFail();
+
+        $course = $product->course;
+        $user = auth()->user();
+
+        if (! $user || ! $course || ! $user->isEnrolledIn($course)) {
+            abort(403);
+        }
+
+        if (! $course->spotplayer_course_id) {
+            return back()->with('error', 'این دوره به اسپات‌پلیر متصل نیست. با پشتیبانی تماس بگیرید.');
+        }
+
+        $license = $this->spotPlayer->issueLicense($user, $course);
+
+        if ($license->status === SpotplayerLicense::STATUS_ISSUED) {
+            return back()->with('success', 'دسترسی اسپات‌پلیر آماده شد.');
+        }
+
+        if ($license->status === SpotplayerLicense::STATUS_PENDING) {
+            return back()->with('success', 'دسترسی در حال آماده‌سازی است. چند لحظه دیگر دوباره امتحان کنید.');
+        }
+
+        return back()->with('error', 'صدور لایسنس ناموفق بود. لطفاً با پشتیبانی تماس بگیرید.');
     }
 
     public function learn(string $slug, ?string $lessonSlug = null): View|RedirectResponse
@@ -243,6 +293,10 @@ class CourseController extends SiteController
 
         $this->orders->enrollUser(auth()->user(), $product->course, null, \App\Models\CourseEnrollment::SOURCE_FREE);
 
-        return redirect()->route('courses.learn', $slug)->with('success', 'ثبت‌نام در دوره انجام شد.');
+        $message = $product->course?->spotplayer_course_id
+            ? 'ثبت‌نام انجام شد. دسترسی اسپات‌پلیر به‌زودی آماده می‌شود.'
+            : 'ثبت‌نام در دوره انجام شد.';
+
+        return redirect()->route('courses.show', $slug)->with('success', $message);
     }
 }

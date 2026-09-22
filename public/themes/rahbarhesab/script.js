@@ -985,3 +985,36 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll("[data-copy-license]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const value = button.getAttribute("data-copy-value") || "";
+      if (!value) return;
+
+      const label = button.textContent;
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(value);
+        } else {
+          const input = button
+            .closest(".course-detail-license-row")
+            ?.querySelector("input");
+          if (input) {
+            input.select();
+            document.execCommand("copy");
+          }
+        }
+        button.textContent = "کپی شد";
+        button.classList.add("is-copied");
+      } catch (_) {
+        button.textContent = "خطا";
+      }
+
+      window.setTimeout(() => {
+        button.textContent = label;
+        button.classList.remove("is-copied");
+      }, 1600);
+    });
+  });
+});

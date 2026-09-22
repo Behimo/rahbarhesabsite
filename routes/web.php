@@ -69,6 +69,7 @@ Route::controller(CourseController::class)->prefix('courses')->name('courses.')-
     // Authenticated student actions
     Route::middleware('auth')->group(function () {
         Route::get('/{slug}/enroll-free', 'enrollFree')->name('enroll-free');
+        Route::post('/{slug}/license/refresh', 'refreshLicense')->name('license.refresh');
         Route::get('/{slug}/learn/{lessonSlug?}', 'learn')->name('learn');
         Route::post('/{slug}/lessons/{lessonSlug}/complete', 'completeLesson')->name('lesson.complete');
         Route::get('/{slug}/lessons/{lessonSlug}/download', 'downloadLesson')->name('lesson.download');

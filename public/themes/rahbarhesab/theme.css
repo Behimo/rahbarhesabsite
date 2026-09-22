@@ -2441,3 +2441,124 @@ body.rh-theme select {
         transition: none;
     }
 }
+
+.course-detail-access-label {
+    margin: 0 0 10px;
+    color: var(--course-purple);
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.course-detail-access-state {
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #f4f0fa;
+    color: #4a3d5c;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.7;
+}
+
+.course-detail-access-state--error {
+    background: #fde8e8;
+    color: #9b1c1c;
+}
+
+.course-detail-cta--quiet {
+    background: #ede7fb;
+    color: var(--course-purple-2);
+}
+
+.course-detail-cta--quiet:hover {
+    background: #e0d4f8;
+    color: var(--course-purple);
+}
+
+.course-detail-access-secondary {
+    display: inline-flex;
+    margin-top: 10px;
+    color: var(--course-purple-2);
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.course-detail-access-secondary:hover {
+    color: var(--course-purple);
+}
+
+.course-detail-license {
+    margin-top: 14px;
+}
+
+.course-detail-license label {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--cd-muted);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.course-detail-license-row {
+    display: flex;
+    gap: 8px;
+}
+
+.course-detail-license-row input {
+    flex: 1;
+    min-width: 0;
+    height: 42px;
+    padding: 0 12px;
+    border: 1px solid var(--cd-line);
+    border-radius: 10px;
+    background: #faf8fc;
+    color: var(--cd-ink);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.course-detail-license-copy {
+    flex-shrink: 0;
+    min-width: 64px;
+    height: 42px;
+    padding: 0 12px;
+    border: 1px solid rgba(100, 58, 188, 0.28);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--course-purple-2);
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.course-detail-license-copy:hover,
+.course-detail-license-copy.is-copied {
+    background: var(--course-yellow);
+    border-color: var(--course-yellow);
+    color: var(--course-purple);
+}
+
+.course-detail-license-copy:focus-visible {
+    outline: 2px solid var(--course-yellow);
+    outline-offset: 2px;
+}
+
+.course-detail-access-steps {
+    margin: 14px 0 0;
+    padding: 0 1.1rem 0 0;
+    color: var(--cd-muted);
+    font-size: 12.5px;
+    font-weight: 700;
+    line-height: 1.85;
+}
+
+.course-detail-access-steps li + li {
+    margin-top: 2px;
+}
+
+.course-detail-access form {
+    margin: 0;
+}

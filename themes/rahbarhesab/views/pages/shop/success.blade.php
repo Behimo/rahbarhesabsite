@@ -20,7 +20,7 @@
                         @endif
                     </p>
                     @if ($license->spot_url)
-                        <a href="{{ $license->spot_url }}" class="text-teal-700 underline" target="_blank">باز کردن در اپ</a>
+                        <a href="{{ $license->spot_url }}" class="text-teal-700 underline" target="_blank" rel="noopener noreferrer">مشاهده در اسپات‌پلیر</a>
                     @endif
                 @endforeach
             </div>
