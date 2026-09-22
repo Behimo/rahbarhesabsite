@@ -17,6 +17,7 @@
     { "url": "admin/plugins", "name": "افزونه‌ها", "icon": "menu-icon tf-icons ti ti-plug", "slug": "admin.plugins" },
     { "menuHeader": "فروشگاه" },
     { "url": "admin/orders", "name": "سفارش‌ها", "icon": "menu-icon tf-icons ti ti-shopping-cart", "slug": "admin.orders" },
+    { "url": "admin/licenses", "name": "لایسنس‌ها", "icon": "menu-icon tf-icons ti ti-key", "slug": "admin.licenses" },
     { "url": "admin/coupons", "name": "کدهای تخفیف", "icon": "menu-icon tf-icons ti ti-discount-2", "slug": "admin.coupons" },
     { "url": "admin/redirects", "name": "ریدایرکت‌ها", "icon": "menu-icon tf-icons ti ti-arrow-forward", "slug": "admin.redirects" },
     { "url": "admin/users", "name": "کاربران", "icon": "menu-icon tf-icons ti ti-users", "slug": "admin.users" },

@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\HomeController as AdminHomeController;
 use App\Http\Controllers\Admin\ImportExportController;
+use App\Http\Controllers\Admin\LicenseController as AdminLicenseController;
 use App\Http\Controllers\Admin\MediaController as AdminMediaController;
 use App\Http\Controllers\Admin\MenuController as AdminMenuController;
 use App\Http\Controllers\Admin\MessageController as AdminMessageController;
@@ -263,6 +264,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/{order}/retry-licenses', 'retryLicenses')->name('retry-licenses');
             Route::post('/enroll', 'enroll')->name('enroll');
             Route::post('/enrollments/{enrollment}/revoke', 'revokeEnrollment')->name('enrollments.revoke');
+        });
+
+        Route::controller(AdminLicenseController::class)->prefix('licenses')->name('licenses.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/{license}', 'show')->name('show');
+            Route::post('/{license}/reissue', 'reissue')->name('reissue');
         });
 
         Route::resource('coupons', AdminCouponController::class)->except(['show']);

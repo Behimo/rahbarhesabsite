@@ -71,6 +71,7 @@ class Permission
             'admin.users.*' => self::MANAGE_USERS,
             'admin.courses.*' => self::MANAGE_COURSES,
             'admin.orders.*' => self::MANAGE_ORDERS,
+            'admin.licenses.*' => self::MANAGE_ORDERS,
             'admin.posts.*' => self::MANAGE_POSTS,
             'admin.pages.*' => self::MANAGE_PAGES,
             'admin.settings.*' => self::MANAGE_SETTINGS,

@@ -15,8 +15,16 @@ class SpotPlayerService
         return ! empty(config('cms.spotplayer.api_key'));
     }
 
-    public function issueLicense(User $user, Course $course, ?int $orderId = null): SpotplayerLicense
+    public function issueLicense(User $user, Course $course, ?int $orderId = null, bool $force = false): SpotplayerLicense
     {
+        $context = [
+            'user_id' => $user->id,
+            'course_id' => $course->id,
+            'order_id' => $orderId,
+            'spotplayer_course_id' => $course->spotplayer_course_id,
+            'force' => $force,
+        ];
+
         $license = SpotplayerLicense::query()->firstOrCreate(
             ['user_id' => $user->id, 'course_id' => $course->id],
             [
@@ -31,19 +39,55 @@ class SpotPlayerService
             $license->update(['order_id' => $orderId]);
         }
 
-        if ($license->status === SpotplayerLicense::STATUS_ISSUED && $license->license_key) {
+        if (! $force && $license->status === SpotplayerLicense::STATUS_ISSUED && $license->license_key) {
+            Log::channel('jobs')->info('SpotPlayer: لایسنس از قبل صادر شده', $context + [
+                'license_id' => $license->id,
+            ]);
+
             return $license;
         }
 
         $license->update(['status' => SpotplayerLicense::STATUS_PENDING]);
 
-        if (! $this->isConfigured() || ! $course->spotplayer_course_id) {
-            $license->update(['status' => SpotplayerLicense::STATUS_FAILED]);
+        if (! $this->isConfigured()) {
+            Log::channel('jobs')->error('SpotPlayer: API Key تنظیم نشده است', $context + [
+                'license_id' => $license->id,
+            ]);
 
-            return $license;
+            $license->update([
+                'status' => SpotplayerLicense::STATUS_FAILED,
+                'api_response' => [
+                    'error' => 'SPOTPLAYER_API_KEY is missing',
+                    'hint' => 'کلید API اسپات‌پلیر را در .env تنظیم کنید.',
+                ],
+                'last_verified_at' => now(),
+            ]);
+
+            return $license->fresh();
+        }
+
+        if (! $course->spotplayer_course_id) {
+            Log::channel('jobs')->error('SpotPlayer: دوره به اسپات‌پلیر متصل نیست', $context + [
+                'license_id' => $license->id,
+            ]);
+
+            $license->update([
+                'status' => SpotplayerLicense::STATUS_FAILED,
+                'api_response' => [
+                    'error' => 'course.spotplayer_course_id is empty',
+                    'hint' => 'در ویرایش دوره، شناسه دوره اسپات‌پلیر را وارد کنید.',
+                ],
+                'last_verified_at' => now(),
+            ]);
+
+            return $license->fresh();
         }
 
         try {
+            Log::channel('jobs')->info('SpotPlayer: درخواست صدور لایسنس', $context + [
+                'license_id' => $license->id,
+            ]);
+
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer '.config('cms.spotplayer.api_key'),
                 'Accept' => 'application/json',
@@ -75,15 +119,51 @@ class SpotPlayerService
                     'issued_at' => $key ? now() : null,
                     'last_verified_at' => now(),
                 ]);
+
+                if ($key) {
+                    Log::channel('jobs')->info('SpotPlayer: لایسنس صادر شد', $context + [
+                        'license_id' => $license->id,
+                        'has_key' => true,
+                    ]);
+                } else {
+                    Log::channel('jobs')->error('SpotPlayer: پاسخ موفق بدون license_key', $context + [
+                        'license_id' => $license->id,
+                        'response' => $data,
+                    ]);
+                }
             } else {
+                $body = $response->json() ?? ['raw' => $response->body()];
+
                 $license->update([
                     'status' => SpotplayerLicense::STATUS_FAILED,
-                    'api_response' => ['status' => $response->status(), 'body' => $response->json()],
+                    'api_response' => [
+                        'http_status' => $response->status(),
+                        'body' => $body,
+                    ],
+                    'last_verified_at' => now(),
+                ]);
+
+                Log::channel('jobs')->error('SpotPlayer: پاسخ ناموفق API', $context + [
+                    'license_id' => $license->id,
+                    'http_status' => $response->status(),
+                    'body' => $body,
                 ]);
             }
         } catch (\Throwable $e) {
-            Log::error('SpotPlayer license error', ['error' => $e->getMessage()]);
-            $license->update(['status' => SpotplayerLicense::STATUS_FAILED]);
+            Log::channel('jobs')->error('SpotPlayer: استثنای صدور لایسنس', $context + [
+                'license_id' => $license->id,
+                'error' => $e->getMessage(),
+                'exception' => $e::class,
+            ]);
+
+            $license->update([
+                'status' => SpotplayerLicense::STATUS_FAILED,
+                'api_response' => [
+                    'error' => $e->getMessage(),
+                    'exception' => $e::class,
+                ],
+                'last_verified_at' => now(),
+            ]);
 
             return $license->fresh();
         }
