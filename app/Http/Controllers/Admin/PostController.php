@@ -264,8 +264,17 @@ class PostController extends Controller
             'term_ids.*' => ['integer', 'exists:cms_taxonomy_terms,id'],
         ]);
 
-        $isPublished = $request->boolean('is_published');
+        $checkboxPublished = $request->boolean('is_published');
+        $requestedStatus = $validated['status'] ?? CmsPost::STATUS_DRAFT;
         $publishedAt = ! empty($validated['published_at']) ? $validated['published_at'] : null;
+
+        // Checkbox OR status select can publish. Default status=draft must not
+        // undo a checked "منتشر شود" (previous bug kept every new post as draft).
+        $isPublished = $checkboxPublished
+            || in_array($requestedStatus, [
+                CmsPost::STATUS_PUBLISHED,
+                CmsPost::STATUS_SCHEDULED,
+            ], true);
 
         if ($isPublished && $publishedAt && now()->lt($publishedAt)) {
             $status = CmsPost::STATUS_SCHEDULED;
@@ -276,28 +285,16 @@ class PostController extends Controller
             $status = CmsPost::STATUS_DRAFT;
         }
 
-        if (! empty($validated['status']) && in_array($validated['status'], [
-            CmsPost::STATUS_DRAFT,
-            CmsPost::STATUS_PUBLISHED,
-            CmsPost::STATUS_SCHEDULED,
-        ], true)) {
-            // Keep explicit status only when consistent with publish flag.
-            if ($validated['status'] === CmsPost::STATUS_DRAFT) {
-                $isPublished = false;
-                $status = CmsPost::STATUS_DRAFT;
-            }
-        }
-
         $body = $validated['body'] ?? '';
         $temp = new CmsPost(['body' => $body]);
 
         $validated['is_published'] = $isPublished;
         $validated['status'] = $status;
         $validated['published_at'] = $publishedAt;
-        $validated['category_id'] = $validated['category_id'] ?: null;
+        $validated['category_id'] = ($validated['category_id'] ?? null) ?: null;
         $validated['reading_time_minutes'] = $temp->estimateReadingTime();
-        $validated['author'] = $validated['author'] ?: config('cms.site_name_fa', 'راهبر حساب');
-        $validated['og_image'] = $validated['og_image'] ?: ($validated['featured_image'] ?? null);
+        $validated['author'] = ($validated['author'] ?? null) ?: config('cms.site_name_fa', 'راهبر حساب');
+        $validated['og_image'] = ($validated['og_image'] ?? null) ?: ($validated['featured_image'] ?? null);
 
         unset($validated['term_ids']);
 

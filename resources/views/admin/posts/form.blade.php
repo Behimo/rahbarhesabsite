@@ -118,7 +118,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">وضعیت</label>
-                        <select name="status" class="form-select">
+                        <select name="status" id="post-status" class="form-select">
                             @foreach ([
                                 'draft' => 'پیش‌نویس',
                                 'published' => 'منتشر شده',
@@ -127,7 +127,7 @@
                                 <option value="{{ $value }}" @selected(old('status', $post->status ?: 'draft') === $value)>{{ $label }}</option>
                             @endforeach
                         </select>
-                        <div class="form-text">تاریخ آینده + انتشار فعال = زمان‌بندی.</div>
+                        <div class="form-text">برای نمایش در سایت بلاگ، «منتشر شود» را فعال کنید.</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">تاریخ انتشار</label>
@@ -425,6 +425,22 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelector('#post-body').value = postEditor.getData();
         }
     });
+
+    const publishCheckbox = document.getElementById('is_published');
+    const statusSelect = document.getElementById('post-status');
+    if (publishCheckbox && statusSelect) {
+        publishCheckbox.addEventListener('change', () => {
+            if (publishCheckbox.checked && statusSelect.value === 'draft') {
+                statusSelect.value = 'published';
+            }
+            if (!publishCheckbox.checked) {
+                statusSelect.value = 'draft';
+            }
+        });
+        statusSelect.addEventListener('change', () => {
+            publishCheckbox.checked = statusSelect.value !== 'draft';
+        });
+    }
 });
 </script>
 @endsection
