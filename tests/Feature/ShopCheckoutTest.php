@@ -87,6 +87,36 @@ class ShopCheckoutTest extends TestCase
         $this->assertTrue($user->fresh()->isEnrolledIn($product->course));
     }
 
+    public function test_failed_payment_callback_redirects_to_failed_page(): void
+    {
+        $user = User::factory()->create();
+        $product = $this->paidCourse();
+
+        $this->actingAs($user)->post(route('cart.add', $product));
+
+        Http::fake([
+            'https://gateway.zibal.ir/v1/request' => Http::response(['result' => 100, 'trackId' => 888], 200),
+        ]);
+
+        $this->actingAs($user)->post(route('checkout.process'));
+        $order = Order::query()->first();
+
+        $this->actingAs($user)
+            ->get(route('checkout.callback', ['gateway' => 'zibal', 'trackId' => 888, 'success' => 0]))
+            ->assertRedirect(route('checkout.failed', $order));
+
+        $this->actingAs($user)
+            ->get(route('checkout.failed', $order))
+            ->assertOk()
+            ->assertSee('پرداخت ناموفق', false);
+
+        $this->assertDatabaseHas('cart_items', [
+            'user_id' => $user->id,
+            'shop_product_id' => $product->id,
+        ]);
+        $this->assertSame(Order::STATUS_FAILED, $order->fresh()->status);
+    }
+
     public function test_coupon_applies_on_checkout(): void
     {
         $user = User::factory()->create();

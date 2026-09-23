@@ -110,6 +110,7 @@ Route::controller(ShopController::class)->group(function () {
     Route::delete('/cart/coupon', 'removeCoupon')->name('cart.coupon.remove');
 
     Route::get('/checkout/callback', 'callback')->name('checkout.callback');
+    Route::get('/checkout/failed/{order?}', 'failed')->name('checkout.failed');
 
     Route::middleware('auth')->group(function () {
         Route::get('/checkout', 'checkout')->name('checkout.index');

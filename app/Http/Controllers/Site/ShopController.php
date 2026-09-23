@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Site;
 
 use App\Models\CartItem;
 use App\Models\Order;
+use App\Models\Payment;
 use App\Models\ShopProduct;
 use App\Models\SpotplayerLicense;
 use App\Services\CartService;
@@ -176,7 +177,11 @@ class ShopController extends SiteController
             return redirect()->route('checkout.success', $payment->order);
         }
 
-        return redirect()->route('cart.index')->with('error', 'پرداخت ناموفق یا لغو شد. سبد خرید شما حفظ شده است.');
+        $order = $this->findOrderFromCallback($gateway, $request->query());
+
+        return redirect()
+            ->route('checkout.failed', array_filter(['order' => $order]))
+            ->with('error', 'پرداخت ناموفق یا لغو شد. سبد خرید شما حفظ شده است.');
     }
 
     public function success(Order $order): View|RedirectResponse
@@ -193,7 +198,32 @@ class ShopController extends SiteController
             ->where('order_id', $order->id)
             ->get();
 
-        return $this->render('pages.shop.success', compact('order', 'licenses'));
+        return $this->render('pages.shop.success', [
+            'order' => $order,
+            'licenses' => $licenses,
+            'seo' => $this->seo->meta(['title' => 'پرداخت موفق']),
+        ]);
+    }
+
+    public function failed(?Order $order = null): View
+    {
+        if ($order && auth()->check() && $order->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        if ($order && ! auth()->check()) {
+            $order = null;
+        }
+
+        if ($order) {
+            $order->load(['payment']);
+        }
+
+        return $this->render('pages.shop.failed', [
+            'order' => $order,
+            'message' => session('error') ?? 'پرداخت ناموفق یا لغو شد. سبد خرید شما حفظ شده است.',
+            'seo' => $this->seo->meta(['title' => 'پرداخت ناموفق']),
+        ]);
     }
 
     /** @return array<string, mixed> */
@@ -206,6 +236,22 @@ class ShopController extends SiteController
         $total = max(0, $subtotal - $discount);
 
         return compact('items', 'subtotal', 'coupon', 'discount', 'total');
+    }
+
+    /** @param  array<string, mixed>  $query */
+    private function findOrderFromCallback(string $gateway, array $query): ?Order
+    {
+        $authority = $query['trackId'] ?? $query['Authority'] ?? $query['authority'] ?? null;
+
+        if (! $authority) {
+            return null;
+        }
+
+        return Payment::query()
+            ->where('gateway', $gateway)
+            ->where('authority', (string) $authority)
+            ->first()
+            ?->order;
     }
 
     private function authorizeCartItem(CartItem $item): void
