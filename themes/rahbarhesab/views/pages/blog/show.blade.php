@@ -1,42 +1,78 @@
 @extends('theme::layouts.site')
 
 @section('page')
-<article class="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
-    <nav class="mb-6 text-sm text-slate-500">
-        <a href="{{ route('home') }}" class="hover:text-teal-700">خانه</a>
-        <span class="mx-2">/</span>
-        <a href="{{ route('blog.index') }}" class="hover:text-teal-700">بلاگ</a>
-        <span class="mx-2">/</span>
-        <span>{{ $post->title }}</span>
-    </nav>
+<div class="blog-page blog-page--article">
+    <article class="blog-article">
+        <div class="blog-article__shell">
+            <nav class="blog-breadcrumb" aria-label="مسیر صفحه">
+                <a href="{{ route('home') }}">خانه</a>
+                <span class="blog-breadcrumb__sep" aria-hidden="true">/</span>
+                <a href="{{ route('blog.index') }}">اخبار و مقالات</a>
+                @if ($post->category)
+                    <span class="blog-breadcrumb__sep" aria-hidden="true">/</span>
+                    <a href="{{ route('blog.index', ['category' => $post->category->slug]) }}">{{ $post->category->name }}</a>
+                @endif
+            </nav>
 
-    <div class="rh-card p-6 sm:p-8">
-        @if ($post->category)
-            <span class="text-sm font-semibold text-teal-700">{{ $post->category->name }}</span>
-        @endif
-        <h1 class="mt-2 mb-4 text-3xl font-extrabold text-slate-800">{{ $post->title }}</h1>
-        <div class="mb-6 flex flex-wrap gap-4 border-b border-slate-200 pb-4 text-sm text-slate-500">
-            @if ($post->author)<span>{{ $post->author }}</span>@endif
-            @if ($post->published_at)<time>{{ $post->published_at->format('Y/m/d') }}</time>@endif
-            <span>{{ number_format($post->views) }} بازدید</span>
+            <header class="blog-article__header">
+                @if ($post->category)
+                    <a href="{{ route('blog.index', ['category' => $post->category->slug]) }}" class="blog-tag">{{ $post->category->name }}</a>
+                @endif
+                <h1 class="blog-article__title">{{ $post->title }}</h1>
+                <div class="blog-article__byline">
+                    @if ($post->author)
+                        <span class="blog-article__author">{{ $post->author }}</span>
+                    @endif
+                    @if ($post->published_at)
+                        <time datetime="{{ $post->published_at->toDateString() }}">{{ $post->published_at->format('Y/m/d') }}</time>
+                    @endif
+                    <span>{{ number_format($post->views) }} بازدید</span>
+                </div>
+            </header>
+
+            @if ($post->featured_image)
+                <figure class="blog-article__figure">
+                    <img src="{{ $post->featured_image }}" alt="{{ $post->title }}" loading="eager" decoding="async">
+                </figure>
+            @endif
+
+            <div class="blog-article__content prose prose-slate">
+                {!! $post->body !!}
+            </div>
         </div>
-        @if ($post->featured_image)
-            <img src="{{ $post->featured_image }}" alt="{{ $post->title }}" class="mb-8 w-full rounded-xl">
-        @endif
-        <div class="prose prose-slate max-w-none leading-8">{!! $post->body !!}</div>
-    </div>
+    </article>
 
     @if ($related->isNotEmpty())
-        <section class="mt-12">
-            <h2 class="mb-4 text-xl font-bold text-slate-800">مطالب مرتبط</h2>
-            <div class="grid gap-4 sm:grid-cols-3">
-                @foreach ($related as $item)
-                    <a href="{{ route('blog.show', $item->slug) }}" class="rh-card block p-4 hover:shadow-md">
-                        <h3 class="font-semibold text-slate-800">{{ $item->title }}</h3>
-                    </a>
-                @endforeach
+        <section class="blog-related" aria-labelledby="blog-related-heading">
+            <div class="blog-shell">
+                <div class="blog-related__head">
+                    <h2 id="blog-related-heading">مطالب مرتبط</h2>
+                    <a href="{{ route('blog.index') }}" class="blog-related__all">همه مقالات</a>
+                </div>
+                <div class="blog-related__grid">
+                    @foreach ($related as $item)
+                        <a href="{{ route('blog.show', $item->slug) }}" class="blog-related__card">
+                            <div class="blog-related__media">
+                                @if ($item->featured_image)
+                                    <img src="{{ $item->featured_image }}" alt="" loading="lazy" decoding="async">
+                                @else
+                                    <div class="blog-card__fallback blog-card__fallback--sm" aria-hidden="true">
+                                        <svg viewBox="0 0 40 40" fill="none">
+                                            <path d="M10 8h16l6 6v18H10V8z" stroke="currentColor" stroke-width="1.6"/>
+                                            <path d="M26 8v6h6M14 20h12M14 25h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                                        </svg>
+                                    </div>
+                                @endif
+                            </div>
+                            <h3>{{ $item->title }}</h3>
+                            @if ($item->published_at)
+                                <time datetime="{{ $item->published_at->toDateString() }}">{{ $item->published_at->format('Y/m/d') }}</time>
+                            @endif
+                        </a>
+                    @endforeach
+                </div>
             </div>
         </section>
     @endif
-</article>
+</div>
 @endsection

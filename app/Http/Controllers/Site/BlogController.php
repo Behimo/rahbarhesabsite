@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Site;
 
+use App\Models\CmsCategory;
 use App\Models\CmsPost;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -16,17 +17,33 @@ class BlogController extends SiteController
             'keywords' => 'بلاگ راهبر حساب, حسابداری, مالیات, آموزش',
         ]);
 
+        $activeCategory = $request->string('category')->toString() ?: null;
+
         $posts = CmsPost::query()
             ->published()
             ->with('category')
-            ->when($request->category, fn ($q, $cat) => $q->whereHas('category', fn ($c) => $c->where('slug', $cat)))
+            ->when($activeCategory, fn ($q) => $q->whereHas('category', fn ($c) => $c->where('slug', $activeCategory)))
             ->orderByDesc('published_at')
             ->orderByDesc('created_at')
-            ->paginate(9);
+            ->paginate(9)
+            ->withQueryString();
+
+        $categories = CmsCategory::query()
+            ->whereHas('posts', fn ($q) => $q->published())
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        $featured = $posts->isNotEmpty() && $posts->currentPage() === 1
+            ? $posts->getCollection()->first()
+            : null;
 
         return $this->render('pages.blog.index', [
             'seo' => $seo,
             'posts' => $posts,
+            'categories' => $categories,
+            'activeCategory' => $activeCategory,
+            'featured' => $featured,
             'structuredData' => [
                 $this->seo->breadcrumbSchema([
                     ['name' => 'خانه', 'url' => route('home')],
