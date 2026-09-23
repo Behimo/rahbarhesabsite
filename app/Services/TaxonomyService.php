@@ -40,6 +40,30 @@ class TaxonomyService
             ]
         );
 
+        CmsTaxonomy::query()->firstOrCreate(
+            ['slug' => 'post-tag'],
+            [
+                'name' => 'برچسب بلاگ',
+                'type' => 'tag',
+                'object_types' => ['cms_post'],
+            ]
+        );
+
+        $postTagTaxonomy = CmsTaxonomy::query()->where('slug', 'post-tag')->first();
+        if ($postTagTaxonomy && $postTagTaxonomy->terms()->count() === 0) {
+            foreach ([
+                ['slug' => 'tax', 'name' => 'مالیات'],
+                ['slug' => 'accounting', 'name' => 'حسابداری'],
+                ['slug' => 'payroll', 'name' => 'حقوق و دستمزد'],
+                ['slug' => 'vat', 'name' => 'ارزش افزوده'],
+            ] as $term) {
+                CmsTaxonomyTerm::query()->firstOrCreate(
+                    ['taxonomy_id' => $postTagTaxonomy->id, 'slug' => $term['slug']],
+                    ['name' => $term['name']]
+                );
+            }
+        }
+
         if (CmsCategory::query()->exists() && $courseTax->terms()->count() === 0) {
             foreach (CmsCategory::query()->get() as $legacy) {
                 CmsTaxonomyTerm::query()->firstOrCreate(

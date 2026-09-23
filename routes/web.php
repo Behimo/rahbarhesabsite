@@ -192,7 +192,20 @@ Route::prefix('admin')->name('admin.')->group(function () {
         });
 
         // Blog Posts & Taxonomies
-        Route::resource('posts', AdminPostController::class)->except(['show']);
+        Route::controller(AdminPostController::class)->prefix('posts')->name('posts.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/create', 'create')->name('create');
+            Route::post('/', 'store')->name('store');
+            Route::post('/{post}/duplicate', 'duplicate')->name('duplicate');
+            Route::get('/{post}/preview', 'preview')->name('preview');
+            Route::get('/{post}/revisions', 'revisions')->name('revisions');
+            Route::post('/{post}/revisions/{revision}/restore', 'restoreRevision')->name('revisions.restore');
+            Route::post('/{id}/restore', 'restore')->name('restore');
+            Route::delete('/{id}/force', 'forceDestroy')->name('force-destroy');
+            Route::get('/{post}/edit', 'edit')->name('edit');
+            Route::put('/{post}', 'update')->name('update');
+            Route::delete('/{post}', 'destroy')->name('destroy');
+        });
         Route::resource('categories', AdminCategoryController::class)->except(['create', 'edit', 'show']);
 
         Route::controller(AdminTaxonomyController::class)->group(function () {

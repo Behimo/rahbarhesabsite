@@ -2,6 +2,14 @@
 
 @section('page')
 <div class="blog-page blog-page--article">
+    @if (!empty($isPreview))
+        <div class="blog-shell" style="padding-top:16px;">
+            <div class="alert alert-warning mb-0" role="status">
+                حالت پیش‌نمایش — این مطلب ممکن است هنوز منتشر نشده باشد.
+            </div>
+        </div>
+    @endif
+
     <article class="blog-article">
         <div class="blog-article__shell">
             <nav class="blog-breadcrumb" aria-label="مسیر صفحه">
@@ -26,19 +34,30 @@
                     @if ($post->published_at)
                         <time datetime="{{ $post->published_at->toDateString() }}">{{ $post->published_at->format('Y/m/d') }}</time>
                     @endif
+                    @if ($post->reading_time_minutes)
+                        <span>{{ fa_digits($post->reading_time_minutes) }} دقیقه مطالعه</span>
+                    @endif
                     <span>{{ number_format($post->views) }} بازدید</span>
                 </div>
             </header>
 
             @if ($post->featured_image)
                 <figure class="blog-article__figure">
-                    <img src="{{ $post->featured_image }}" alt="{{ $post->title }}" loading="eager" decoding="async">
+                    <img src="{{ $post->featured_image }}" alt="{{ $post->featured_image_alt ?: $post->title }}" loading="eager" decoding="async">
                 </figure>
             @endif
 
             <div class="blog-article__content prose prose-slate">
                 {!! $post->body !!}
             </div>
+
+            @if ($post->relationLoaded('taxonomyTerms') ? $post->taxonomyTerms->isNotEmpty() : $post->taxonomyTerms()->exists())
+                <div class="blog-article__tags" style="margin-top:28px;display:flex;flex-wrap:wrap;gap:8px;">
+                    @foreach ($post->taxonomyTerms as $term)
+                        <span class="blog-tag blog-tag--quiet">{{ $term->name }}</span>
+                    @endforeach
+                </div>
+            @endif
         </div>
     </article>
 

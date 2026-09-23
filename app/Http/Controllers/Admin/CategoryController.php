@@ -23,7 +23,10 @@ class CategoryController extends Controller
             'slug' => ['required', 'string', 'max:80', 'alpha_dash', 'unique:cms_categories,slug'],
             'name' => ['required', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:500'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
         ]);
+
+        $validated['sort_order'] = $validated['sort_order'] ?? ((int) CmsCategory::query()->max('sort_order') + 1);
 
         CmsCategory::query()->create($validated);
 

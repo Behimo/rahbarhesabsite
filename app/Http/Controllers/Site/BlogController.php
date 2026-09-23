@@ -55,7 +55,7 @@ class BlogController extends SiteController
 
     public function show(string $slug): View
     {
-        $post = CmsPost::query()->published()->where('slug', $slug)->with('category')->firstOrFail();
+        $post = CmsPost::query()->published()->where('slug', $slug)->with(['category', 'taxonomyTerms'])->firstOrFail();
 
         $post->increment('views');
 

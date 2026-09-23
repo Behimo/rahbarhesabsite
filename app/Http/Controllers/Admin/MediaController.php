@@ -12,9 +12,24 @@ use Illuminate\View\View;
 
 class MediaController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View|JsonResponse
     {
         $media = CmsMedia::query()->latest()->paginate(24);
+
+        if ($request->expectsJson() || $request->boolean('json')) {
+            return response()->json([
+                'data' => $media->getCollection()->map(fn (CmsMedia $item) => [
+                    'id' => $item->id,
+                    'url' => $item->url(),
+                    'filename' => $item->filename,
+                    'alt' => $item->alt,
+                    'is_image' => $item->isImage(),
+                ]),
+                'next_page_url' => $media->nextPageUrl(),
+                'current_page' => $media->currentPage(),
+                'last_page' => $media->lastPage(),
+            ]);
+        }
 
         return view('admin.media.index', compact('media'));
     }
