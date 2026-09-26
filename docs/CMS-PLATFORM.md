@@ -11,7 +11,7 @@
 - **اسپات‌پلیر** — صدور لایسنس با صف و retry
 - **مهاجرت وردپرس** — `wp:migrate-users|courses|orders|audit` روی بکاپ `WP_DB_*`
 - **قالب‌ها** — پوشه `themes/{name}/views`
-- **افزونه‌ها** — پوشه `plugins/{Name}/` با `plugin.json` و Hook system
+- **افزونه‌ها** — پوشه `plugins/{Name}/` با `plugin.json` و ServiceProvider
 
 ## نصب
 
@@ -82,12 +82,7 @@ plugins/MyPlugin/
   MyPluginServiceProvider.php
 ```
 
-نمونه در `plugins/Example/`. از `App\Support\Hook` برای actions و filters استفاده کنید:
-
-```php
-Hook::addAction('order.fulfilled', fn ($order) => ...);
-Hook::addFilter('cms.nav.links', fn (array $links) => $links);
-```
+نمونه در `plugins/Example/`. ServiceProvider افزونهٔ فعال موقع boot ثبت می‌شود.
 
 ## مسیرهای اصلی
 

@@ -11,7 +11,6 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\ShopProduct;
 use App\Models\User;
-use App\Support\Hook;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -65,8 +64,6 @@ class OrderService
                     ],
                 ]);
             }
-
-            Hook::doAction('order.created', $order);
 
             return $order->load('items.product');
         });
@@ -122,11 +119,7 @@ class OrderService
             foreach ($product->relatedCourses() as $course) {
                 $this->enrollUser($order->user, $course, $order, CourseEnrollment::SOURCE_PURCHASE);
             }
-
-            Hook::doAction('order.item.fulfilled', $order, $item);
         }
-
-        Hook::doAction('order.fulfilled', $order);
     }
 
     public function enrollUser(
@@ -159,8 +152,6 @@ class OrderService
         if ($course->spotplayer_course_id) {
             IssueSpotplayerLicenseJob::dispatch($user->id, $course->id, $order?->id);
         }
-
-        Hook::doAction('course.enrolled', $user, $course, $enrollment);
 
         return $enrollment;
     }

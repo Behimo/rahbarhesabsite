@@ -55,8 +55,7 @@ return [
     | Custom page builder blocks
     |--------------------------------------------------------------------------
     |
-    | Add your own block classes here, or register them via Hook:
-    | Hook::addFilter('cms.blocks.classes', fn ($classes) => [...$classes, MyBlock::class]);
+    | Add your own block classes here.
     |
     */
     'blocks' => [

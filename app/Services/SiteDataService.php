@@ -18,7 +18,7 @@ class SiteDataService
         $menuLinks = $menuService->linksForLocation($location);
 
         if (!empty($menuLinks)) {
-            return \App\Support\Hook::applyFilters('cms.nav.links', $this->normalizeNavLinks($menuLinks));
+            return $this->normalizeNavLinks($menuLinks);
         }
 
         $links = [
@@ -74,7 +74,7 @@ class SiteDataService
             ];
         }
 
-        return \App\Support\Hook::applyFilters('cms.nav.links', $links);
+        return $links;
     }
 
     public function pageContent(string $slug, array $defaults = []): array

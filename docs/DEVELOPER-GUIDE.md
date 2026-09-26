@@ -16,30 +16,13 @@
 
 1. کلاس جدید بسازید که `AbstractBlock` را extend کند.
 2. view مربوطه را در `resources/views/blocks/` اضافه کنید.
-3. کلاس را در `config/cms.php` → `blocks` ثبت کنید، **یا** از Hook استفاده کنید.
+3. کلاس را در `config/cms.php` → `blocks` ثبت کنید.
 
 ```php
 // config/cms.php
 'blocks' => [
     \App\Blocks\PricingBlock::class,
 ],
-```
-
-### روش ۲ — از طریق Hook (افزونه)
-
-```php
-use App\Support\Hook;
-use App\Blocks\PricingBlock;
-
-Hook::addFilter('cms.blocks.classes', function (array $classes) {
-    $classes[] = PricingBlock::class;
-    return $classes;
-});
-
-// یا ثبت مستقیم:
-Hook::addAction('cms.blocks.boot', function ($registry) {
-    $registry->register('pricing', PricingBlock::class);
-});
 ```
 
 ### ساختار schema
@@ -87,15 +70,6 @@ public function schema(): array
 1. پوشه `plugins/{Slug}/` با `plugin.json` و ServiceProvider.
 2. `php artisan cms:discover`
 3. از پنل `/admin/plugins` فعال کنید.
-
-## Hook ها
-
-```php
-\App\Support\Hook::addFilter('cms.nav.links', fn ($links) => $links);
-\App\Support\Hook::addAction('course.enrolled', fn ($user, $course) => null);
-\App\Support\Hook::addFilter('cms.blocks.classes', fn ($classes) => $classes);
-\App\Support\Hook::addAction('cms.blocks.boot', fn ($registry) => null);
-```
 
 ## REST API
 

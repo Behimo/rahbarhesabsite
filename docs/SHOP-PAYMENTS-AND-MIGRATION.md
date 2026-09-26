@@ -69,8 +69,6 @@ Money::tomanToRials($toman); // × 10
 
 `course_ids` از `ShopProduct::relatedCourses()` می‌آید (دوره تکی یا آیتم‌های باندل `course_bundle_items`).
 
-هوک: `order.created`.
-
 ---
 
 ## پرداخت موفق و تحویل
@@ -84,8 +82,6 @@ Money::tomanToRials($toman); // × 10
 5. `fulfill()` برای هر محصول، همه دوره‌های مرتبط را enroll می‌کند (`source=purchase`).
 6. بعد از تراکنش سبد کاربر را خالی می‌کند.
 7. فیلدهای شاپرک روی `payments` به‌روز می‌شود اگر آرایه آمده باشد.
-
-هوک‌ها: `order.item.fulfilled`، `order.fulfilled`، `course.enrolled`.
 
 انقضای ثبت‌نام: `CMS_ENROLLMENT_MONTHS` (پیش‌فرض ۱۲). مقدار `0` یعنی بدون انقضا.
 
