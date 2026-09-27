@@ -5,76 +5,72 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\CmsPage;
 use App\Services\HomeContentService;
+use App\Services\HomePageDefaults;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 
 class HomeController extends Controller
 {
     public function __construct(private HomeContentService $homeContent) {}
 
-    public function edit(): View|\Illuminate\Http\RedirectResponse
+    public function edit(HomePageDefaults $defaults): RedirectResponse
     {
-        $homePage = CmsPage::query()->where('slug', 'home')->first();
+        $page = CmsPage::query()->firstOrCreate(
+            ['slug' => 'home'],
+            [
+                'title' => 'صفحه اصلی',
+                'is_published' => true,
+                'is_system' => true,
+                'template' => 'system',
+                'status' => 'published',
+                'sort_order' => 1,
+            ]
+        );
 
-        if ($homePage) {
-            return redirect()->route('admin.pages.builder', $homePage);
+        if (empty($page->builder_content['blocks'])) {
+            $page->update([
+                'builder_enabled' => true,
+                'builder_content' => $defaults->builderContent(),
+            ]);
         }
 
-        return view('admin.home.edit', [
-            'content' => $this->homeContent->all(),
-        ]);
+        return redirect()->route('admin.pages.builder', $page);
     }
 
     public function update(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'hero_eyebrow' => ['nullable', 'string', 'max:200'],
-            'hero_title_line1' => ['nullable', 'string', 'max:100'],
-            'hero_rotate_words' => ['nullable', 'string'],
-            'hero_title_line2' => ['nullable', 'string', 'max:100'],
-            'hero_lead' => ['nullable', 'string', 'max:500'],
-            'hero_cta_primary' => ['nullable', 'string', 'max:50'],
-            'hero_cta_secondary' => ['nullable', 'string', 'max:80'],
-            'hero_chips' => ['nullable', 'string'],
-            'hero_pills' => ['nullable', 'array'],
-            'hero_pills.*.title' => ['nullable', 'string', 'max:80'],
-            'hero_pills.*.text' => ['nullable', 'string', 'max:200'],
-            'stats' => ['nullable', 'array'],
-            'stats.*.value' => ['nullable', 'string', 'max:30'],
-            'stats.*.label' => ['nullable', 'string', 'max:50'],
-            'stats.*.hint' => ['nullable', 'string', 'max:80'],
-            'partners' => ['nullable', 'string'],
-            'testimonials' => ['nullable', 'array'],
-            'testimonials.*.name' => ['nullable', 'string', 'max:80'],
-            'testimonials.*.role' => ['nullable', 'string', 'max:120'],
-            'testimonials.*.text' => ['nullable', 'string', 'max:500'],
-            'cta_title' => ['nullable', 'string', 'max:100'],
-            'cta_subtitle' => ['nullable', 'string', 'max:300'],
+            'heading_small' => ['nullable', 'string', 'max:200'],
+            'heading' => ['nullable', 'string', 'max:300'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'banner_image' => ['nullable', 'string', 'max:500'],
+            'courses_title' => ['nullable', 'string', 'max:200'],
+            'free_courses_title' => ['nullable', 'string', 'max:200'],
+            'news_title' => ['nullable', 'string', 'max:200'],
+            'app_download_url' => ['nullable', 'string', 'max:500'],
+            'faqs' => ['nullable', 'array', 'max:12'],
+            'faqs.*.q' => ['nullable', 'string', 'max:300'],
+            'faqs.*.a' => ['nullable', 'string', 'max:1000'],
+            'faqs.*.href' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $content = [
-            'hero' => [
-                'eyebrow' => $validated['hero_eyebrow'] ?? '',
-                'title_line1' => $validated['hero_title_line1'] ?? '',
-                'rotate_words' => array_values(array_filter(array_map('trim', explode("\n", $validated['hero_rotate_words'] ?? '')))),
-                'title_line2' => $validated['hero_title_line2'] ?? '',
-                'lead' => $validated['hero_lead'] ?? '',
-                'cta_primary' => $validated['hero_cta_primary'] ?? '',
-                'cta_secondary' => $validated['hero_cta_secondary'] ?? '',
-                'chips' => array_values(array_filter(array_map('trim', explode("\n", $validated['hero_chips'] ?? '')))),
-                'pills' => array_values(array_filter($validated['hero_pills'] ?? [], fn ($p) => ! empty($p['title']))),
-            ],
-            'stats' => array_values(array_filter($validated['stats'] ?? [], fn ($s) => ! empty($s['value']))),
-            'partners' => array_values(array_filter(array_map('trim', explode("\n", $validated['partners'] ?? '')))),
-            'testimonials' => array_values(array_filter($validated['testimonials'] ?? [], fn ($t) => ! empty($t['text']))),
-            'cta' => [
-                'title' => $validated['cta_title'] ?? '',
-                'subtitle' => $validated['cta_subtitle'] ?? '',
-            ],
-        ];
+        $faqs = array_values(array_filter($validated['faqs'] ?? [], fn ($faq) => ! empty($faq['q'])));
 
-        $this->homeContent->save($content);
+        $this->homeContent->save([
+            'about' => [
+                'heading_small' => $validated['heading_small'] ?? '',
+                'heading' => $validated['heading'] ?? '',
+                'description' => $validated['description'] ?? '',
+                'banner_image' => $validated['banner_image'] ?? '',
+            ],
+            'sections' => [
+                'courses_title' => $validated['courses_title'] ?? '',
+                'free_courses_title' => $validated['free_courses_title'] ?? '',
+                'news_title' => $validated['news_title'] ?? '',
+            ],
+            'app_download_url' => $validated['app_download_url'] ?? '',
+            'faqs' => $faqs,
+        ]);
 
         return back()->with('success', 'صفحه اصلی ذخیره شد.');
     }

@@ -32,15 +32,15 @@ abstract class AbstractBlock implements BlockInterface
         return view($view, $data)->render();
     }
 
-    /** Resolve block view: active theme first, then generic fallback. */
+    /** Page sections render only inside the site theme. There is no second theme fallback. */
     protected function blockView(string $name, array $data = []): string
     {
         $themeView = 'theme::blocks.'.$name;
 
-        if (View::exists($themeView)) {
-            return view($themeView, $data)->render();
+        if (! View::exists($themeView)) {
+            throw new \InvalidArgumentException("Page block [{$name}] has no view in the site theme.");
         }
 
-        return view('blocks.'.$name, $data)->render();
+        return view($themeView, $data)->render();
     }
 }

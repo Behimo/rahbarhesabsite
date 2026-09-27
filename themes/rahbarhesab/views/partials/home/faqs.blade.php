@@ -12,7 +12,7 @@
             <div class="faq-viewport">
                 <div class="faq-track">
                     @foreach ($faqs as $faq)
-                        <a href="{{ $faq['href'] ?? route('blog.index') }}" class="faq-card">
+                        <a href="{{ $faq['href'] ?: route('blog.index') }}" class="faq-card">
                             <div class="faq-icon">
                                 <svg viewBox="0 0 80 80">
                                     <circle cx="40" cy="40" r="27" />

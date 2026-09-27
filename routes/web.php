@@ -174,7 +174,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('home', [AdminHomeController::class, 'edit'])->name('home.edit');
         Route::put('home', [AdminHomeController::class, 'update'])->name('home.update');
 
-        // Pages & Visual Page Builder
         Route::controller(AdminPageController::class)->prefix('pages')->name('pages.')->group(function () {
             Route::get('/', 'index')->name('index');
             Route::get('/create', 'create')->name('create');
