@@ -7,6 +7,7 @@ use App\Models\CmsPage;
 use App\Models\CmsPageRevision;
 use App\Services\BlockRegistry;
 use App\Services\BlockRenderer;
+use App\Services\BuilderCanvasRenderer;
 use App\Services\CacheService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -18,15 +19,20 @@ class PageBuilderController extends Controller
     public function __construct(
         private BlockRegistry $registry,
         private BlockRenderer $renderer,
+        private BuilderCanvasRenderer $canvas,
         private CacheService $cache,
     ) {}
 
     public function edit(CmsPage $page): View
     {
+        $blocks = $this->registry->all();
+        $builderContent = $this->canvas->normalize($page->builder_content ?? ['blocks' => []], $blocks);
+
         return view('admin.pages.builder', [
             'page' => $page,
-            'blocks' => $this->registry->all(),
-            'builderContent' => $page->builder_content ?? ['blocks' => []],
+            'blocks' => $blocks,
+            'builderContent' => $builderContent,
+            'canvasHtml' => $this->canvas->render($builderContent, $blocks),
         ]);
     }
 

@@ -24,6 +24,19 @@
     .layout-nested-body { padding: .75rem; border-top: 1px solid var(--bs-border-color); }
     .layout-nested-block.collapsed .layout-nested-body { display: none; }
     .layout-add-block { display: flex; gap: .5rem; align-items: center; margin-top: .5rem; }
+    /* فونت آیکون دیر لود می‌شود. بدون جعبهٔ ثابت، دکمه‌ها با transition:all و scale قالب می‌لرزند. */
+    #builder-form .ti {
+        width: 1.25rem;
+        height: 1.25rem;
+        flex: 0 0 1.25rem;
+        overflow: hidden;
+        line-height: 1;
+        text-align: center;
+    }
+    #builder-form .btn {
+        transform: none;
+        transition: color .15s ease, background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+    }
 </style>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -65,9 +78,9 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span class="fw-semibold">محتوای صفحه</span>
-                    <span class="badge bg-label-primary" id="block-count">۰ بلوک</span>
+                    <span class="badge bg-label-primary" id="block-count">{{ count($builderContent['blocks'] ?? []) }} بلوک</span>
                 </div>
-                <div class="card-body" id="builder-canvas"></div>
+                <div class="card-body" id="builder-canvas">{!! $canvasHtml !!}</div>
             </div>
             <div class="d-flex gap-2 mt-3">
                 <button type="submit" class="btn btn-success">
@@ -640,20 +653,10 @@ document.getElementById('preview-builder').addEventListener('click', async () =>
     previewEl.innerHTML = data.html || '<p class="text-muted small">محتوایی برای نمایش نیست.</p>';
 });
 
-if (!builderContent.blocks?.length) {
+if (!builderContent.blocks) {
     builderContent.blocks = [];
-} else {
-    builderContent.blocks = builderContent.blocks.map(block => {
-        const merged = { ...getDefaultSettings(block.type), ...(block.settings || {}) };
-
-        if (block.type === 'columns') {
-            return { type: block.type, settings: normalizeColumnsSettings(merged) };
-        }
-
-        return { type: block.type, settings: merged };
-    });
 }
 
-renderCanvas();
+syncInput();
 </script>
 @endsection
