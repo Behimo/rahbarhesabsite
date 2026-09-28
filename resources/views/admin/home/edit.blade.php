@@ -8,10 +8,6 @@
     <p class="text-muted mb-0">چیدمان صفحه ثابت است. اینجا فقط متن معرفی، عنوان بخش‌ها و سوالات پرتکرار عوض می‌شود. دوره‌ها از فهرست دوره‌ها و اخبار از بلاگ می‌آیند.</p>
 </div>
 
-@if (session('success'))
-    <div class="alert alert-success">{{ session('success') }}</div>
-@endif
-
 <form method="POST" action="{{ route('admin.home.update') }}">
     @csrf @method('PUT')
 

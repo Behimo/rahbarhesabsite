@@ -8,10 +8,6 @@
     <h4 class="mt-2 mb-0">سفارش {{ $order->order_number }}</h4>
 </div>
 
-@if (session('success'))
-    <div class="alert alert-success">{{ session('success') }}</div>
-@endif
-
 <div class="d-flex flex-wrap gap-2 mb-4">
     @unless ($order->isPaid())
         <form method="POST" action="{{ route('admin.orders.mark-paid', $order) }}" onsubmit="return confirm('سفارش پرداخت‌شده شود و دسترسی صادر گردد؟')">

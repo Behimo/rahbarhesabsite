@@ -5,10 +5,6 @@
 @section('content')
 <h4 class="mb-4">ریدایرکت‌های ۳۰۱/۳۰۲</h4>
 
-@if (session('success'))
-    <div class="alert alert-success">{{ session('success') }}</div>
-@endif
-
 <div class="card mb-4">
     <div class="card-header">افزودن ریدایرکت</div>
     <div class="card-body">

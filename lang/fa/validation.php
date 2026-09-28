@@ -1,0 +1,35 @@
+<?php
+
+return [
+    'accepted' => ':attribute باید پذیرفته شود.',
+    'array' => ':attribute باید یک لیست باشد.',
+    'boolean' => ':attribute نامعتبر است.',
+    'confirmed' => 'تکرار :attribute مطابقت ندارد.',
+    'date' => ':attribute باید یک تاریخ معتبر باشد.',
+    'email' => ':attribute باید یک ایمیل معتبر باشد.',
+    'exists' => ':attribute انتخاب‌شده معتبر نیست.',
+    'file' => ':attribute باید یک فایل باشد.',
+    'image' => ':attribute باید یک تصویر باشد.',
+    'in' => ':attribute انتخاب‌شده معتبر نیست.',
+    'integer' => ':attribute باید عدد صحیح باشد.',
+    'max' => [
+        'array' => ':attribute نباید بیشتر از :max مورد داشته باشد.',
+        'file' => 'حجم :attribute نباید بیشتر از :max کیلوبایت باشد.',
+        'numeric' => ':attribute نباید بزرگ‌تر از :max باشد.',
+        'string' => ':attribute نباید بیشتر از :max کاراکتر باشد.',
+    ],
+    'mimes' => ':attribute باید یکی از این فرمت‌ها باشد: :values.',
+    'min' => [
+        'array' => ':attribute باید حداقل :min مورد داشته باشد.',
+        'file' => 'حجم :attribute باید حداقل :min کیلوبایت باشد.',
+        'numeric' => ':attribute نباید کوچک‌تر از :min باشد.',
+        'string' => ':attribute باید حداقل :min کاراکتر باشد.',
+    ],
+    'numeric' => ':attribute باید عدد باشد.',
+    'required' => 'وارد کردن :attribute الزامی است.',
+    'string' => ':attribute باید متن باشد.',
+    'unique' => 'این :attribute قبلاً ثبت شده است.',
+    'uploaded' => 'بارگذاری :attribute ناموفق بود.',
+    'url' => ':attribute باید یک آدرس معتبر باشد.',
+    'alpha_dash' => ':attribute فقط می‌تواند شامل حروف انگلیسی، عدد، خط تیره و زیرخط باشد.',
+];
