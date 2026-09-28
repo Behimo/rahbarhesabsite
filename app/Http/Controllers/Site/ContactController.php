@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Site;
 
+use App\Http\Requests\Site\ContactMessageRequest;
 use App\Models\ContactMessage;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class ContactController extends SiteController
@@ -14,9 +14,9 @@ class ContactController extends SiteController
         $seo = $this->seo->forPage('contact');
 
         return $this->renderSystemPage('contact', 'pages.contact', [
-                    'seo' => $seo,
-                    'contact' => $this->siteData->contact(),
-                    'faq' => $this->siteData->contactFaq(),
+            'seo' => $seo,
+            'contact' => $this->siteData->contact(),
+            'faq' => $this->siteData->contactFaq(),
             'structuredData' => [
                 $this->seo->breadcrumbSchema([
                     ['name' => 'خانه', 'url' => route('home')],
@@ -27,22 +27,9 @@ class ContactController extends SiteController
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(ContactMessageRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email', 'max:150'],
-            'phone' => ['nullable', 'string', 'max:20'],
-            'subject' => ['nullable', 'string', 'max:150'],
-            'message' => ['required', 'string', 'max:5000'],
-        ], [
-            'name.required' => 'نام الزامی است.',
-            'email.required' => 'ایمیل الزامی است.',
-            'email.email' => 'ایمیل معتبر نیست.',
-            'message.required' => 'پیام الزامی است.',
-        ]);
-
-        ContactMessage::query()->create($validated);
+        ContactMessage::query()->create($request->validated());
 
         return back()->with('success', 'پیام شما با موفقیت ارسال شد. در ۲۴ ساعت پاسخ می‌دهیم.');
     }

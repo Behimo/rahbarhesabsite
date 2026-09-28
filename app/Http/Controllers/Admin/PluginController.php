@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\PluginUploadRequest;
 use App\Models\CmsPlugin;
 use App\Services\PluginService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class PluginController extends Controller
@@ -22,9 +22,8 @@ class PluginController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(PluginUploadRequest $request): RedirectResponse
     {
-        $request->validate(['plugin_zip' => ['required', 'file', 'mimes:zip', 'max:51200']]);
         $this->plugins->installFromZip($request->file('plugin_zip'));
 
         return back()->with('success', 'افزونه نصب شد.');

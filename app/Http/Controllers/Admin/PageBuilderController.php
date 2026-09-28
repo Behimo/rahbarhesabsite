@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\BuilderSaveRequest;
 use App\Models\CmsPage;
 use App\Models\CmsPageRevision;
 use App\Services\BlockRegistry;
@@ -36,28 +37,15 @@ class PageBuilderController extends Controller
         ]);
     }
 
-    public function save(Request $request, CmsPage $page): JsonResponse|RedirectResponse
+    public function save(BuilderSaveRequest $request, CmsPage $page): JsonResponse|RedirectResponse
     {
-        $builderContent = $request->input('builder_content');
-
-        if (is_string($builderContent)) {
-            $builderContent = json_decode($builderContent, true);
-        }
-
-        if (! is_array($builderContent)) {
-            if ($request->expectsJson()) {
-                return response()->json(['message' => 'محتوای صفحه‌ساز نامعتبر است.'], 422);
-            }
-
-            return back()->withErrors(['builder_content' => 'محتوای صفحه‌ساز نامعتبر است.']);
-        }
-
+        $builderContent = $request->validated('builder_content');
         CmsPageRevision::query()->create([
             'page_id' => $page->id,
             'admin_id' => auth('cms')->id(),
             'content' => $page->content,
             'builder_content' => $page->builder_content,
-            'note' => $request->input('note'),
+            'note' => $request->validated('note'),
         ]);
 
         $page->update([

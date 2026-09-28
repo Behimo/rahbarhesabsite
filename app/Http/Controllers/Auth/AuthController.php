@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Site\SiteController;
+use App\Http\Requests\Auth\PasswordLoginRequest;
+use App\Http\Requests\Auth\SendOtpRequest;
+use App\Http\Requests\Auth\VerifyOtpRequest;
 use App\Models\User;
 use App\Services\CartService;
 use App\Services\OtpService;
@@ -34,16 +37,9 @@ class AuthController extends SiteController
         return $this->render('auth.login');
     }
 
-    public function sendOtp(Request $request): RedirectResponse
+    public function sendOtp(SendOtpRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'phone' => ['required', 'string', 'max:20'],
-            'name' => ['nullable', 'string', 'max:255'],
-        ]);
-
-        if (! PhoneNormalizer::isValidIranMobile($validated['phone'])) {
-            return back()->withErrors(['phone' => 'شماره موبایل معتبر نیست.'])->withInput();
-        }
+        $validated = $request->validated();
 
         $existing = User::findByPhone($validated['phone']);
         if ($existing?->isBlocked()) {
@@ -77,7 +73,7 @@ class AuthController extends SiteController
         ]);
     }
 
-    public function verifyOtp(Request $request): RedirectResponse
+    public function verifyOtp(VerifyOtpRequest $request): RedirectResponse
     {
         $phone = session('otp_phone');
 
@@ -85,11 +81,7 @@ class AuthController extends SiteController
             return redirect()->route('login');
         }
 
-        $validated = $request->validate([
-            'code' => ['required', 'string', 'size:'.config('otp.length', 6)],
-        ]);
-
-        if (! $this->otp->verify($phone, $validated['code'])) {
+        if (! $this->otp->verify($phone, $request->validated('code'))) {
             return back()->withErrors(['code' => 'کد تأیید نامعتبر یا منقضی شده است.']);
         }
 
@@ -115,13 +107,9 @@ class AuthController extends SiteController
         return redirect()->intended(route('panel.dashboard'));
     }
 
-    public function loginPassword(Request $request): RedirectResponse
+    public function loginPassword(PasswordLoginRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'login' => ['required', 'string', 'max:255'],
-            'password' => ['required', 'string'],
-        ]);
-
+        $validated = $request->validated();
         $login = $validated['login'];
         $user = User::query()
             ->where('email', $login)

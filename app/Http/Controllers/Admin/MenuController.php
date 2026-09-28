@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\MenuRequest;
+use App\Http\Requests\Admin\MenuTreeRequest;
 use App\Models\CmsMenu;
 use App\Services\MenuService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class MenuController extends Controller
@@ -26,15 +27,9 @@ class MenuController extends Controller
         return view('admin.menus.form', ['menu' => new CmsMenu]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(MenuRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
-            'slug' => ['required', 'string', 'max:100', 'alpha_dash', 'unique:cms_menus,slug'],
-            'location' => ['nullable', 'string', 'max:50'],
-        ]);
-
-        $menu = CmsMenu::query()->create($validated);
+        $menu = CmsMenu::query()->create($request->validated());
 
         return redirect()->route('admin.menus.edit', $menu)->with('success', 'منو ایجاد شد.');
     }
@@ -47,23 +42,16 @@ class MenuController extends Controller
         ]);
     }
 
-    public function update(Request $request, CmsMenu $menu): RedirectResponse
+    public function update(MenuRequest $request, CmsMenu $menu): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
-            'slug' => ['required', 'string', 'max:100', 'alpha_dash', 'unique:cms_menus,slug,'.$menu->id],
-            'location' => ['nullable', 'string', 'max:50'],
-        ]);
-
-        $menu->update($validated);
+        $menu->update($request->validated());
 
         return back()->with('success', 'منو به‌روزرسانی شد.');
     }
 
-    public function saveTree(Request $request, CmsMenu $menu): JsonResponse
+    public function saveTree(MenuTreeRequest $request, CmsMenu $menu): JsonResponse
     {
-        $validated = $request->validate(['tree' => ['required', 'array']]);
-        $this->menus->saveTree($menu, $validated['tree']);
+        $this->menus->saveTree($menu, $request->validated('tree'));
 
         return response()->json(['success' => true]);
     }

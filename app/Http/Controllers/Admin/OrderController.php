@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\EnrollRequest;
 use App\Models\Course;
 use App\Models\CourseEnrollment;
 use App\Models\Order;
+use App\Models\SpotplayerLicense;
+use App\Models\User;
 use App\Services\OrderService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class OrderController extends Controller
@@ -29,7 +31,7 @@ class OrderController extends Controller
     {
         $order->load(['user', 'items.product', 'payment', 'coupon']);
 
-        $licenses = \App\Models\SpotplayerLicense::query()
+        $licenses = SpotplayerLicense::query()
             ->with('course.product')
             ->where('order_id', $order->id)
             ->orWhere(function ($q) use ($order) {
@@ -64,15 +66,10 @@ class OrderController extends Controller
         return back()->with('success', 'صدور مجدد لایسنس در صف قرار گرفت.');
     }
 
-    public function enroll(Request $request): RedirectResponse
+    public function enroll(EnrollRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'user_id' => ['required', 'exists:users,id'],
-            'course_id' => ['required', 'exists:courses,id'],
-            'source' => ['required', 'in:manual,gift,free'],
-        ]);
-
-        $user = \App\Models\User::query()->findOrFail($validated['user_id']);
+        $validated = $request->validated();
+        $user = User::query()->findOrFail($validated['user_id']);
         $course = Course::query()->findOrFail($validated['course_id']);
 
         $this->orders->enrollUser($user, $course, null, $validated['source']);

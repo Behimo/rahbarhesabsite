@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\CategoryRequest;
 use App\Models\CmsCategory;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class CategoryController extends Controller
@@ -17,15 +17,9 @@ class CategoryController extends Controller
         return view('admin.categories.index', compact('categories'));
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(CategoryRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'slug' => ['required', 'string', 'max:80', 'alpha_dash', 'unique:cms_categories,slug'],
-            'name' => ['required', 'string', 'max:100'],
-            'description' => ['nullable', 'string', 'max:500'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
-        ]);
-
+        $validated = $request->validated();
         $validated['sort_order'] = $validated['sort_order'] ?? ((int) CmsCategory::query()->max('sort_order') + 1);
 
         CmsCategory::query()->create($validated);
@@ -33,16 +27,9 @@ class CategoryController extends Controller
         return back()->with('success', 'دسته‌بندی ایجاد شد.');
     }
 
-    public function update(Request $request, CmsCategory $category): RedirectResponse
+    public function update(CategoryRequest $request, CmsCategory $category): RedirectResponse
     {
-        $validated = $request->validate([
-            'slug' => ['required', 'string', 'max:80', 'alpha_dash', 'unique:cms_categories,slug,'.$category->id],
-            'name' => ['required', 'string', 'max:100'],
-            'description' => ['nullable', 'string', 'max:500'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
-        ]);
-
-        $category->update($validated);
+        $category->update($request->validated());
 
         return back()->with('success', 'دسته‌بندی به‌روزرسانی شد.');
     }

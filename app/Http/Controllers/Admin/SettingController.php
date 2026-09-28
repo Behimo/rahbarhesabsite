@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\SettingRequest;
 use App\Models\CmsSetting;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class SettingController extends Controller
@@ -26,20 +26,9 @@ class SettingController extends Controller
         ]);
     }
 
-    public function update(Request $request): RedirectResponse
+    public function update(SettingRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'contact_email' => ['required', 'email', 'max:150'],
-            'contact_phone' => ['nullable', 'string', 'max:20'],
-            'social_linkedin' => ['nullable', 'url', 'max:300'],
-            'social_telegram' => ['nullable', 'url', 'max:300'],
-            'social_instagram' => ['nullable', 'url', 'max:300'],
-            'site_logo' => ['nullable', 'string', 'max:500'],
-            'site_favicon' => ['nullable', 'string', 'max:500'],
-            'site_og_image' => ['nullable', 'string', 'max:500'],
-        ]);
-
-        foreach ($validated as $key => $value) {
+        foreach ($request->validated() as $key => $value) {
             CmsSetting::set($key, $value);
         }
 

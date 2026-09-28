@@ -3,10 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\CmsAuditLog;
+use App\Http\Requests\Admin\ThemeUploadRequest;
 use App\Services\ThemeService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class ThemeController extends Controller
@@ -18,27 +17,26 @@ class ThemeController extends Controller
         return view('admin.themes.index', ['themes' => $this->themes->all()]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(ThemeUploadRequest $request): RedirectResponse
     {
-        $request->validate(['theme_zip' => ['required', 'file', 'mimes:zip', 'max:51200']]);
         $this->themes->installFromZip($request->file('theme_zip'));
 
         return back()->with('success', 'قالب نصب شد.');
     }
 
     public function activate(string $slug): RedirectResponse
-        {
-            $this->themes->activate($slug);
+    {
+        $this->themes->activate($slug);
 
-            return back()->with('success', 'قالب فعال شد.');
+        return back()->with('success', 'قالب فعال شد.');
+    }
+
+    public function preview(string $slug): RedirectResponse
+    {
+        if (! is_dir(base_path('themes/'.$slug))) {
+            return back()->with('error', 'قالب یافت نشد.');
         }
 
-        public function preview(string $slug): RedirectResponse
-        {
-            if (! is_dir(base_path('themes/' . $slug))) {
-                return back()->with('error', 'قالب یافت نشد.');
-            }
-
-            return redirect()->to($this->themes->previewUrl($slug));
-        }
+        return redirect()->to($this->themes->previewUrl($slug));
+    }
 }

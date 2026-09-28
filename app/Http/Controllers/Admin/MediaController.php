@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\MediaUploadRequest;
 use App\Models\CmsMedia;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -34,13 +35,8 @@ class MediaController extends Controller
         return view('admin.media.index', compact('media'));
     }
 
-    public function store(Request $request): JsonResponse|RedirectResponse
+    public function store(MediaUploadRequest $request): JsonResponse|RedirectResponse
     {
-        $request->validate([
-            'file' => ['required', 'file', 'max:5120', 'mimes:jpg,jpeg,png,gif,webp,svg,pdf'],
-            'alt' => ['nullable', 'string', 'max:200'],
-        ]);
-
         $file = $request->file('file');
         $path = $file->store('cms/'.date('Y/m'), 'public');
 

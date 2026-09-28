@@ -51,6 +51,41 @@ class AdminProductFeedbackTest extends TestCase
         ]);
     }
 
+    public function test_persian_slug_is_rejected_on_create_and_update(): void
+    {
+        $admin = $this->admin();
+        $product = CmsProduct::query()->create([
+            'slug' => 'rahbar',
+            'title' => 'راهبر',
+            'accent' => 'orange',
+        ]);
+
+        $this->actingAs($admin, 'cms')
+            ->from(route('admin.products.create'))
+            ->post(route('admin.products.store'), [
+                'title' => 'محصول فارسی',
+                'slug' => 'محصول',
+                'accent' => 'orange',
+            ])
+            ->assertRedirect(route('admin.products.create'))
+            ->assertSessionHasErrors('slug');
+
+        $this->actingAs($admin, 'cms')
+            ->from(route('admin.products.edit', $product))
+            ->put(route('admin.products.update', $product), [
+                'title' => 'راهبر',
+                'slug' => 'محصول',
+                'accent' => 'orange',
+            ])
+            ->assertRedirect(route('admin.products.edit', $product))
+            ->assertSessionHasErrors('slug');
+
+        $this->assertDatabaseHas('cms_products', [
+            'id' => $product->id,
+            'slug' => 'rahbar',
+        ]);
+    }
+
     public function test_duplicate_slug_shows_error(): void
     {
         $admin = $this->admin();

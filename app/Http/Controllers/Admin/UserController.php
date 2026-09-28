@@ -3,12 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UserRequest;
 use App\Models\User;
 use App\Support\Permission;
-use App\Support\PhoneNormalizer;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class UserController extends Controller
@@ -29,11 +27,9 @@ class UserController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(UserRequest $request): RedirectResponse
     {
-        $validated = $this->validateUser($request);
-
-        User::query()->create($validated);
+        User::query()->create($request->userAttributes());
 
         return redirect()->route('admin.users.index')->with('success', 'کاربر ایجاد شد.');
     }
@@ -47,10 +43,9 @@ class UserController extends Controller
         ]);
     }
 
-    public function update(Request $request, User $user): RedirectResponse
+    public function update(UserRequest $request, User $user): RedirectResponse
     {
-        $validated = $this->validateUser($request, $user);
-        $user->update($validated);
+        $user->update($request->userAttributes());
 
         return redirect()->route('admin.users.index')->with('success', 'کاربر به‌روزرسانی شد.');
     }
@@ -64,34 +59,5 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->route('admin.users.index')->with('success', 'کاربر حذف شد.');
-    }
-
-    private function validateUser(Request $request, ?User $user = null): array
-    {
-        $phoneRule = ['required', 'string', 'max:20'];
-        $phoneRule[] = $user
-            ? 'unique:users,phone,'.$user->id
-            : 'unique:users,phone';
-
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'phone' => $phoneRule,
-            'email' => ['nullable', 'email', 'max:255'],
-            'role' => ['required', 'in:'.implode(',', array_keys(Permission::roles()))],
-            'permissions' => ['nullable', 'array'],
-            'permissions.*' => ['string'],
-        ]);
-
-        $validated['phone'] = PhoneNormalizer::toLocal($validated['phone']);
-        $validated['mobile'] = $validated['phone'];
-
-        if (! PhoneNormalizer::isValidIranMobile($validated['phone'])) {
-            abort(422, 'شماره موبایل معتبر نیست.');
-        }
-
-        $validated['permissions'] = array_values($validated['permissions'] ?? []);
-        $validated['password'] = $user?->password ?? Str::random(32);
-
-        return $validated;
     }
 }

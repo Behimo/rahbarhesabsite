@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\CmsImportRequest;
 use App\Services\ImportExportService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
 
 class ImportExportController extends Controller
@@ -21,9 +21,8 @@ class ImportExportController extends Controller
         ]);
     }
 
-    public function import(Request $request): RedirectResponse
+    public function import(CmsImportRequest $request): RedirectResponse
     {
-        $request->validate(['export_file' => ['required', 'file', 'mimes:json,txt']]);
         $payload = json_decode(file_get_contents($request->file('export_file')->getRealPath()), true);
 
         if (! is_array($payload)) {

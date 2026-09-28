@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\TaxonomyRequest;
+use App\Http\Requests\Admin\TaxonomyTermRequest;
 use App\Models\CmsTaxonomy;
 use App\Models\CmsTaxonomyTerm;
 use App\Services\TaxonomyService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class TaxonomyController extends Controller
@@ -23,31 +24,16 @@ class TaxonomyController extends Controller
         ]);
     }
 
-    public function storeTaxonomy(Request $request): RedirectResponse
+    public function storeTaxonomy(TaxonomyRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'slug' => ['required', 'string', 'max:100', 'alpha_dash', 'unique:cms_taxonomies,slug'],
-            'name' => ['required', 'string', 'max:100'],
-            'type' => ['required', 'in:category,tag'],
-            'object_types' => ['nullable', 'array'],
-        ]);
-
-        CmsTaxonomy::query()->create($validated);
+        CmsTaxonomy::query()->create($request->validated());
 
         return back()->with('success', 'taxonomy ایجاد شد.');
     }
 
-    public function storeTerm(Request $request, CmsTaxonomy $taxonomy): RedirectResponse
+    public function storeTerm(TaxonomyTermRequest $request, CmsTaxonomy $taxonomy): RedirectResponse
     {
-        $validated = $request->validate([
-            'slug' => ['required', 'string', 'max:100', 'alpha_dash'],
-            'name' => ['required', 'string', 'max:100'],
-            'description' => ['nullable', 'string'],
-            'parent_id' => ['nullable', 'exists:cms_taxonomy_terms,id'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
-        ]);
-
-        $taxonomy->terms()->create($validated);
+        $taxonomy->terms()->create($request->validated());
 
         return back()->with('success', 'دسته اضافه شد.');
     }

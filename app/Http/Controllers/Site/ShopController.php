@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Site;
 
+use App\Http\Requests\Site\ApplyCouponRequest;
 use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\Payment;
@@ -72,15 +73,11 @@ class ShopController extends SiteController
         return back()->with('success', 'از سبد خرید حذف شد.');
     }
 
-    public function applyCoupon(Request $request): RedirectResponse
+    public function applyCoupon(ApplyCouponRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'code' => ['required', 'string', 'max:50'],
-        ]);
-
         try {
             $this->coupons->apply(
-                $validated['code'],
+                $request->validated('code'),
                 $this->cart->items(),
                 $this->cart->subtotal(),
                 auth()->user()

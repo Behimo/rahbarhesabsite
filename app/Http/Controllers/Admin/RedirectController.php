@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\RedirectImportRequest;
+use App\Http\Requests\Admin\RedirectRequest;
 use App\Models\CmsRedirect;
 use App\Services\CacheService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
@@ -19,19 +20,19 @@ class RedirectController extends Controller
         return view('admin.redirects.index', compact('redirects'));
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(RedirectRequest $request): RedirectResponse
     {
-        $data = $this->validated($request);
+        $data = $request->redirectAttributes();
         CmsRedirect::query()->create($data);
         $this->forgetPath($data['from_path']);
 
         return back()->with('success', 'ریدایرکت افزوده شد.');
     }
 
-    public function update(Request $request, CmsRedirect $redirect): RedirectResponse
+    public function update(RedirectRequest $request, CmsRedirect $redirect): RedirectResponse
     {
         $old = $redirect->from_path;
-        $data = $this->validated($request, $redirect);
+        $data = $request->redirectAttributes();
         $redirect->update($data);
         $this->forgetPath($old);
         $this->forgetPath($data['from_path']);
@@ -48,12 +49,8 @@ class RedirectController extends Controller
         return back()->with('success', 'ریدایرکت حذف شد.');
     }
 
-    public function import(Request $request): RedirectResponse
+    public function import(RedirectImportRequest $request): RedirectResponse
     {
-        $request->validate([
-            'rows' => ['required', 'string'],
-        ]);
-
         $count = 0;
         foreach (preg_split('/\r\n|\r|\n/', $request->input('rows')) as $line) {
             $line = trim($line);
@@ -81,21 +78,6 @@ class RedirectController extends Controller
         app(CacheService::class)->flushContent();
 
         return back()->with('success', "{$count} ریدایرکت وارد شد.");
-    }
-
-    private function validated(Request $request, ?CmsRedirect $redirect = null): array
-    {
-        $data = $request->validate([
-            'from_path' => ['required', 'string', 'max:255', 'unique:cms_redirects,from_path,'.($redirect?->id ?? 'NULL')],
-            'to_path' => ['required', 'string', 'max:255'],
-            'status_code' => ['required', 'in:301,302'],
-            'is_active' => ['sometimes', 'boolean'],
-        ]);
-
-        $data['from_path'] = '/'.ltrim($data['from_path'], '/');
-        $data['is_active'] = $request->boolean('is_active', true);
-
-        return $data;
     }
 
     private function forgetPath(string $path): void

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Models\CmsProduct;
+use App\Rules\EnglishSlug;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -19,7 +20,7 @@ class ProductRequest extends FormRequest
         $productId = $product instanceof CmsProduct ? $product->id : null;
 
         return [
-            'slug' => ['required', 'string', 'max:100', 'alpha_dash', Rule::unique('cms_products', 'slug')->ignore($productId)],
+            'slug' => ['required', 'string', 'max:100', new EnglishSlug, Rule::unique('cms_products', 'slug')->ignore($productId)],
             'title' => ['required', 'string', 'max:200'],
             'subtitle' => ['nullable', 'string', 'max:200'],
             'description' => ['nullable', 'string', 'max:1000'],
@@ -65,7 +66,6 @@ class ProductRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'slug.alpha_dash' => 'نامک فقط می‌تواند شامل حروف انگلیسی، عدد، خط تیره و زیرخط باشد.',
             'slug.unique' => 'این نامک قبلاً برای محصول دیگری ثبت شده است.',
             'dashboard_image_file.image' => 'فایل داشبورد باید یک تصویر باشد.',
             'dashboard_image_file.mimes' => 'تصویر داشبورد باید JPG، PNG یا WebP باشد.',
