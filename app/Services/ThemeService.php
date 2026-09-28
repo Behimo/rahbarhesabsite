@@ -6,7 +6,6 @@ use App\Models\CmsAuditLog;
 use App\Models\CmsTheme;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
@@ -54,13 +53,11 @@ class ThemeService
 
     public function layoutViewNames(): array
     {
-        $names = ['layouts.site'];
-
         if (is_dir($this->path() . '/views/layouts')) {
-            $names[] = 'theme::layouts.site';
+            return ['theme::layouts.site'];
         }
 
-        return $names;
+        return [];
     }
 
     /** Register (replace) the active theme's views under the theme:: namespace. */
@@ -76,7 +73,8 @@ class ThemeService
     }
 
     /**
-     * Resolve a view: first the active theme, then the base app view.
+     * Resolve a public view from the active theme.
+     * Panel screens that are not overridden by the theme still live in resources/views/panel.
      */
     public function view(string $view, array $data = []): \Illuminate\Contracts\View\View
     {
@@ -86,9 +84,11 @@ class ThemeService
             return view($themeView, $data);
         }
 
-        Log::debug("Theme view not found, falling back to base view: {$view}");
+        if (str_starts_with($view, 'panel.') && View::exists($view)) {
+            return view($view, $data);
+        }
 
-        return view($view, $data);
+        throw new \InvalidArgumentException("Theme view [{$view}] was not found in [{$this->active()}].");
     }
 
     /** Public URL for a theme asset (relative to public/themes/{slug}/). */

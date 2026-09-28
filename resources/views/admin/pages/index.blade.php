@@ -46,7 +46,8 @@
                             @endif
                         </td>
                         <td>
-                            <a href="{{ route('admin.pages.edit', $page) }}" class="btn btn-sm btn-label-primary">ویرایش</a>
+                            <a href="{{ route('admin.pages.builder', $page) }}" class="btn btn-sm btn-label-primary">صفحه‌ساز</a>
+                            <a href="{{ route('admin.pages.edit', $page) }}" class="btn btn-sm btn-label-secondary">تنظیمات</a>
                         </td>
                     </tr>
                 @endforeach

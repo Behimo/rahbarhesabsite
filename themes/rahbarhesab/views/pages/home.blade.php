@@ -6,8 +6,8 @@
     @include('theme::partials.home.benefits')
 
     @include('theme::partials.home.courses', [
-        'courses' => $courses,
-        'title' => 'جدیدترین دوره های ما',
+        'courses' => $courses ?? collect(),
+        'title' => $coursesTitle ?? 'جدیدترین دوره های ما',
         'sectionId' => 'latestCourses',
     ])
 
@@ -16,7 +16,7 @@
     @if (!empty($freeCourses) && $freeCourses->isNotEmpty())
         @include('theme::partials.home.courses', [
             'courses' => $freeCourses,
-            'title' => 'دوره های رایگان',
+            'title' => $freeCoursesTitle ?? 'دوره های رایگان',
             'sectionId' => 'freeCourses',
             'sectionClass' => 'free-courses-section',
             'isFree' => true,
