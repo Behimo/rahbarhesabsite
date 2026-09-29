@@ -11,10 +11,12 @@
 <div class="card" style="max-width: 42rem;">
     <div class="card-body">
         <div class="row g-3 mb-4">
-            <div class="col-sm-6">
-                <small class="text-muted d-block">ایمیل</small>
-                <a href="mailto:{{ $message->email }}" dir="ltr">{{ $message->email }}</a>
-            </div>
+            @if ($message->email)
+                <div class="col-sm-6">
+                    <small class="text-muted d-block">ایمیل</small>
+                    <a href="mailto:{{ $message->email }}" dir="ltr">{{ $message->email }}</a>
+                </div>
+            @endif
             @if ($message->phone)
                 <div class="col-sm-6">
                     <small class="text-muted d-block">تلفن</small>

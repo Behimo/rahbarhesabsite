@@ -14,10 +14,9 @@ class ContactMessageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email', 'max:150'],
-            'phone' => ['nullable', 'string', 'max:20'],
-            'subject' => ['nullable', 'string', 'max:150'],
+            'first_name' => ['required', 'string', 'max:50'],
+            'last_name' => ['required', 'string', 'max:50'],
+            'phone' => ['required', 'string', 'max:20'],
             'message' => ['required', 'string', 'max:5000'],
         ];
     }
@@ -25,21 +24,22 @@ class ContactMessageRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'name' => 'نام',
-            'email' => 'ایمیل',
+            'first_name' => 'نام',
+            'last_name' => 'نام خانوادگی',
             'phone' => 'تلفن',
-            'subject' => 'موضوع',
             'message' => 'پیام',
         ];
     }
 
-    public function messages(): array
+    public function messageAttributes(): array
     {
+        $data = $this->validated();
+
         return [
-            'name.required' => 'نام الزامی است.',
-            'email.required' => 'ایمیل الزامی است.',
-            'email.email' => 'ایمیل معتبر نیست.',
-            'message.required' => 'پیام الزامی است.',
+            'name' => trim($data['first_name'].' '.$data['last_name']),
+            'phone' => $data['phone'],
+            'message' => $data['message'],
+            'email' => '',
         ];
     }
 }

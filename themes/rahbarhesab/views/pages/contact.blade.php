@@ -1,59 +1,197 @@
 @extends('theme::layouts.site')
 
+@php
+    $socials = [
+        'instagram' => 'اینستاگرام',
+        'telegram' => 'تلگرام',
+        'whatsapp' => 'واتساپ',
+        'youtube' => 'یوتیوب',
+        'aparat' => 'آپارات',
+        'bale' => 'بله',
+        'rubika' => 'روبیکا',
+        'linkedin' => 'لینکدین',
+    ];
+
+    $formRows = [
+        [
+            ['name' => 'first_name', 'id' => 'firstName', 'label' => 'نام', 'type' => 'text'],
+            ['name' => 'last_name', 'id' => 'lastName', 'label' => 'نام خانوادگی', 'type' => 'text'],
+        ],
+        [
+            ['name' => 'phone', 'id' => 'phone', 'label' => 'تلفن', 'type' => 'tel'],
+        ],
+        [
+            ['name' => 'message', 'id' => 'message', 'label' => 'پیام', 'type' => 'textarea'],
+        ],
+    ];
+
+    $phones = [];
+    foreach (['phone', 'mobile'] as $phoneKey) {
+        if (! empty($contact[$phoneKey])) {
+            $phones[] = [
+                'tel' => $contact[$phoneKey],
+                'label' => $contact[$phoneKey.'_display'] ?? $contact[$phoneKey],
+            ];
+        }
+    }
+@endphp
+
 @section('page')
-<section class="bg-teal-800 py-12 text-white">
-    <div class="mx-auto max-w-5xl px-4 text-center sm:px-6">
-        <h1 class="text-3xl font-extrabold">تماس با ما</h1>
-        <p class="mt-2 text-teal-100">در ۲۴ ساعت کاری پاسخ می‌دهیم</p>
-    </div>
-</section>
+<div class="contact-page">
+    <svg class="contact-sprite" aria-hidden="true">
+        <symbol id="contact-phone" viewBox="0 0 24 24"><path fill="currentColor" d="M6.6 10.8a15 15 0 006.6 6.6l2.2-2.2a1 1 0 011-.24 11.5 11.5 0 003.6.58 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 7a1 1 0 011-1h3.5a1 1 0 011 1 11.5 11.5 0 00.58 3.6 1 1 0 01-.24 1L6.6 10.8z"/></symbol>
+        <symbol id="contact-pin" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a7 7 0 00-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 00-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></symbol>
+        <symbol id="contact-bell" viewBox="0 0 24 24"><path fill="currentColor" d="M12 22a2.4 2.4 0 002.35-2h-4.7A2.4 2.4 0 0012 22zm6.2-6.2V11a6.2 6.2 0 00-5.2-6.1V4a1 1 0 10-2 0v.9A6.2 6.2 0 005.8 11v4.8L4 17.6V19h16v-1.4l-1.8-1.8z"/></symbol>
+        <symbol id="contact-clock" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 11H7v-2h4V7h2v6z"/></symbol>
+        <symbol id="contact-instagram" viewBox="0 0 448 512"><path fill="currentColor" d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.5 74.7 74.7-33.6 74.7-74.7 74.7zm146.4-194.3c0 14.9-12 26.8-26.8 26.8-14.9 0-26.8-12-26.8-26.8s12-26.8 26.8-26.8 26.8 12 26.8 26.8zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></symbol>
+        <symbol id="contact-telegram" viewBox="0 0 496 512"><path fill="currentColor" d="M248 8C111 8 0 119 0 256s111 248 248 248 248-111 248-248S385 8 248 8zm121.8 169.9l-40.7 191.8c-3 13.6-11.1 16.9-22.4 10.5l-62-45.7-29.9 28.8c-3.3 3.3-6.1 6.1-12.5 6.1l4.4-63.1 114.9-103.8c5-4.4-1.1-6.9-7.7-2.5l-142 89.4-61.2-19.1c-13.3-4.2-13.6-13.3 2.8-19.7l239.1-92.2c11.1-4 20.8 2.7 17.2 19.5z"/></symbol>
+        <symbol id="contact-whatsapp" viewBox="0 0 448 512"><path fill="currentColor" d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/></symbol>
+        <symbol id="contact-youtube" viewBox="0 0 576 512"><path fill="currentColor" d="M549.655 124.083c-6.281-23.65-24.787-42.276-48.284-48.597C458.781 64 288 64 288 64S117.22 64 74.629 75.486c-23.497 6.322-42.003 24.947-48.284 48.597-11.412 42.867-11.412 132.305-11.412 132.305s0 89.438 11.412 132.305c6.281 23.65 24.787 41.5 48.284 47.821C117.22 448 288 448 288 448s170.78 0 213.371-11.486c23.497-6.321 42.003-24.171 48.284-47.821 11.412-42.867 11.412-132.305 11.412-132.305s0-89.438-11.412-132.305zm-317.51 213.508V175.185l142.739 81.205-142.739 81.201z"/></symbol>
+        <symbol id="contact-linkedin" viewBox="0 0 448 512"><path fill="currentColor" d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3zM135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5zm282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9V416z"/></symbol>
+    </svg>
 
-<div class="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
-    @if (session('success'))
-        <div class="mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-green-800">{{ session('success') }}</div>
-    @endif
-
-    <div class="grid gap-8 lg:grid-cols-5">
-        <div class="space-y-4 lg:col-span-2">
-            <div class="rh-card p-6">
-                <h2 class="mb-2 font-bold text-slate-800">ایمیل</h2>
-                <a href="mailto:{{ $contact['email'] ?? '' }}" class="text-teal-700 hover:underline">{{ $contact['email'] ?? '' }}</a>
+    <section class="contact-hero">
+        <div class="contact-wrap">
+            <div class="contact-hero__card">
+                <h1>تماس با ما</h1>
+                <p>ارتباط با راهبر حساب، در سریع‌ترین زمان پاسخگوی شما هستیم.</p>
             </div>
-            @if (!empty($contact['phone']))
-                <div class="rh-card p-6">
-                    <h2 class="mb-2 font-bold text-slate-800">تلفن</h2>
-                    <a href="tel:{{ $contact['phone'] }}" class="text-teal-700 hover:underline" dir="ltr">{{ $contact['phone'] }}</a>
-                </div>
-            @endif
         </div>
+    </section>
 
-        <form method="POST" action="{{ route('contact.store') }}" class="rh-card space-y-4 p-6 lg:col-span-3">
-            @csrf
-            <div>
-                <label for="name" class="mb-1 block text-sm font-medium text-slate-700">نام *</label>
-                <input type="text" id="name" name="name" value="{{ old('name') }}" required class="w-full rounded-lg border border-slate-300 px-4 py-3 focus:border-teal-600 focus:outline-none">
-                @error('name') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+    <section class="contact-guide">
+        <div class="contact-wrap">
+            <div class="contact-guide__content">
+                <h2>راهنمای استفاده از محصولات خریداری شده</h2>
+                <p>
+                    در صورتی که محصولات آموزشی خریده‌اید و در مورد شروع و
+                    نحوه استفاده از آموزش یا رفع خطاهای احتمالی سوال دارید
+                    روی دکمه زیر کلیک کنید:
+                </p>
+                <a href="{{ route('courses.index') }}" class="contact-guide__btn">
+                    راهنمای ثبت نام دوره های آموزشی
+                </a>
             </div>
-            <div>
-                <label for="email" class="mb-1 block text-sm font-medium text-slate-700">ایمیل *</label>
-                <input type="email" id="email" name="email" value="{{ old('email') }}" required dir="ltr" class="w-full rounded-lg border border-slate-300 px-4 py-3 focus:border-teal-600 focus:outline-none">
-                @error('email') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+        </div>
+    </section>
+
+    <section class="contact-info">
+        <div class="contact-wrap">
+            <div class="contact-info__box">
+                <article class="contact-info__item">
+                    <div class="contact-info__icon" aria-hidden="true"><svg><use href="#contact-phone"/></svg></div>
+                    <h3>با ما تماس بگیرید</h3>
+                    <div class="contact-info__phones">
+                        @foreach ($phones as $phone)
+                            <a href="tel:{{ $phone['tel'] }}">{{ $phone['label'] }}</a>
+                        @endforeach
+                    </div>
+                </article>
+
+                <article class="contact-info__item">
+                    <div class="contact-info__icon" aria-hidden="true"><svg><use href="#contact-pin"/></svg></div>
+                    <h3>آدرس</h3>
+                    <p class="contact-info__text">{!! nl2br(e($contact['address'] ?? '')) !!}</p>
+                </article>
+
+                <article class="contact-info__item">
+                    <div class="contact-info__icon" aria-hidden="true"><svg><use href="#contact-bell"/></svg></div>
+                    <h3>ما را دنبال کنید</h3>
+                    <div class="contact-socials">
+                        @foreach ($socials as $key => $label)
+                            <a
+                                href="{{ $contact[$key] }}"
+                                class="contact-social contact-social--{{ $key }}"
+                                aria-label="{{ $label }}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                @if ($key === 'aparat')
+                                    <svg viewBox="0 0 360 360" aria-hidden="true"><path fill="#ed135a" d="M178.485 52.992c35.977.103 68.266 13.204 94.05 38.52 16.7 16.96 27.978 37.345 33.465 60.488l.569 2.354c1.67 7.854 1.77 15.67 1.747 23.66-.003 2.284.02 4.567.045 6.851.124 28.18-10.796 53.833-28.16 75.58-1.134 1.468-2.172 3.01-3.201 4.555h-2l-.812 1.938C273 269 273 269 270 270v2h-2l-1 3a84 84 0 0 1-5.625 4.625l-1.755 1.327c-28.223 20.946-62.37 30.602-97.499 25.93C134.87 302.548 111.31 290.337 91 272l-2.238-2.02c-22.225-21.156-35.933-52.85-36.989-83.355C51.1 154.721 60.063 123.681 81 99h2l.672-1.648C89.524 86.99 101.239 79.348 111 73l2.957-1.93c19.344-11.907 41.868-18.007 64.528-18.078M119 97l-1 3h-2c-6.515 7.698-8.575 17.265-8.285 27.113 1.026 10.39 6.217 18.768 14.164 25.348 9.253 6.714 18.979 7.566 30.121 6.539 8.364-1.91 16.588-7.221 21.836-14.059 5.626-9.383 8.036-19.14 5.465-29.855C176.358 106.07 170.994 98.262 163 93c-15.548-7.418-30.092-6.597-44 4m92 17v2h-2c-6.39 8.098-10.723 17.262-10.281 27.719 1.352 10.965 6.595 19.759 15.062 26.777 8.87 6.012 19.374 7.882 29.844 6.043 9.413-2.5 16.677-7.697 22.375-15.539l2.25-3.062c4.565-8.61 4.406-18.818 1.852-27.97-3.3-8.894-9.815-16.341-18.059-21.097-13.258-5.98-29.767-4.014-41.043 5.129m-44 57c-3.315 4.706-3.905 9.401-3 15 2.215 4.347 4.807 7.484 9 10 6.447 1.803 11.012.722 17-2v-2h2c3.622-5.886 3.877-11.142 2.375-17.75-2.256-3.691-5.491-6.308-9.375-8.25-7.283-.845-12.842-.555-18 5m-69.75 25.875c-7.071 8.572-8.921 16.711-8.031 27.867C90.852 234.822 96.16 242.597 104 249c2.574 1.655 5.15 2.895 8 4l3.188 1.25c10.936 2.152 20.714 1.079 30.285-4.758 7.68-5.514 12.273-12.682 15.527-21.492 1.628-11.809-.06-21.088-7-31-6.012-6.882-13.705-12.285-23-13-14.304-.832-23.97 2.307-33.75 12.875m93.375 15c-7.671 8.244-10.071 16.726-9.879 27.906.352 4.464 1.415 8.156 3.254 12.219l1.563 3.5c4.314 7.037 11.586 13.222 19.402 15.91 9.915 1.927 21.382 2.383 30.035-3.41l2.098-1.32c8.88-6.076 13.667-14.233 15.902-24.68 1.052-10.645-1.57-19.92-8.379-28.223-7.756-8.504-16.19-12.218-27.742-12.808-9.961.108-19.065 4.024-26.254 10.906"/><path fill="#221e1f" d="M264 70a1066 1066 0 0 1 17 4l2.395.584C295.107 77.49 306.825 80.464 315 90l1.672 1.703c9.012 9.475 11.683 19.958 11.539 32.766-.782 13.093-5.52 26.022-9.211 38.531h-2l-.48-3.191c-1.587-10.015-3.856-19.323-7.52-28.809l-.75-1.964c-5.245-13.491-12.783-25.145-21.973-36.302C285 91 285 91 284 88h-2c-1.34-1.434-1.34-1.434-2.937-3.437-3.836-4.551-8.232-8.113-12.903-11.778L264 71zm26 193h2a901 901 0 0 1-3.354 13.483 1192 1192 0 0 0-1.311 5.159c-4.031 15.832-8.57 28.385-22.335 38.358-3.562 2.03-7.146 3.61-11 5l-2.016.742c-10.987 3.37-22.34.898-33.1-2.05a482 482 0 0 0-6.323-1.672c-10.256-2.715-10.256-2.715-12.561-5.02l1.826-.44c27.211-6.628 51.53-15.96 72.174-35.56l1.641-1.55a449 449 0 0 0 4.921-4.763l1.483-1.453c2.359-2.382 4.378-4.77 6.17-7.59zM142.835 37.427a384 384 0 0 0 6.548 1.659C157.06 41.017 157.06 41.017 160 42l1 2-2.762.41c-24.444 4.062-47.111 13.424-66.363 29.207C90 75 90 75 87 76v2c-1.469 1.41-1.469 1.41-3.5 3.063C78.863 84.987 74.935 89.385 71 94c-1.359-2.717-.69-3.923.074-6.84l.776-2.974.838-3.124.779-3.017C76.97 64.78 80.767 54.465 91 45l2.563-2.5c14.25-11.696 32.828-9.462 49.272-5.073M40 202h2l.559 3.164C47.219 229.52 58.05 251.127 74 270l1.322 1.568C80.674 277.846 86.262 283.232 93 288l-1 2a1809 1809 0 0 1-12.268-3.143 723 723 0 0 0-4.16-1.062C67.242 283.693 59.507 281.317 52 277v-2l-1.687-.687c-2.984-1.694-4.98-3.804-7.313-6.313l-2-2.125c-7.896-11.35-9.383-23.403-8-36.875 1.281-6.434 3.315-12.633 5.355-18.858.808-2.684 1.288-5.365 1.645-8.142"/></svg>
+                                @elseif ($key === 'bale')
+                                    <svg viewBox="0 0 355.3 355.2" aria-hidden="true"><defs><linearGradient id="contact-bale-grad" x1="280.1" x2="29" y1="28.9" y2="280" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4cebb4"/><stop offset="1" stop-color="#2e2e74"/></linearGradient></defs><path fill="url(#contact-bale-grad)" d="M354.7 190.2c-.3 6.3-.9 12.8-2.4 19-.6 5.9-2.3 11.6-3.8 17.2-1.8 6.9-4.4 13.6-7.1 20.3-2.4 5.6-5.1 11-7.9 16.4-2.7 4.8-5.6 9.5-8.6 14q-5.1 7.5-10.8 14.4c-4 4.7-8.1 9.3-12.5 13.5-5.7 5.6-11.8 10.7-18.2 15.5-5.5 4.1-11.2 7.9-17.2 11.2-6.7 4-13.8 7.3-20.9 10.3q-11.4 4.65-23.4 7.8c-6.9 1.5-13.9 3.3-20.9 3.8-13.2 2-26.6 2.1-39.8.8-11.9-.9-23.8-3.5-35.3-6.9v-.2C70.6 331.2 25.1 285.7 8.3 230.6c-3.7-11.9-6.3-24.1-7.2-36.5-1.4-12-.7-24.2-.8-36.2V47.8c-.1-8.5 0-16.9 0-25.4-.8-6.3 1.3-13 6.1-17.3C11.5.5 19.1-1.3 25.6 1c3.9 1.3 7.4 3.8 10.9 5.9 12.8 8.3 25.1 17.4 37.2 26.6 1.3-.7 2.6-1.5 3.8-2.4 4.9-3.4 9.9-6.5 15.2-9.4s10.7-5.5 16.3-7.9c5.8-2.4 11.8-4.5 17.8-6.4 6.4-1.8 12.9-3.6 19.5-4.5 7.2-1.4 14.6-2.3 22-2.6 8.9-.5 18-.3 27 .7 6.8.6 13.7 1.7 20.4 3.2 45.7 9.6 86.7 38.5 111.7 77.8 11.1 17.4 19.2 36.6 23.6 56.8 1.7 7.4 3 15 3.4 22.7 1 9.5 1.1 19.2.3 28.7"/><path fill="#fff" d="M246.5 92.8c7.2-2.1 15-1.9 22.2.5 9.1 3.5 16.5 10.6 20.4 19.5 3 8.1 3.3 17.2.3 25.4-2.2 5.8-6 10.7-10.4 14.8-4 3.9-7.9 7.8-11.8 11.8l-12.6 12.6-12 12c-4.4 4.4-8.8 8.7-13.1 13.1-5 5-10 9.9-14.9 14.9l-14.1 14.1c-4.7 4.8-9.5 9.5-14.3 14.3-4.4 4.2-8.4 8.9-13.3 12.5-6.1 3.9-13.3 5.8-20.6 5.7-8.4-.5-16.6-3.8-22.6-9.8l-55.8-55.8c-4.6-4.5-7.6-10.3-9.2-16.5-1.7-8.5-.7-17.6 3.7-25.1 3.3-5.9 8.5-10.5 14.3-13.8 6.4-3 13.5-4.3 20.6-3.5 7.6 1.1 14.9 4.6 20.2 10.2 10.1 10.1 20.1 20.2 30.3 30.3 3.1-2.9 6-5.9 8.9-9 4.3-4.1 8.4-8.3 12.5-12.6 4-3.8 7.9-7.8 11.8-11.8 2.7-2.4 5.2-5.2 7.8-7.7 4.3-4.1 8.4-8.4 12.6-12.6 4-3.8 7.9-7.8 11.8-11.7 4.2-4.1 8.3-8.3 12.4-12.4 4.2-4.2 9.3-7.5 15-9.4Z"/></svg>
+                                @elseif ($key === 'rubika')
+                                    <svg viewBox="0 0 275.4 312.4" aria-hidden="true"><path fill="#efeeef" d="M206.6 116.4v79.5l-68.9 39.8v-79.5z"/><path fill="#e3e3e3" d="M137.7 156.2v79.5l-68.8-39.8v-79.5z"/><path fill="#fdfdfd" d="m206.6 116.4-68.9 39.8-68.8-39.8 68.8-39.7z"/><path fill="#7a4587" d="M275.4 87.3v68.9l-68.9-39.8 66.4-38.3c1.6 2.7 2.5 5.9 2.5 9.2"/><path fill="#e54d52" d="M275.4 156.2v68.9c0 3.3-.9 6.4-2.5 9.2L206.5 196z"/><path fill="#4d3884" d="m275.4 156.2-68.8 39.7v-79.5z"/><path fill="#f4a926" d="m137.7 235.7 68.9-39.8v79.6z"/><path fill="#38ad9c" d="M206.6 36.9v79.5l-68.9-39.7z"/><path fill="#7eb427" d="m206.6 36.9-68.9 39.8V0c3.1 0 6.3.8 9.1 2.4h.1z"/><path fill="#b8cd06" d="M206.6 275.5 146.9 310c-.2.1-.4.2-.5.3-2.7 1.4-5.7 2.2-8.6 2.2v-76.7l68.9 39.8Z"/><path fill="#5bd5bd" d="m273 78.1-66.4 38.3V36.9l59.7 34.5c2.8 1.6 5.1 4 6.7 6.7"/><path fill="#ee7617" d="M273 234.3c-1.6 2.7-3.9 5.1-6.7 6.7l-59.7 34.5V196z"/><path fill="#4d3884" d="M68.9 195.9 2.5 234.3c-1.6-2.8-2.5-5.9-2.5-9.2v-68.9L68.9 196Z"/><path fill="#e54d52" d="M68.9 116.4 0 156.2V87.3c0-3.3.9-6.4 2.5-9.2z"/><path fill="#7a4587" d="m0 156.2 68.9-39.8v79.5z"/><path fill="#f4a926" d="m137.7 76.7-68.8 39.7V36.9z"/><path fill="#38ad9c" d="M68.9 275.5v-79.6l68.8 39.8z"/><path fill="#7eb427" d="M137.7 235.7v76.7c-3 0-5.9-.7-8.6-2.2-.2-.1-.4-.2-.5-.3l-59.7-34.5 68.9-39.8Z"/><path fill="#b8cd06" d="M137.7 0v76.7L68.8 36.9l59.7-34.4h.1c2.8-1.6 5.9-2.4 9.1-2.4Z"/><path fill="#5bd5bd" d="M68.9 195.9v79.5L9.2 240.9c-2.8-1.6-5.1-4-6.7-6.7z"/><path fill="#ee7617" d="M68.9 36.9v79.5L2.5 78.1c1.6-2.7 3.9-5.1 6.7-6.7z"/></svg>
+                                @else
+                                    <svg aria-hidden="true"><use href="#contact-{{ $key }}"/></svg>
+                                @endif
+                            </a>
+                        @endforeach
+                    </div>
+                </article>
+
+                <article class="contact-info__item">
+                    <div class="contact-info__icon" aria-hidden="true"><svg><use href="#contact-clock"/></svg></div>
+                    <h3>ساعات کاری</h3>
+                    <p class="contact-info__text">{{ $contact['hours'] ?? '' }}</p>
+                </article>
             </div>
-            <div>
-                <label for="phone" class="mb-1 block text-sm font-medium text-slate-700">تلفن</label>
-                <input type="text" id="phone" name="phone" value="{{ old('phone') }}" dir="ltr" class="w-full rounded-lg border border-slate-300 px-4 py-3 focus:border-teal-600 focus:outline-none">
+        </div>
+    </section>
+
+    <section class="contact-form-section">
+        <div class="contact-wrap">
+            <div class="contact-form-box">
+                <p class="contact-form-title">در صورت نیاز به برقراری ارتباط تلفنی با کارشناسان مجموعه فرم زیر را تکمیل کنید.</p>
+
+                <div class="contact-form-grid">
+                    <form id="contactForm" method="POST" action="{{ route('contact.store') }}">
+                        @csrf
+
+                        @if (session('success'))
+                            <p class="contact-form-alert" role="status">{{ session('success') }}</p>
+                        @endif
+
+                        @foreach ($formRows as $row)
+                            <div @class(['form-row' => count($row) > 1])>
+                                @foreach ($row as $field)
+                                    <div @class(['form-group', 'form-group-full' => count($row) === 1])>
+                                        @if ($field['type'] === 'textarea')
+                                            <textarea
+                                                id="{{ $field['id'] }}"
+                                                name="{{ $field['name'] }}"
+                                                placeholder="{{ $field['label'] }}"
+                                                aria-label="{{ $field['label'] }}"
+                                                rows="5"
+                                                required
+                                                @class(['is-invalid' => $errors->has($field['name'])])
+                                            >{{ old($field['name']) }}</textarea>
+                                        @else
+                                            <input
+                                                type="{{ $field['type'] }}"
+                                                id="{{ $field['id'] }}"
+                                                name="{{ $field['name'] }}"
+                                                placeholder="{{ $field['label'] }}"
+                                                aria-label="{{ $field['label'] }}"
+                                                value="{{ old($field['name']) }}"
+                                                required
+                                                @class(['is-invalid' => $errors->has($field['name'])])
+                                            >
+                                        @endif
+                                        @error($field['name']) <p class="contact-form-error">{{ $message }}</p> @enderror
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endforeach
+
+                        <div class="form-submit">
+                            <button type="submit">ارسال</button>
+                        </div>
+                    </form>
+
+                    <div class="contact-map">
+                        <iframe
+                            src="{{ $contact['map'] }}"
+                            title="موقعیت راهبر حساب روی نقشه"
+                            loading="lazy"
+                            allowfullscreen
+                            referrerpolicy="no-referrer-when-downgrade"
+                        ></iframe>
+                        <a class="contact-map__link" href="{{ $contact['map_link'] }}" target="_blank" rel="noopener noreferrer">مشاهده در گوگل‌مپ</a>
+                    </div>
+                </div>
             </div>
-            <div>
-                <label for="subject" class="mb-1 block text-sm font-medium text-slate-700">موضوع</label>
-                <input type="text" id="subject" name="subject" value="{{ old('subject', request('product')) }}" class="w-full rounded-lg border border-slate-300 px-4 py-3 focus:border-teal-600 focus:outline-none">
-            </div>
-            <div>
-                <label for="message" class="mb-1 block text-sm font-medium text-slate-700">پیام *</label>
-                <textarea id="message" name="message" rows="5" required class="w-full rounded-lg border border-slate-300 px-4 py-3 focus:border-teal-600 focus:outline-none">{{ old('message') }}</textarea>
-                @error('message') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-            </div>
-            <button type="submit" class="w-full rounded-xl bg-teal-700 px-6 py-3 font-semibold text-white hover:bg-teal-800">ارسال پیام</button>
-        </form>
-    </div>
+        </div>
+    </section>
 </div>
 @endsection

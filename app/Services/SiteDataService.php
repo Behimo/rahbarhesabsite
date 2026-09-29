@@ -99,15 +99,26 @@ class SiteDataService
 
     public function contact(): array
     {
+        $mobile = CmsSetting::get('contact_mobile', '09333658333');
+
         return [
             'email' => CmsSetting::get('contact_email', config('cms.contact_email') ?: 'info@rahbarhesab.com'),
             'phone' => CmsSetting::get('contact_phone', config('cms.contact_phone') ?: '02191020105'),
             'phone_display' => CmsSetting::get('contact_phone_display', '۰۲۱-۹۱۰۲۰۱۰۵'),
-            'mobile' => CmsSetting::get('contact_mobile', '09333658333'),
+            'mobile' => $mobile,
             'mobile_display' => CmsSetting::get('contact_mobile_display', '۰۹۳۳۳۶۵۸۳۳۳'),
-            'instagram' => CmsSetting::get('social_instagram', config('cms.social.instagram')),
-            'telegram' => CmsSetting::get('social_telegram', config('cms.social.telegram')),
-            'linkedin' => CmsSetting::get('social_linkedin', config('cms.social.linkedin')),
+            'address' => CmsSetting::get('contact_address', "تهران - خیابان توحید نبش کوچه\nصائب"),
+            'hours' => CmsSetting::get('contact_hours', 'شنبه تا پنجشنبه ۹ الی ۲۱'),
+            'map' => CmsSetting::get('contact_map', 'https://www.google.com/maps?q=35.7016614,51.3779503&hl=fa&z=17&output=embed'),
+            'map_link' => 'https://maps.app.goo.gl/ps5hwVey1WyJ1ptU6',
+            'instagram' => CmsSetting::get('social_instagram', config('cms.social.instagram')) ?: 'https://instagram.com/Rahbarhesab',
+            'telegram' => CmsSetting::get('social_telegram', config('cms.social.telegram')) ?: 'https://t.me/rahbarhesab_MR',
+            'whatsapp' => CmsSetting::get('social_whatsapp') ?: 'https://wa.me/989334653933',
+            'youtube' => CmsSetting::get('social_youtube') ?: 'https://www.youtube.com/@OfficialRahbarhesab',
+            'aparat' => CmsSetting::get('social_aparat') ?: 'https://www.aparat.com/Rahbarhesab',
+            'bale' => CmsSetting::get('social_bale') ?: 'https://ble.ir/rahbarhesab',
+            'rubika' => CmsSetting::get('social_rubika') ?: 'https://rubika.ir/rahbarhesab1',
+            'linkedin' => CmsSetting::get('social_linkedin', config('cms.social.linkedin')) ?: 'https://www.linkedin.com/in/%D9%85%D9%88%D8%B3%D8%B3%D9%87-%D8%AE%D8%AF%D9%85%D8%A7%D8%AA%DB%8C-%D9%88-%D8%A2%D9%85%D9%88%D8%B2%D8%B4%DB%8C-%D9%85%D8%A7%D9%84%DB%8C-%D9%88-%D9%85%D8%A7%D9%84%DB%8C%D8%A7%D8%AA-%D8%B1%D9%87%D8%A8%D8%B1%D8%AD%D8%B3%D8%A7%D8%A8-034ba83a9/',
         ];
     }
 

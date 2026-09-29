@@ -1055,3 +1055,46 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+  const playButton = document.querySelector(".about-page .play-btn");
+  const dialog = document.querySelector(".about-video-dialog");
+
+  if (!playButton || !dialog || typeof dialog.showModal !== "function") return;
+
+  const frame = dialog.querySelector("iframe");
+  const empty = dialog.querySelector(".about-video-dialog__empty");
+
+  const stopVideo = () => {
+    if (!frame) return;
+    frame.removeAttribute("src");
+    frame.hidden = true;
+  };
+
+  playButton.addEventListener("click", () => {
+    const src = playButton.getAttribute("data-video") || "";
+
+    if (frame) {
+      if (src) {
+        frame.src = src;
+        frame.hidden = false;
+        if (empty) empty.hidden = true;
+      } else {
+        stopVideo();
+        if (empty) empty.hidden = false;
+      }
+    }
+
+    if (!dialog.open) dialog.showModal();
+  });
+
+  dialog.querySelector("[data-about-video-close]")?.addEventListener("click", () => {
+    dialog.close();
+  });
+
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) dialog.close();
+  });
+
+  dialog.addEventListener("close", stopVideo);
+});

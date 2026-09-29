@@ -16,7 +16,6 @@ class ContactController extends SiteController
         return $this->renderSystemPage('contact', 'pages.contact', [
             'seo' => $seo,
             'contact' => $this->siteData->contact(),
-            'faq' => $this->siteData->contactFaq(),
             'structuredData' => [
                 $this->seo->breadcrumbSchema([
                     ['name' => 'خانه', 'url' => route('home')],
@@ -29,8 +28,8 @@ class ContactController extends SiteController
 
     public function store(ContactMessageRequest $request): RedirectResponse
     {
-        ContactMessage::query()->create($request->validated());
+        ContactMessage::query()->create($request->messageAttributes());
 
-        return back()->with('success', 'پیام شما با موفقیت ارسال شد. در ۲۴ ساعت پاسخ می‌دهیم.');
+        return back()->with('success', 'درخواست شما ثبت شد. کارشناسان مجموعه در ساعات کاری با شما تماس می‌گیرند.');
     }
 }
