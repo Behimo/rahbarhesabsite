@@ -632,20 +632,11 @@ class SiteDataService
     private function normalizeNavLinks(array $items): array
     {
         return collect($items)->map(function (array $item) {
-            $href = $item['href'] ?? $item['url'] ?? null;
-            $children = [];
-
-            foreach ($item['children'] ?? [] as $child) {
-                $children[] = [
-                    'label' => $child['label'] ?? '',
-                    'href' => $child['href'] ?? $child['url'] ?? '#',
-                    'target' => $child['target'] ?? '_self',
-                ];
-            }
+            $children = $this->normalizeNavLinks($item['children'] ?? []);
 
             $link = [
                 'label' => $item['label'] ?? '',
-                'href' => $href,
+                'href' => $item['href'] ?? $item['url'] ?? null,
                 'target' => $item['target'] ?? '_self',
             ];
 
@@ -659,7 +650,7 @@ class SiteDataService
             }
 
             return $link;
-        })->all();
+        })->values()->all();
     }
 
     public function clearCache(): void

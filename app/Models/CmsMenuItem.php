@@ -38,20 +38,24 @@ class CmsMenuItem extends Model
 
     public function resolveUrl(): string
     {
-        return match ($this->type) {
-            'route' => $this->route_name
-                ? route($this->route_name, $this->route_params ?? [])
-                : '#',
-            'page' => isset($this->meta['slug'])
-                ? route('pages.show', $this->meta['slug'])
-                : '#',
-            'post' => isset($this->meta['slug'])
-                ? route('blog.show', $this->meta['slug'])
-                : '#',
-            'course' => isset($this->meta['slug'])
-                ? route('courses.show', $this->meta['slug'])
-                : '#',
-            default => $this->url ?? '#',
-        };
+        try {
+            return match ($this->type) {
+                'route' => $this->route_name
+                    ? route($this->route_name, $this->route_params ?? [])
+                    : '#',
+                'page' => isset($this->meta['slug'])
+                    ? route('pages.show', $this->meta['slug'])
+                    : '#',
+                'post' => isset($this->meta['slug'])
+                    ? route('blog.show', $this->meta['slug'])
+                    : '#',
+                'course' => isset($this->meta['slug'])
+                    ? route('courses.show', $this->meta['slug'])
+                    : '#',
+                default => $this->url ?: '#',
+            };
+        } catch (\Throwable) {
+            return $this->url ?: '#';
+        }
     }
 }

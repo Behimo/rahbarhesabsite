@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\CmsAdmin;
+use App\Models\CmsMenu;
 use App\Models\CmsPage;
 use App\Services\MenuService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -151,5 +152,65 @@ class CmsExtensionsTest extends TestCase
         $links = app(MenuService::class)->linksForLocation('missing');
 
         $this->assertSame([], $links);
+    }
+
+    public function test_nested_menu_is_stored_and_rendered_on_the_site(): void
+    {
+        $admin = CmsAdmin::query()->create([
+            'name' => 'Admin',
+            'email' => 'menu@test.com',
+            'password' => bcrypt('password'),
+            'is_super' => true,
+        ]);
+
+        $menu = CmsMenu::query()->create([
+            'name' => 'اصلی',
+            'slug' => 'primary-nav',
+            'location' => 'primary',
+        ]);
+
+        $this->actingAs($admin, 'cms')
+            ->postJson(route('admin.menus.tree', $menu), [
+                'tree' => [
+                    [
+                        'label' => 'آموزش',
+                        'type' => 'custom',
+                        'url' => '/courses',
+                        'target' => '_self',
+                        'children' => [
+                            [
+                                'label' => 'حسابداری',
+                                'type' => 'custom',
+                                'url' => '/courses/accounting',
+                                'children' => [
+                                    [
+                                        'label' => 'سطح سوم منوی آزمایشی',
+                                        'type' => 'custom',
+                                        'url' => '/courses/accounting/basic',
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ])
+            ->assertOk()
+            ->assertJsonPath('tree.0.children.0.children.0.label', 'سطح سوم منوی آزمایشی');
+
+        $this->actingAs($admin, 'cms')
+            ->get(route('admin.menus.edit', $menu))
+            ->assertOk()
+            ->assertSee('id="menu-builder"', false)
+            ->assertSee('initialTree', false);
+
+        $links = app(MenuService::class)->linksForLocation('primary');
+
+        $this->assertSame('سطح سوم منوی آزمایشی', $links[0]['children'][0]['children'][0]['label']);
+        $this->assertSame('/courses/accounting/basic', $links[0]['children'][0]['children'][0]['href']);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('سطح سوم منوی آزمایشی', false)
+            ->assertSee('nav-dropdown-sub', false);
     }
 }
