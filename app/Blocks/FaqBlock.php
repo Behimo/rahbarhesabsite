@@ -35,9 +35,9 @@ class FaqBlock extends AbstractBlock
 
     public function render(array $settings): string
     {
-        $faqs = $this->normalizeFaqs($settings['items'] ?? []);
-
-        if ($faqs === []) {
+        if (array_key_exists('items', $settings)) {
+            $faqs = $this->normalizeFaqs($settings['items'] ?? []);
+        } else {
             $faqs = app(PageRenderContext::class)->get('faqs', app(HomePageDefaults::class)->defaultFaqs());
         }
 

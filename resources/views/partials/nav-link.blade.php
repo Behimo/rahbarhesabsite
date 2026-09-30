@@ -34,7 +34,24 @@
         </button>
         <div class="dropdown-menu">
             @foreach ($children as $child)
-                <a href="{{ $resolveHref($child) }}" target="{{ $child['target'] ?? '_self' }}">{{ $child['label'] }}</a>
+                @php $grandchildren = $child['children'] ?? []; @endphp
+                @if ($grandchildren !== [])
+                    <div class="dropdown-submenu">
+                        <button class="dropdown-submenu-trigger" type="button">
+                            {{ $child['label'] }}
+                            <svg viewBox="0 0 20 20" aria-hidden="true">
+                                <path d="M12 5L7 10L12 15" />
+                            </svg>
+                        </button>
+                        <div class="dropdown-submenu-menu">
+                            @foreach ($grandchildren as $grandchild)
+                                <a href="{{ $resolveHref($grandchild) }}" target="{{ $grandchild['target'] ?? '_self' }}">{{ $grandchild['label'] }}</a>
+                            @endforeach
+                        </div>
+                    </div>
+                @else
+                    <a href="{{ $resolveHref($child) }}" target="{{ $child['target'] ?? '_self' }}">{{ $child['label'] }}</a>
+                @endif
             @endforeach
         </div>
     </div>

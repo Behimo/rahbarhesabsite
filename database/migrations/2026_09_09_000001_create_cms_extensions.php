@@ -164,17 +164,6 @@ return new class extends Migration
             });
         }
 
-        if (! Schema::hasTable('cms_blocks')) {
-            Schema::create('cms_blocks', function (Blueprint $table) {
-                $table->id();
-                $table->string('slug')->unique();
-                $table->string('name');
-                $table->string('type');
-                $table->json('settings')->nullable();
-                $table->timestamps();
-            });
-        }
-
         if (! Schema::hasTable('spotplayer_licenses')) {
             Schema::create('spotplayer_licenses', function (Blueprint $table) {
                 $table->id();
@@ -220,7 +209,6 @@ return new class extends Migration
         Schema::dropIfExists('personal_access_tokens');
         Schema::dropIfExists('cms_redirects');
         Schema::dropIfExists('spotplayer_licenses');
-        Schema::dropIfExists('cms_blocks');
         Schema::dropIfExists('cms_page_revisions');
         Schema::dropIfExists('cms_menu_items');
         Schema::dropIfExists('cms_menus');

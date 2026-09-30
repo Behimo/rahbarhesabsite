@@ -65,7 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
     */
 
   dropdowns.forEach((dropdown) => {
-    const trigger = dropdown.querySelector(".dropdown-trigger");
+    const trigger = dropdown.querySelector(":scope > .dropdown-trigger");
 
     if (!trigger) {
       return;
@@ -83,6 +83,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
         dropdown.classList.toggle("open");
       }
+    });
+  });
+
+  document.querySelectorAll(".dropdown-submenu-trigger").forEach((trigger) => {
+    trigger.addEventListener("click", (event) => {
+      if (window.innerWidth > 980) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      const submenu = trigger.closest(".dropdown-submenu");
+
+      if (!submenu) {
+        return;
+      }
+
+      submenu.parentElement?.querySelectorAll(".dropdown-submenu.open").forEach((item) => {
+        if (item !== submenu) {
+          item.classList.remove("open");
+        }
+      });
+
+      submenu.classList.toggle("open");
     });
   });
 

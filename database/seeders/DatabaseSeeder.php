@@ -16,7 +16,9 @@ class DatabaseSeeder extends Seeder
             PlatformSeeder::class,
             RahbarHesabSeeder::class,
             CmsExtensionsSeeder::class,
+            MenuSeeder::class,
             DemoContentSeeder::class,
+            HomeBlocksSeeder::class,
         ]);
     }
 }

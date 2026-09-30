@@ -72,7 +72,7 @@
         <div class="about-visual">
           <img
             class="main-pawn about-banner-image"
-            src="{{ !empty($banner_image) ? $banner_image : asset('site/images/rahbar-hesab-new-banner.webp') }}"
+            src="{{ block_media($banner_image ?? '', 'site/images/rahbar-hesab-new-banner.webp') }}"
             alt="مهره شطرنج راهبر حساب"
           />
           <div class="pawn-shadow"></div>

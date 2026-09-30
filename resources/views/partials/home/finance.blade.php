@@ -1,81 +1,52 @@
+@php
+    $defaults = app(\App\Services\HomePageDefaults::class)->section('finance');
+    $heading = $heading ?? $defaults['heading'];
+    $description = $description ?? $defaults['description'];
+    $items = $items ?? $defaults['items'];
+    $image = $image ?? $defaults['image'];
+    $ctaText = $ctaText ?? ($cta_text ?? $defaults['cta_text']);
+    $ctaUrl = $ctaUrl ?? ($cta_url ?? $defaults['cta_url']);
+@endphp
 <section class="rahbar-finance-section" id="rahbarFinance">
       <div class="rahbar-finance-container">
-        <!-- =========================
-             سمت راست - محتوا
-        ========================== -->
         <div class="rahbar-finance-content">
           <div class="finance-content-inner">
-            <h2>راهبر مالی، خدمات تخصصی مالی و مالیاتی برای شرکت ها</h2>
+            <h2>{{ $heading }}</h2>
 
-            <p class="finance-description">
-              اگر می خواهید امور مالی و حسابداری شرکتتان کاملاً اصولی و مطابق با
-              قوانین پیش برود و نگرانی بابت پرداخت مالیات غیرعادلانه نداشته
-              باشید مجموعه ما اینجاست تا همراهتان باشد!
-            </p>
+            <p class="finance-description">{{ $description }}</p>
 
             <ul class="finance-features">
+              @foreach ($items as $item)
               <li>
                 <span class="finance-check">
                   <svg viewBox="0 0 24 24">
                     <path d="M6.5 12.5L10.2 16L17.8 8.5" />
                   </svg>
                 </span>
-
-                <span> ارائه خدمات مالی و مالیاتی تخصصی </span>
+                <span>{{ $item['text'] ?? ($item['title'] ?? '') }}</span>
               </li>
-
-              <li>
-                <span class="finance-check">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M6.5 12.5L10.2 16L17.8 8.5" />
-                  </svg>
-                </span>
-
-                <span> انجام تمامی تکالیف قانونی </span>
-              </li>
-
-              <li>
-                <span class="finance-check">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M6.5 12.5L10.2 16L17.8 8.5" />
-                  </svg>
-                </span>
-
-                <span> پشتیبانی حرفه ای و همراهی مستمر </span>
-              </li>
-
-              <li>
-                <span class="finance-check">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M6.5 12.5L10.2 16L17.8 8.5" />
-                  </svg>
-                </span>
-
-                <span> پرداخت مالیات عادلانه و بدون دغدغه </span>
-              </li>
+              @endforeach
             </ul>
 
-            <a href="{{ route('about') }}" class="finance-more-button">
-              <span> سایر خدمات راهبر مالی </span>
-
+            @if (filled($ctaText))
+            <a href="{{ $ctaUrl ?: '#' }}" class="finance-more-button">
+              <span>{{ $ctaText }}</span>
               <span class="finance-button-arrow">
                 <svg viewBox="0 0 24 24">
                   <path d="M14 5L7 12L14 19" />
                 </svg>
               </span>
             </a>
+            @endif
           </div>
         </div>
 
-        <!-- =========================
-             سمت چپ - تصویر
-        ========================== -->
         <div class="rahbar-finance-visual">
           <div class="finance-image-wrapper">
             <div class="finance-circle finance-circle-1">
               <img
-                src="{{ asset('site/images/99605e6a-3a2b-44b4-a380-a9980fb0b822.png') }}"
-                alt="تیم خدمات مالی و مالیاتی راهبر حساب"
+                src="{{ block_media($image, 'site/images/99605e6a-3a2b-44b4-a380-a9980fb0b822.png') }}"
+                alt="{{ $heading }}"
                 class="finance-team-image"
               />
             </div>

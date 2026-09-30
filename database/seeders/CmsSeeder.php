@@ -48,7 +48,11 @@ class CmsSeeder extends Seeder
 
             if ($slug === 'home') {
                 $payload['builder_enabled'] = true;
-                $payload['builder_content'] = $homeDefaults->builderContent();
+                $existing = CmsPage::query()->where('slug', $slug)->first();
+
+                if ($existing === null || empty($existing->builder_content['blocks'] ?? null)) {
+                    $payload['builder_content'] = $homeDefaults->builderContent();
+                }
             }
 
             CmsPage::query()->updateOrCreate(['slug' => $slug], $payload);

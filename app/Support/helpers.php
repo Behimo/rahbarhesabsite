@@ -2,6 +2,27 @@
 
 use Illuminate\Support\Carbon;
 
+if (! function_exists('block_media')) {
+    function block_media(?string $path, string $fallback = ''): string
+    {
+        $path = trim((string) $path);
+
+        if ($path === '') {
+            $path = $fallback;
+        }
+
+        if ($path === '') {
+            return '';
+        }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://') || str_starts_with($path, '/')) {
+            return $path;
+        }
+
+        return asset($path);
+    }
+}
+
 if (! function_exists('fa_digits')) {
     function fa_digits(int|string|null $value): string
     {
