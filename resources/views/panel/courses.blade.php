@@ -1,4 +1,4 @@
-@extends('theme::layouts.panel')
+@extends('layouts.panel')
 
 @section('title', 'دوره‌های من')
 

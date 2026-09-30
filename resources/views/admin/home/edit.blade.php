@@ -32,7 +32,7 @@
             </div>
             <div class="mb-3">
                 <label class="form-label">تصویر بنر (آدرس)</label>
-                <input type="text" name="banner_image" value="{{ old('banner_image', $content['about']['banner_image'] ?? '') }}" class="form-control" dir="ltr" placeholder="/themes/rahbarhesab/images/...">
+                <input type="text" name="banner_image" value="{{ old('banner_image', $content['about']['banner_image'] ?? '') }}" class="form-control" dir="ltr" placeholder="/site/images/...">
             </div>
             <div>
                 <label class="form-label">لینک دانلود اپ</label>

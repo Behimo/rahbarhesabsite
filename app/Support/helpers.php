@@ -1,14 +1,6 @@
 <?php
 
-use App\Services\ThemeService;
 use Illuminate\Support\Carbon;
-
-if (! function_exists('theme_asset')) {
-    function theme_asset(string $path): string
-    {
-        return app(ThemeService::class)->asset($path);
-    }
-}
 
 if (! function_exists('fa_digits')) {
     function fa_digits(int|string|null $value): string

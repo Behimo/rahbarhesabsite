@@ -21,7 +21,6 @@ use App\Http\Controllers\Admin\RedirectController as AdminRedirectController;
 use App\Http\Controllers\Admin\SearchController as AdminSearchController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Admin\TaxonomyController as AdminTaxonomyController;
-use App\Http\Controllers\Admin\ThemeController as AdminThemeController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Panel\DashboardController as PanelDashboardController;
@@ -40,6 +39,13 @@ use Illuminate\Support\Facades\Route;
 | SEO, Sitemaps & Feeds
 |--------------------------------------------------------------------------
 */
+Route::get('/themes/rahbarhesab/{path}', function (string $path) {
+    abort_if(str_contains($path, '..'), 404);
+    abort_unless(is_file(public_path('site/'.$path)), 404);
+
+    return redirect('/site/'.$path, 301);
+})->where('path', '.*');
+
 Route::controller(SitemapController::class)->group(function () {
     Route::get('/sitemap_index.xml', 'index')->name('sitemap.index');
     Route::get('/sitemap.xml', 'legacy')->name('sitemap');
@@ -246,14 +252,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::put('/{menu}', 'update')->name('update');
             Route::post('/{menu}/tree', 'saveTree')->name('tree');
             Route::delete('/{menu}', 'destroy')->name('destroy');
-        });
-
-        // Themes & Plugins
-        Route::controller(AdminThemeController::class)->prefix('themes')->name('themes.')->group(function () {
-            Route::get('/', 'index')->name('index');
-            Route::post('/', 'store')->name('store');
-            Route::post('/{slug}/activate', 'activate')->name('activate');
-            Route::get('/{slug}/preview', 'preview')->name('preview');
         });
 
         Route::controller(AdminPluginController::class)->prefix('plugins')->name('plugins.')->group(function () {

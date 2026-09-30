@@ -87,18 +87,6 @@ return new class extends Migration
             });
         }
 
-        if (! Schema::hasTable('cms_themes')) {
-            Schema::create('cms_themes', function (Blueprint $table) {
-                $table->id();
-                $table->string('slug')->unique();
-                $table->string('name');
-                $table->string('version')->default('1.0.0');
-                $table->json('manifest')->nullable();
-                $table->boolean('is_active')->default(false);
-                $table->timestamps();
-            });
-        }
-
         if (! Schema::hasTable('cms_taxonomies')) {
             Schema::create('cms_taxonomies', function (Blueprint $table) {
                 $table->id();
@@ -239,7 +227,6 @@ return new class extends Migration
         Schema::dropIfExists('cms_termables');
         Schema::dropIfExists('cms_taxonomy_terms');
         Schema::dropIfExists('cms_taxonomies');
-        Schema::dropIfExists('cms_themes');
         Schema::dropIfExists('cms_audit_logs');
     }
 };

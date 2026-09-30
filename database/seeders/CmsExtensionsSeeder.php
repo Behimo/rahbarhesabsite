@@ -4,22 +4,14 @@ namespace Database\Seeders;
 
 use App\Models\CmsMenu;
 use App\Models\CmsMenuItem;
-use App\Models\CmsTheme;
 use App\Services\TaxonomyService;
-use App\Services\ThemeService;
 use Illuminate\Database\Seeder;
 
 class CmsExtensionsSeeder extends Seeder
 {
     public function run(): void
     {
-        app(ThemeService::class)->discover();
         app(TaxonomyService::class)->ensureDefaults();
-
-        CmsTheme::query()->updateOrCreate(
-            ['slug' => 'rahbarhesab'],
-            ['name' => 'راهبر حساب', 'version' => '1.0.0', 'is_active' => true]
-        );
 
         $menu = CmsMenu::query()->firstOrCreate(
             ['slug' => 'primary'],

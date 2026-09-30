@@ -11,7 +11,6 @@ use App\Services\PageRenderContext;
 use App\Services\PluginService;
 use App\Services\SpotPlayerService;
 use App\Services\TaxonomyService;
-use App\Services\ThemeService;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -22,7 +21,6 @@ class AppServiceProvider extends ServiceProvider
     {
         require_once app_path('Support/helpers.php');
 
-        $this->app->singleton(ThemeService::class);
         $this->app->singleton(PluginService::class);
         $this->app->singleton(BlockRegistry::class);
         $this->app->singleton(BlockRenderer::class);
@@ -45,8 +43,6 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
         }
-
-        app(ThemeService::class)->registerViews();
 
         if ($this->app->runningInConsole()) {
             return;

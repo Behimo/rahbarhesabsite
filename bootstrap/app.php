@@ -14,7 +14,6 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
         $middleware->append(\App\Http\Middleware\HandleCmsRedirects::class);
-        $middleware->prepend(\App\Http\Middleware\PreviewTheme::class);
 
         $middleware->alias([
             'cms.admin' => \App\Http\Middleware\EnsureCmsAdmin::class,

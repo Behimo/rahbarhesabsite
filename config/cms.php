@@ -3,7 +3,7 @@
 return [
     'site_name' => env('CMS_SITE_NAME', 'Rahbar Hesab'),
     'site_name_fa' => env('CMS_SITE_NAME_FA', 'راهبر حساب'),
-    'default_og_image' => env('CMS_OG_IMAGE', '/themes/rahbarhesab/og-image.png'),
+    'default_og_image' => env('CMS_OG_IMAGE', '/site/images/logorahbarhesab.webp'),
     'twitter_handle' => env('CMS_TWITTER', '@rahbarhesab'),
     'contact_email' => env('CMS_CONTACT_EMAIL', 'info@rahbarhesab.ir'),
     'contact_phone' => env('CMS_CONTACT_PHONE'),
@@ -14,8 +14,6 @@ return [
     ],
     'admin_email' => env('CMS_ADMIN_EMAIL', 'admin@rahbarhesab.ir'),
     'admin_password' => env('CMS_ADMIN_PASSWORD'),
-
-    'active_theme' => env('CMS_ACTIVE_THEME', 'rahbarhesab'),
 
     'payment_gateway' => env('CMS_PAYMENT_GATEWAY', 'zibal'),
 
@@ -47,7 +45,7 @@ return [
     'branding' => [
         'logo' => env('CMS_LOGO', '/images/rahbarhesab/logo-full.png'),
         'favicon' => env('CMS_FAVICON', '/images/rahbarhesab/logo-full.png'),
-        'og_image' => env('CMS_OG_IMAGE', '/themes/rahbarhesab/og-image.png'),
+        'og_image' => env('CMS_OG_IMAGE', '/site/images/logorahbarhesab.webp'),
     ],
 
     /*

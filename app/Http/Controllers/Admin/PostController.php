@@ -8,7 +8,6 @@ use App\Models\CmsPost;
 use App\Models\CmsPostRevision;
 use App\Services\SiteDataService;
 use App\Services\TaxonomyService;
-use App\Services\ThemeService;
 use App\Support\PersianSlug;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,7 +20,6 @@ class PostController extends Controller
     public function __construct(
         private TaxonomyService $taxonomy,
         private SiteDataService $siteData,
-        private ThemeService $theme,
     ) {}
 
     public function index(Request $request): View
@@ -172,7 +170,7 @@ class PostController extends Controller
             'robots' => 'noindex, nofollow',
         ];
 
-        return $this->theme->view('pages.blog.show', array_merge(
+        return view('pages.blog.show', array_merge(
             $this->siteData->sharedViewData(),
             [
                 'post' => $post,
