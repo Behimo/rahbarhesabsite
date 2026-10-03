@@ -74,7 +74,7 @@ class Permission
             'admin.settings.*' => self::MANAGE_SETTINGS,
             'admin.plugins.*' => self::MANAGE_PLUGINS,
             'admin.menus.*' => self::MANAGE_MENUS,
-            'admin.taxonomies.*' => self::MANAGE_TAXONOMIES,
+            'admin.tags.*' => self::MANAGE_TAXONOMIES,
             'admin.media.*' => self::MANAGE_MEDIA,
             'admin.home.*' => self::MANAGE_PAGES,
             'admin.categories.*' => self::MANAGE_TAXONOMIES,

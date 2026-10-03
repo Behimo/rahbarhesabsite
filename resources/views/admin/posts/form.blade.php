@@ -138,26 +138,39 @@
                         <input type="text" name="author" value="{{ old('author', $post->author ?? config('cms.site_name_fa', 'راهبر حساب')) }}" class="form-control">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">دسته‌بندی</label>
-                        <select name="category_id" class="form-select">
-                            <option value="">بدون دسته</option>
+                        @include('admin.partials.category-ui')
+                        <div class="d-flex justify-content-between align-items-baseline gap-2 mb-2">
+                            <label class="form-label mb-0">دستهٔ اصلی</label>
+                            <a href="{{ route('admin.categories.index', ['type' => 'post']) }}" class="small">مدیریت درخت</a>
+                        </div>
+                        @php $selectedCategory = (string) old('category_id', $post->category?->id); @endphp
+                        <div class="cat-pick">
+                            <label class="cat-pick__row">
+                                <input class="form-check-input" type="radio" name="category_id" value="" @checked($selectedCategory === '')>
+                                <span class="cat-pick__name">بدون دسته</span>
+                            </label>
                             @foreach ($categories as $cat)
-                                <option value="{{ $cat->id }}" @selected(old('category_id', $post->category_id) == $cat->id)>{{ $cat->name }}</option>
+                                <label class="cat-pick__row" style="padding-inline-start: {{ .85 + ($cat->treeDepth * 1.15) }}rem">
+                                    <input class="form-check-input" type="radio" name="category_id" value="{{ $cat->id }}" @checked($selectedCategory === (string) $cat->id)>
+                                    <span>
+                                        <span class="cat-pick__name">{{ $cat->name }}</span>
+                                        <span class="cat-path">{{ $cat->full_slug }}</span>
+                                    </span>
+                                </label>
                             @endforeach
-                        </select>
-                        <div class="form-text"><a href="{{ route('admin.categories.index') }}">مدیریت دسته‌ها</a></div>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">برچسب‌ها</label>
                         <div class="tag-check-grid">
                             @forelse ($tags as $tag)
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="term_ids[]" value="{{ $tag->id }}" id="tag-{{ $tag->id }}"
-                                           @checked(in_array($tag->id, old('term_ids', $selectedTerms), true))>
+                                    <input class="form-check-input" type="checkbox" name="tag_ids[]" value="{{ $tag->id }}" id="tag-{{ $tag->id }}"
+                                           @checked(in_array($tag->id, array_map('intval', (array) old('tag_ids', $selectedTags)), true))>
                                     <label class="form-check-label" for="tag-{{ $tag->id }}">{{ $tag->name }}</label>
                                 </div>
                             @empty
-                                <span class="text-muted small">برچسبی نیست. از بخش Taxonomy بسازید.</span>
+                                <span class="text-muted small">برچسبی نیست. از <a href="{{ route('admin.tags.index') }}">برچسب‌ها</a> بسازید.</span>
                             @endforelse
                         </div>
                     </div>

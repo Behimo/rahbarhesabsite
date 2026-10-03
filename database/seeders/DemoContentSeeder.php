@@ -13,6 +13,7 @@ final class DemoContentSeeder extends Seeder
         $this->call([
             DemoBlogSeeder::class,
             DemoCourseSeeder::class,
+            ProductCategorySeeder::class,
         ]);
     }
 }

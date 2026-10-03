@@ -154,8 +154,8 @@ class CouponService
             }
 
             if ($target->target_type === 'category') {
-                $termIds = $product->taxonomyTerms()->pluck('cms_taxonomy_terms.id')->all();
-                if (in_array((int) $target->target_id, array_map('intval', $termIds), true)) {
+                $categoryIds = $product->categories()->pluck('categories.id')->all();
+                if (in_array((int) $target->target_id, array_map('intval', $categoryIds), true)) {
                     return true;
                 }
             }

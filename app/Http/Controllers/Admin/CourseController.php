@@ -3,19 +3,21 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\Course;
 use App\Models\CourseLesson;
 use App\Models\CourseSection;
 use App\Models\ShopProduct;
 use App\Models\User;
-use App\Services\TaxonomyService;
+use App\Services\CategoryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class CourseController extends Controller
 {
-    public function __construct(private TaxonomyService $taxonomy) {}
+    public function __construct(private CategoryService $categories) {}
 
     public function index(): View
     {
@@ -32,13 +34,13 @@ class CourseController extends Controller
     {
         $instructors = User::query()->whereIn('role', [User::ROLE_INSTRUCTOR, User::ROLE_ADMIN])->get();
 
-        $this->taxonomy->ensureDefaults();
-
         return view('admin.courses.form', [
             'product' => new ShopProduct(['type' => ShopProduct::TYPE_COURSE, 'is_published' => false]),
             'course' => new Course,
             'instructors' => $instructors,
-            'terms' => $this->taxonomy->termsFor('course-category'),
+            'categories' => $this->categories->flat(Category::TYPE_PRODUCT),
+            'selectedCategoryIds' => [],
+            'primaryCategoryId' => null,
         ]);
     }
 
@@ -48,7 +50,7 @@ class CourseController extends Controller
 
         $product = ShopProduct::query()->create($validated['product']);
         $product->course()->create($validated['course']);
-        $this->taxonomy->syncTerms($product, $request->input('term_ids', []));
+        $product->syncCategories($validated['category_ids'], $validated['primary_category_id']);
 
         return redirect()->route('admin.courses.edit', $product)->with('success', 'دوره ایجاد شد.');
     }
@@ -60,14 +62,15 @@ class CourseController extends Controller
         $course->load(['course.sections.lessons']);
         $instructors = User::query()->whereIn('role', [User::ROLE_INSTRUCTOR, User::ROLE_ADMIN])->get();
 
-        $this->taxonomy->ensureDefaults();
+        $selected = $course->categories()->pluck('categories.id')->all();
 
         return view('admin.courses.form', [
             'product' => $course,
             'course' => $course->course,
             'instructors' => $instructors,
-            'terms' => $this->taxonomy->termsFor('course-category'),
-            'selectedTerms' => $course->taxonomyTerms()->pluck('cms_taxonomy_terms.id')->all(),
+            'categories' => $this->categories->flat(Category::TYPE_PRODUCT),
+            'selectedCategoryIds' => $selected,
+            'primaryCategoryId' => $course->category?->id,
         ]);
     }
 
@@ -78,7 +81,7 @@ class CourseController extends Controller
         $validated = $this->validateCourse($request, $course);
         $course->update($validated['product']);
         $course->course->update($validated['course']);
-        $this->taxonomy->syncTerms($course, $request->input('term_ids', []));
+        $course->syncCategories($validated['category_ids'], $validated['primary_category_id']);
 
         return back()->with('success', 'دوره به‌روزرسانی شد.');
     }
@@ -201,6 +204,9 @@ class CourseController extends Controller
             'meta_title' => ['nullable', 'string', 'max:200'],
             'meta_description' => ['nullable', 'string', 'max:500'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
+            'category_ids' => ['nullable', 'array'],
+            'category_ids.*' => ['integer', Rule::exists('categories', 'id')->where('type', Category::TYPE_PRODUCT)],
+            'primary_category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('type', Category::TYPE_PRODUCT)],
         ]);
 
         $courseData = $request->validate([
@@ -212,11 +218,20 @@ class CourseController extends Controller
             'spotplayer_course_id' => ['nullable', 'string', 'max:100'],
         ]);
 
+        $categoryIds = array_map('intval', $productData['category_ids'] ?? []);
+        $primaryCategoryId = isset($productData['primary_category_id']) ? (int) $productData['primary_category_id'] : null;
+        unset($productData['category_ids'], $productData['primary_category_id']);
+
         $productData['type'] = ShopProduct::TYPE_COURSE;
         $productData['is_published'] = $request->boolean('is_published');
         $courseData['what_you_learn'] = array_values(array_filter(array_map('trim', explode("\n", $courseData['what_you_learn'] ?? ''))));
         $courseData['requirements'] = array_values(array_filter(array_map('trim', explode("\n", $courseData['requirements'] ?? ''))));
 
-        return ['product' => $productData, 'course' => $courseData];
+        return [
+            'product' => $productData,
+            'course' => $courseData,
+            'category_ids' => $categoryIds,
+            'primary_category_id' => $primaryCategoryId ?: null,
+        ];
     }
 }

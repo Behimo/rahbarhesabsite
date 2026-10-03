@@ -20,7 +20,7 @@ use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\RedirectController as AdminRedirectController;
 use App\Http\Controllers\Admin\SearchController as AdminSearchController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
-use App\Http\Controllers\Admin\TaxonomyController as AdminTaxonomyController;
+use App\Http\Controllers\Admin\TagController as AdminTagController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Panel\DashboardController as PanelDashboardController;
@@ -212,14 +212,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::put('/{post}', 'update')->name('update');
             Route::delete('/{post}', 'destroy')->name('destroy');
         });
-        Route::resource('categories', AdminCategoryController::class)->except(['create', 'edit', 'show']);
-
-        Route::controller(AdminTaxonomyController::class)->group(function () {
-            Route::get('taxonomies', 'index')->name('taxonomies.index');
-            Route::post('taxonomies', 'storeTaxonomy')->name('taxonomies.store');
-            Route::post('taxonomies/{taxonomy}/terms', 'storeTerm')->name('taxonomies.terms.store');
-            Route::delete('taxonomy-terms/{term}', 'destroyTerm')->name('taxonomies.terms.destroy');
-        });
+        Route::resource('categories', AdminCategoryController::class)->except(['show']);
+        Route::resource('tags', AdminTagController::class)->except(['create', 'edit', 'show']);
 
         // Courses & Curriculum (Sections & Lessons)
         Route::resource('products', AdminProductController::class)->except(['show']);

@@ -2,13 +2,13 @@
 
 namespace Database\Seeders;
 
-use App\Services\TaxonomyService;
+use App\Services\CategoryService;
 use Illuminate\Database\Seeder;
 
 class CmsExtensionsSeeder extends Seeder
 {
     public function run(): void
     {
-        app(TaxonomyService::class)->ensureDefaults();
+        app(CategoryService::class)->ensureDefaultTags();
     }
 }

@@ -26,9 +26,9 @@
                     همه مطالب
                 </a>
                 @foreach ($categories as $category)
-                    <a href="{{ route('blog.index', ['category' => $category->slug]) }}"
-                       class="blog-filter{{ $activeCategory === $category->slug ? ' is-active' : '' }}">
-                        {{ $category->name }}
+                    <a href="{{ route('blog.index', ['category' => $category->full_slug]) }}"
+                       class="blog-filter{{ $activeCategory === $category->full_slug || $activeCategory === $category->slug ? ' is-active' : '' }}">
+                        {{ str_repeat('– ', $category->treeDepth) }}{{ $category->name }}
                     </a>
                 @endforeach
             </nav>

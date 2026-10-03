@@ -17,14 +17,18 @@
                 <span class="blog-breadcrumb__sep" aria-hidden="true">/</span>
                 <a href="{{ route('blog.index') }}">اخبار و مقالات</a>
                 @if ($post->category)
+                    @foreach ($post->category->ancestors as $ancestor)
+                        <span class="blog-breadcrumb__sep" aria-hidden="true">/</span>
+                        <a href="{{ route('blog.index', ['category' => $ancestor->full_slug]) }}">{{ $ancestor->name }}</a>
+                    @endforeach
                     <span class="blog-breadcrumb__sep" aria-hidden="true">/</span>
-                    <a href="{{ route('blog.index', ['category' => $post->category->slug]) }}">{{ $post->category->name }}</a>
+                    <a href="{{ route('blog.index', ['category' => $post->category->full_slug]) }}">{{ $post->category->name }}</a>
                 @endif
             </nav>
 
             <header class="blog-article__header">
                 @if ($post->category)
-                    <a href="{{ route('blog.index', ['category' => $post->category->slug]) }}" class="blog-tag">{{ $post->category->name }}</a>
+                    <a href="{{ route('blog.index', ['category' => $post->category->full_slug]) }}" class="blog-tag">{{ $post->category->name }}</a>
                 @endif
                 <h1 class="blog-article__title">{{ $post->title }}</h1>
                 <div class="blog-article__byline">
@@ -51,10 +55,10 @@
                 {!! $post->body !!}
             </div>
 
-            @if ($post->relationLoaded('taxonomyTerms') ? $post->taxonomyTerms->isNotEmpty() : $post->taxonomyTerms()->exists())
+            @if ($post->relationLoaded('tags') ? $post->tags->isNotEmpty() : $post->tags()->exists())
                 <div class="blog-article__tags" style="margin-top:28px;display:flex;flex-wrap:wrap;gap:8px;">
-                    @foreach ($post->taxonomyTerms as $term)
-                        <span class="blog-tag blog-tag--quiet">{{ $term->name }}</span>
+                    @foreach ($post->tags as $tag)
+                        <span class="blog-tag blog-tag--quiet">{{ $tag->name }}</span>
                     @endforeach
                 </div>
             @endif

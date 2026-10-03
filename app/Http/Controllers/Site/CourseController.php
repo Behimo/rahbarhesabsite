@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers\Site;
 
-use App\Models\Course;
+use App\Models\Category;
+use App\Models\CourseEnrollment;
 use App\Models\CourseLesson;
 use App\Models\LessonProgress;
 use App\Models\ShopProduct;
 use App\Models\SpotplayerLicense;
+use App\Services\CategoryService;
 use App\Services\OrderService;
 use App\Services\SeoService;
 use App\Services\SiteDataService;
 use App\Services\SpotPlayerService;
-use App\Services\TaxonomyService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
@@ -28,17 +29,24 @@ class CourseController extends SiteController
         parent::__construct($siteData, $seo);
     }
 
-    public function index(Request $request, TaxonomyService $taxonomy): View
+    public function index(Request $request, CategoryService $categories): View
     {
         $type = $request->query('type');
+        $categoryPath = $request->string('category')->toString();
+        $category = $categoryPath !== ''
+            ? $categories->findByPath(Category::TYPE_PRODUCT, $categoryPath)
+            : null;
+        $categoryIds = $category ? $category->descendantsAndSelf()->pluck('id') : collect();
 
         $courses = ShopProduct::query()
             ->published()
             ->where('type', ShopProduct::TYPE_COURSE)
-            ->with(['course.instructor', 'taxonomyTerms'])
-            ->when($request->query('category'), function ($q, $category) {
-                $q->whereHas('taxonomyTerms', fn ($t) => $t->where('slug', $category));
-            })
+            ->with(['course.instructor', 'categories'])
+            ->when($category, fn ($q) => $q->whereHas(
+                'categories',
+                fn ($related) => $related->whereIn('categories.id', $categoryIds)
+            ))
+            ->when($categoryPath !== '' && ! $category, fn ($q) => $q->whereRaw('0 = 1'))
             ->when($request->query('q'), function ($q, $search) {
                 $q->where(function ($inner) use ($search) {
                     $inner->where('title', 'like', "%{$search}%")
@@ -50,7 +58,7 @@ class CourseController extends SiteController
             ->orderBy('sort_order')
             ->get();
 
-        $categories = $taxonomy->termsFor('course-category');
+        $categories = $categories->flat(Category::TYPE_PRODUCT, true);
 
         $seo = $this->seo->meta([
             'title' => 'دوره‌های آموزشی حسابداری | '.config('cms.site_name_fa'),
@@ -291,7 +299,7 @@ class CourseController extends SiteController
             return redirect()->route('login')->with('error', 'برای ثبت‌نام در دوره رایگان وارد شوید.');
         }
 
-        $this->orders->enrollUser(auth()->user(), $product->course, null, \App\Models\CourseEnrollment::SOURCE_FREE);
+        $this->orders->enrollUser(auth()->user(), $product->course, null, CourseEnrollment::SOURCE_FREE);
 
         $message = $product->course?->spotplayer_course_id
             ? 'ثبت‌نام انجام شد. دسترسی اسپات‌پلیر به‌زودی آماده می‌شود.'

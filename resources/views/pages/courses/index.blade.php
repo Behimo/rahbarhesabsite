@@ -16,7 +16,7 @@
         return route('courses.index', $query);
     };
 
-    $activeCategoryName = $categories->firstWhere('slug', $activeCategory)?->name;
+    $activeCategoryName = $categories->first(fn ($category) => $category->full_slug === $activeCategory || $category->slug === $activeCategory)?->name;
     $typeLabels = [
         'paid' => 'دوره‌های تخصصی',
         'free' => 'رایگان',
@@ -69,7 +69,7 @@
                     <div class="courses-archive-chips" role="navigation" aria-label="دسته‌بندی دوره‌ها">
                         <a href="{{ $filterUrl(['category' => null]) }}" class="{{ blank($activeCategory) ? 'is-active' : '' }}">همه</a>
                         @foreach ($categories as $category)
-                            <a href="{{ $filterUrl(['category' => $category->slug]) }}" class="{{ $activeCategory === $category->slug ? 'is-active' : '' }}">{{ $category->name }}</a>
+                            <a href="{{ $filterUrl(['category' => $category->full_slug]) }}" class="{{ $activeCategory === $category->full_slug || $activeCategory === $category->slug ? 'is-active' : '' }}">{{ $category->name }}</a>
                         @endforeach
                     </div>
                 </div>

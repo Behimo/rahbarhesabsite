@@ -6,8 +6,16 @@
     { "url": "admin/home", "name": "صفحه اصلی", "icon": "menu-icon tf-icons ti ti-home", "slug": "admin.home" },
     { "url": "admin/pages", "name": "صفحات", "icon": "menu-icon tf-icons ti ti-file-text", "slug": "admin.pages" },
     { "url": "admin/posts", "name": "بلاگ", "icon": "menu-icon tf-icons ti ti-article", "slug": "admin.posts" },
-    { "url": "admin/categories", "name": "دسته‌بندی بلاگ", "icon": "menu-icon tf-icons ti ti-category", "slug": "admin.categories" },
-    { "url": "admin/taxonomies", "name": "Taxonomy", "icon": "menu-icon tf-icons ti ti-tags", "slug": "admin.taxonomies" },
+    {
+      "name": "دسته‌بندی",
+      "icon": "menu-icon tf-icons ti ti-category",
+      "slug": ["admin.categories", "admin.tags"],
+      "submenu": [
+        { "url": "admin/categories?type=post", "name": "دسته‌های بلاگ", "slug": "admin.categories.index" },
+        { "url": "admin/categories?type=product", "name": "دسته‌های محصول", "slug": "admin.categories.index" },
+        { "url": "admin/tags", "name": "برچسب‌ها", "slug": "admin.tags.index" }
+      ]
+    },
     { "url": "admin/menus", "name": "منوساز", "icon": "menu-icon tf-icons ti ti-menu-2", "slug": "admin.menus" },
     { "url": "admin/products", "name": "محصولات", "icon": "menu-icon tf-icons ti ti-package", "slug": "admin.products" },
     { "url": "admin/courses", "name": "دوره‌های LMS", "icon": "menu-icon tf-icons ti ti-school", "slug": "admin.courses" },

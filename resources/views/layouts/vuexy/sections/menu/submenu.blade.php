@@ -8,8 +8,26 @@
       $active = $configData["layout"] === 'vertical' ? 'active open':'active';
       $currentRouteName =  Route::currentRouteName();
 
-      if ($currentRouteName === $submenu->slug) {
+      $menuUrl = (string) ($submenu->url ?? '');
+      $menuHasQuery = str_contains($menuUrl, '?');
+
+      if (! $menuHasQuery && $currentRouteName === $submenu->slug) {
           $activeClass = 'active';
+      }
+      elseif ($menuHasQuery) {
+          $targetPath = trim((string) parse_url($menuUrl, PHP_URL_PATH), '/');
+          $targetQuery = [];
+          parse_str((string) parse_url($menuUrl, PHP_URL_QUERY), $targetQuery);
+          $pathMatches = request()->is($targetPath) || request()->is($targetPath.'/*');
+          $queryMatches = true;
+          foreach ($targetQuery as $key => $value) {
+              if ((string) request()->query($key) !== (string) $value) {
+                  $queryMatches = false;
+              }
+          }
+          if ($pathMatches && $queryMatches) {
+              $activeClass = 'active';
+          }
       }
       elseif (isset($submenu->submenu)) {
         if (gettype($submenu->slug) === 'array') {

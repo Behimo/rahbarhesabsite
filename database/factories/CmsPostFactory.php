@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\CmsCategory;
 use App\Models\CmsPost;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -19,7 +18,6 @@ class CmsPostFactory extends Factory
         $title = fake()->sentence(6);
 
         return [
-            'category_id' => CmsCategory::factory(),
             'slug' => Str::slug($title).'-'.fake()->unique()->numerify('####'),
             'title' => $title,
             'excerpt' => fake()->sentence(12),
