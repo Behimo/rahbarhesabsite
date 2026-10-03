@@ -12,7 +12,6 @@ use App\Services\CategoryService;
 use App\Services\MenuService;
 use App\Services\PageBuilderService;
 use App\Services\PageRenderContext;
-use App\Services\PluginService;
 use App\Services\SpotPlayerService;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
@@ -24,7 +23,6 @@ class AppServiceProvider extends ServiceProvider
     {
         require_once app_path('Support/helpers.php');
 
-        $this->app->singleton(PluginService::class);
         $this->app->singleton(BlockRegistry::class);
         $this->app->singleton(BlockRenderer::class);
         $this->app->singleton(PageRenderContext::class);
@@ -46,16 +44,6 @@ class AppServiceProvider extends ServiceProvider
 
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
-        }
-
-        if ($this->app->runningInConsole()) {
-            return;
-        }
-
-        try {
-            app(PluginService::class)->bootActive();
-        } catch (\Throwable) {
-            // Database may not be migrated yet.
         }
     }
 }

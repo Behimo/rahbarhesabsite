@@ -14,7 +14,6 @@ use App\Http\Controllers\Admin\MessageController as AdminMessageController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\PageBuilderController;
 use App\Http\Controllers\Admin\PageController as AdminPageController;
-use App\Http\Controllers\Admin\PluginController as AdminPluginController;
 use App\Http\Controllers\Admin\PostController as AdminPostController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\RedirectController as AdminRedirectController;
@@ -246,12 +245,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::put('/{menu}', 'update')->name('update');
             Route::post('/{menu}/tree', 'saveTree')->name('tree');
             Route::delete('/{menu}', 'destroy')->name('destroy');
-        });
-
-        Route::controller(AdminPluginController::class)->prefix('plugins')->name('plugins.')->group(function () {
-            Route::get('/', 'index')->name('index');
-            Route::post('/', 'store')->name('store');
-            Route::post('/{plugin}/toggle', 'toggle')->name('toggle');
         });
 
         // Media Library

@@ -10,7 +10,7 @@
 
 این پروژه اسمش توی composer «Bisan corporate website and CMS» هست، ولی عملاً برای **راهبر حساب** (`rahbarhesab.com`) ساخته شده: سایت آموزشی + فروش دوره + بلاگ + صفحات CMS.
 
-اگه از وردپرس کار کرده باشی، ذهنیتش آشناست: قالب، افزونه، صفحه‌ساز. فقط به‌جای PHP خام وردپرس، Laravel 12 داریم.
+اگه از وردپرس کار کرده باشی، ذهنیتش آشناست: قالب و صفحه‌ساز. فقط به‌جای PHP خام وردپرس، Laravel 12 داریم.
 
 **استک اصلی:**
 - PHP 8.2+، Laravel 12
@@ -51,7 +51,6 @@ app/
   Support/          ← Permission، Money، helpers
 config/cms.php      ← تنظیمات CMS
 themes/rahbarhesab/ ← قالب فعال
-plugins/            ← افزونه‌ها
 resources/views/
   admin/            ← Blade ادمین
   blocks/           ← view رندر بلوک‌ها
@@ -98,7 +97,6 @@ routes/web.php      ← همه routeهای وب
 | ریدایرکت | `/admin/redirects` | `RedirectController` |
 | منوها | `/admin/menus` | `MenuController` |
 | قالب‌ها | `/admin/themes` | `ThemeController` |
-| افزونه‌ها | `/admin/plugins` | `PluginController` |
 | تنظیمات | `/admin/settings` | `SettingController` |
 | رسانه | `/admin/media` | `MediaController` |
 
@@ -144,7 +142,7 @@ routes/web.php      ← همه routeهای وب
 - `CmsPost` / `CmsCategory` — بلاگ
 - `CmsSetting` — key/value (لوگو، عنوان سایت، ...)
 - `CmsMenu` / `CmsMenuItem` — منوی سایت
-- `CmsTheme` / `CmsPlugin` — قالب و افزونه فعال
+- `CmsTheme` — قالب فعال
 - `CmsRedirect` — ریدایرکت 301/302
 
 ### فروش و LMS
@@ -317,18 +315,6 @@ themes/rahbarhesab/
 
 ---
 
-## افزونه‌ها
-
-ساختار: `plugins/MyPlugin/plugin.json` + ServiceProvider
-
-PSR-4: `Plugins\` — توی `composer.json` autoload شده.
-
-نمونه: `plugins/Example/`
-
-`AppServiceProvider::boot()` → `PluginService::bootActive()` افزونه‌های فعال رو boot می‌کنه.
-
----
-
 ## LMS و دوره‌ها
 
 **Admin:** `Admin\CourseController` — CRUD دوره، فصل، درس.
@@ -402,7 +388,7 @@ Middleware: `api.token` (`EnsureApiToken`)
 
 | دستور | کار |
 |-------|-----|
-| `cms:discover` | کشف قالب، افزونه، taxonomy پیش‌فرض |
+| `cms:discover` | ساخت برچسب‌های پیش‌فرض |
 | `cms:ensure-admin` | ساخت/آپدیت ادمین از `.env` |
 | `cms:publish-scheduled` | انتشار زمان‌بندی‌شده — **هر دقیقه scheduler** |
 | `cms:refresh-brand` | مهاجرت برندینگ قدیمی Bisan → Rahbar |
@@ -550,7 +536,7 @@ role توی `cms_admins` — `Permission::roleDefaults()`.
 ## جمع‌بندی برای کسی که تازه اومده
 
 ۱. Laravel معمولیه — MVC + Service layer.  
-۲. CMS شبیه WP: theme, plugin, block.  
+۲. CMS شبیه WP: theme و block.  
 ۳. دو auth جدا: cms admin vs user OTP (+ رمز اختیاری برای مهاجرت وردپرس).  
 ۴. LMS روی ShopProduct + Course سوار شده. قیمت تومان است؛ درگاه ریال.  
 ۵. صفحه‌ساز JSON توی `builder_content` — ColumnsBlock nested داره.  
