@@ -65,12 +65,6 @@ public function schema(): array
 2. `php artisan cms:discover`
 3. از پنل `/admin/themes` ZIP آپلود یا فعال‌سازی کنید.
 
-## افزودن افزونه
-
-1. پوشه `plugins/{Slug}/` با `plugin.json` و ServiceProvider.
-2. `php artisan cms:discover`
-3. از پنل `/admin/plugins` فعال کنید.
-
 ## REST API
 
 Header: `Authorization: Bearer {CMS_API_TOKEN}`

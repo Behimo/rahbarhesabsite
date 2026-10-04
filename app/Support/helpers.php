@@ -1,12 +1,25 @@
 <?php
 
-use App\Services\ThemeService;
 use Illuminate\Support\Carbon;
 
-if (! function_exists('theme_asset')) {
-    function theme_asset(string $path): string
+if (! function_exists('block_media')) {
+    function block_media(?string $path, string $fallback = ''): string
     {
-        return app(ThemeService::class)->asset($path);
+        $path = trim((string) $path);
+
+        if ($path === '') {
+            $path = $fallback;
+        }
+
+        if ($path === '') {
+            return '';
+        }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://') || str_starts_with($path, '/')) {
+            return $path;
+        }
+
+        return asset($path);
     }
 }
 

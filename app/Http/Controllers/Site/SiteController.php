@@ -8,7 +8,6 @@ use App\Services\BlockRenderer;
 use App\Services\PageBuilderService;
 use App\Services\SeoService;
 use App\Services\SiteDataService;
-use App\Services\ThemeService;
 use Illuminate\View\View as ViewResponse;
 
 abstract class SiteController extends Controller
@@ -21,7 +20,7 @@ abstract class SiteController extends Controller
 
     protected function render(string $view, array $data = []): ViewResponse
     {
-        return app(ThemeService::class)->view($view, array_merge(
+        return view($view, array_merge(
             $this->siteData->sharedViewData(),
             $data
         ));

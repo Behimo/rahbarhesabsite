@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Category;
 use App\Models\ShopProduct;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -39,6 +40,34 @@ class ShopProductFactory extends Factory
             'type' => ShopProduct::TYPE_COURSE,
             'is_published' => true,
         ]);
+    }
+
+    public function digital(): static
+    {
+        return $this->state(fn () => [
+            'type' => ShopProduct::TYPE_DIGITAL,
+            'stock' => null,
+            'is_published' => true,
+        ]);
+    }
+
+    public function physical(): static
+    {
+        return $this->state(fn () => [
+            'type' => ShopProduct::TYPE_PHYSICAL,
+            'stock' => fake()->numberBetween(3, 40),
+            'is_published' => true,
+        ]);
+    }
+
+    public function inCategories(Category $primary, Category ...$also): static
+    {
+        return $this->afterCreating(function (ShopProduct $product) use ($primary, $also) {
+            $product->syncCategories(
+                array_merge([$primary->id], array_map(fn (Category $category) => $category->id, $also)),
+                $primary->id
+            );
+        });
     }
 
     public function free(): static

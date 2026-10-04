@@ -50,7 +50,14 @@
     </div>
 </div>
 
-<form method="POST" action="{{ route('admin.pages.builder.save', $page) }}" id="builder-form">
+@if (session('success'))
+    <div class="alert alert-success">{{ session('success') }}</div>
+@endif
+@if ($errors->any())
+    <div class="alert alert-danger">{{ $errors->first() }}</div>
+@endif
+
+<form method="POST" action="{{ route('admin.pages.builder.save', $page) }}" id="builder-form" novalidate>
     @csrf
     <input type="hidden" name="builder_content" id="builder-content-input" value="">
     <div class="row g-3">
@@ -241,7 +248,7 @@ function renderFieldInput(blockIndex, fieldKey, field, value, dataPath) {
             return `
                 <div class="builder-field">
                     <label for="${id}">${label}</label>
-                    <input type="url" class="form-control block-field" value="${escapeHtml(value)}" placeholder="/images/example.jpg" dir="ltr" ${common}>
+                    <input type="text" class="form-control block-field" value="${escapeHtml(value)}" placeholder="/images/example.jpg" dir="ltr" ${common}>
                     ${value ? `<img src="${escapeHtml(value)}" alt="" class="builder-image-preview block-image-preview" data-preview-for="${id}">` : `<img src="" alt="" class="builder-image-preview block-image-preview d-none" data-preview-for="${id}">`}
                 </div>`;
         case 'repeater':
@@ -619,7 +626,40 @@ function getSchemaField(blockType, path) {
     return blockDefs[blockType]?.schema?.[topKey];
 }
 
-form.addEventListener('submit', () => syncInput());
+form.addEventListener('submit', (event) => {
+    try {
+        document.querySelectorAll('.block-field').forEach((field) => {
+            const blockIndex = Number(field.dataset.block);
+            const path = field.dataset.path;
+            const settings = builderContent.blocks?.[blockIndex]?.settings;
+            if (!path || !settings) return;
+
+            let value = field.value;
+            if (field.type === 'number') {
+                value = field.value === '' ? 0 : Number(field.value);
+            }
+
+            setNestedValue(settings, path, value);
+        });
+
+        syncInput();
+
+        if (!contentInput.value) {
+            event.preventDefault();
+            window.alert('محتوای صفحه برای ذخیره خالی است.');
+            return;
+        }
+
+        const button = event.submitter;
+        if (button) {
+            button.disabled = true;
+            button.textContent = 'در حال ذخیره...';
+        }
+    } catch (error) {
+        event.preventDefault();
+        window.alert('ذخیره انجام نشد. صفحه را یک‌بار تازه کنید و دوباره ذخیره کنید.');
+    }
+});
 
 document.getElementById('preview-builder').addEventListener('click', async () => {
     syncInput();

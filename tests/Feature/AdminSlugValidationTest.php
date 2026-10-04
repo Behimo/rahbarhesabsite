@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
 use App\Models\CmsAdmin;
-use App\Models\CmsCategory;
 use App\Models\CmsPage;
 use App\Models\ShopProduct;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -26,7 +26,8 @@ class AdminSlugValidationTest extends TestCase
             ->assertRedirect(route('admin.categories.index'))
             ->assertSessionHasErrors('slug');
 
-        $category = CmsCategory::query()->create([
+        $category = Category::query()->create([
+            'type' => Category::TYPE_POST,
             'slug' => 'tax',
             'name' => 'مالیات',
         ]);

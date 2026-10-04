@@ -2,7 +2,7 @@
 
 namespace Database\Seeders\Demo\Builders;
 
-use App\Models\CmsCategory;
+use App\Models\Category;
 use App\Models\CmsPost;
 use Database\Seeders\Demo\Support\BlogCategoryDefinition;
 use Database\Seeders\Demo\Support\BlogPostDefinition;
@@ -12,18 +12,19 @@ final class DemoBlogBuilder
 {
     /**
      * @param  list<BlogCategoryDefinition>  $definitions
-     * @return Collection<string, CmsCategory>
+     * @return Collection<string, Category>
      */
     public function syncCategories(array $definitions): Collection
     {
         return collect($definitions)
             ->mapWithKeys(function (BlogCategoryDefinition $definition) {
-                $category = CmsCategory::query()->updateOrCreate(
-                    ['slug' => $definition->slug],
+                $category = Category::query()->updateOrCreate(
+                    ['type' => Category::TYPE_POST, 'slug' => $definition->slug, 'parent_id' => null],
                     [
                         'name' => $definition->name,
                         'description' => $definition->description,
                         'sort_order' => $definition->sortOrder,
+                        'is_active' => true,
                     ]
                 );
 
@@ -32,7 +33,7 @@ final class DemoBlogBuilder
     }
 
     /**
-     * @param  Collection<string, CmsCategory>  $categories
+     * @param  Collection<string, Category>  $categories
      * @param  list<BlogPostDefinition>  $definitions
      */
     public function syncPosts(Collection $categories, array $definitions): void
@@ -40,10 +41,9 @@ final class DemoBlogBuilder
         foreach ($definitions as $definition) {
             $category = $categories->get($definition->categorySlug);
 
-            CmsPost::query()->updateOrCreate(
+            $post = CmsPost::query()->updateOrCreate(
                 ['slug' => $definition->slug],
                 [
-                    'category_id' => $category?->id,
                     'title' => $definition->title,
                     'excerpt' => $definition->excerpt,
                     'body' => $definition->body,
@@ -57,6 +57,8 @@ final class DemoBlogBuilder
                     'views' => $definition->views,
                 ]
             );
+
+            $post->syncCategories($category ? [$category->id] : [], $category?->id);
         }
     }
 

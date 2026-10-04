@@ -87,18 +87,6 @@ return new class extends Migration
             });
         }
 
-        if (! Schema::hasTable('cms_themes')) {
-            Schema::create('cms_themes', function (Blueprint $table) {
-                $table->id();
-                $table->string('slug')->unique();
-                $table->string('name');
-                $table->string('version')->default('1.0.0');
-                $table->json('manifest')->nullable();
-                $table->boolean('is_active')->default(false);
-                $table->timestamps();
-            });
-        }
-
         if (! Schema::hasTable('cms_taxonomies')) {
             Schema::create('cms_taxonomies', function (Blueprint $table) {
                 $table->id();
@@ -176,17 +164,6 @@ return new class extends Migration
             });
         }
 
-        if (! Schema::hasTable('cms_blocks')) {
-            Schema::create('cms_blocks', function (Blueprint $table) {
-                $table->id();
-                $table->string('slug')->unique();
-                $table->string('name');
-                $table->string('type');
-                $table->json('settings')->nullable();
-                $table->timestamps();
-            });
-        }
-
         if (! Schema::hasTable('spotplayer_licenses')) {
             Schema::create('spotplayer_licenses', function (Blueprint $table) {
                 $table->id();
@@ -232,14 +209,12 @@ return new class extends Migration
         Schema::dropIfExists('personal_access_tokens');
         Schema::dropIfExists('cms_redirects');
         Schema::dropIfExists('spotplayer_licenses');
-        Schema::dropIfExists('cms_blocks');
         Schema::dropIfExists('cms_page_revisions');
         Schema::dropIfExists('cms_menu_items');
         Schema::dropIfExists('cms_menus');
         Schema::dropIfExists('cms_termables');
         Schema::dropIfExists('cms_taxonomy_terms');
         Schema::dropIfExists('cms_taxonomies');
-        Schema::dropIfExists('cms_themes');
         Schema::dropIfExists('cms_audit_logs');
     }
 };

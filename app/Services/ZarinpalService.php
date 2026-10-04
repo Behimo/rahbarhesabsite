@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Order;
 use App\Models\Payment;
+use App\Services\Concerns\GuardsVerifiedPaymentAmount;
 use App\Support\Money;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -11,11 +12,30 @@ use Illuminate\Support\Facades\Log;
 
 class ZarinpalService implements \App\Contracts\PaymentGatewayInterface
 {
+    use GuardsVerifiedPaymentAmount;
+
     public function __construct(private OrderService $orders) {}
 
     public function name(): string
     {
         return 'zarinpal';
+    }
+
+    public function label(): string
+    {
+        return 'زرین‌پال';
+    }
+
+    public function reportedAmountRials(array $verifyPayload): ?int
+    {
+        $amount = $verifyPayload['data']['amount'] ?? $verifyPayload['amount'] ?? null;
+
+        return is_numeric($amount) ? (int) $amount : null;
+    }
+
+    public function requiresReportedAmount(): bool
+    {
+        return false;
     }
 
     public function requestPayment(Order $order): string
@@ -127,6 +147,12 @@ class ZarinpalService implements \App\Contracts\PaymentGatewayInterface
             $payload = $response->json();
 
             if (in_array($code, [100, 101], true)) {
+                if (! $this->amountAccepted($payment, $payload)) {
+                    $this->rejectUntrustedAmount($payment, $payload);
+
+                    return null;
+                }
+
                 $cardPan = $response->json('data.card_pan') ?? $response->json('data.cardPan');
                 $cardHash = $response->json('data.card_hash') ?? $response->json('data.cardHash');
 

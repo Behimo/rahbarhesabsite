@@ -8,6 +8,7 @@ use App\Http\Requests\Panel\UpdateProfileRequest;
 use App\Models\CourseEnrollment;
 use App\Models\Order;
 use App\Models\SpotplayerLicense;
+use App\Services\PaymentGatewayManager;
 use App\Support\PhoneNormalizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -50,7 +51,7 @@ class DashboardController extends SiteController
         return $this->render('panel.courses', compact('enrollments', 'licenses'));
     }
 
-    public function orders(): View
+    public function orders(PaymentGatewayManager $payments): View
     {
         $orders = Order::query()
             ->with('items')
@@ -58,7 +59,9 @@ class DashboardController extends SiteController
             ->latest()
             ->paginate(10);
 
-        return $this->render('panel.orders', compact('orders'));
+        $gateways = $payments->enabledOptions();
+
+        return $this->render('panel.orders', compact('orders', 'gateways'));
     }
 
     public function profile(): View

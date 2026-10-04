@@ -25,15 +25,13 @@ class SyncHomeSectionsCommand extends Command
             ]
         );
 
-        if (! $this->option('force') && ! empty($page->builder_content['blocks'])) {
-            $this->warn('Home page already has builder content. Use --force to overwrite.');
-
-            return self::SUCCESS;
-        }
+        $content = $this->option('force') || empty($page->builder_content['blocks'])
+            ? $defaults->builderContent()
+            : $defaults->hydrate($page->builder_content);
 
         $page->update([
             'builder_enabled' => true,
-            'builder_content' => $defaults->builderContent(),
+            'builder_content' => $content,
         ]);
 
         $this->info('Home page sections synced successfully.');

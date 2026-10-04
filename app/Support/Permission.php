@@ -16,10 +16,6 @@ class Permission
 
     public const MANAGE_SETTINGS = 'manage_settings';
 
-    public const MANAGE_THEMES = 'manage_themes';
-
-    public const MANAGE_PLUGINS = 'manage_plugins';
-
     public const MANAGE_MENUS = 'manage_menus';
 
     public const MANAGE_TAXONOMIES = 'manage_taxonomies';
@@ -46,8 +42,6 @@ class Permission
             self::MANAGE_POSTS => 'مدیریت بلاگ',
             self::MANAGE_PAGES => 'مدیریت صفحات',
             self::MANAGE_SETTINGS => 'تنظیمات سایت',
-            self::MANAGE_THEMES => 'مدیریت قالب‌ها',
-            self::MANAGE_PLUGINS => 'مدیریت افزونه‌ها',
             self::MANAGE_MENUS => 'مدیریت منوها',
             self::MANAGE_TAXONOMIES => 'دسته‌بندی‌ها',
             self::MANAGE_MEDIA => 'مدیریت رسانه',
@@ -75,10 +69,8 @@ class Permission
             'admin.posts.*' => self::MANAGE_POSTS,
             'admin.pages.*' => self::MANAGE_PAGES,
             'admin.settings.*' => self::MANAGE_SETTINGS,
-            'admin.themes.*' => self::MANAGE_THEMES,
-            'admin.plugins.*' => self::MANAGE_PLUGINS,
             'admin.menus.*' => self::MANAGE_MENUS,
-            'admin.taxonomies.*' => self::MANAGE_TAXONOMIES,
+            'admin.tags.*' => self::MANAGE_TAXONOMIES,
             'admin.media.*' => self::MANAGE_MEDIA,
             'admin.home.*' => self::MANAGE_PAGES,
             'admin.categories.*' => self::MANAGE_TAXONOMIES,

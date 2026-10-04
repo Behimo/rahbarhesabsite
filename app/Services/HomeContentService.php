@@ -52,7 +52,7 @@ class HomeContentService
     {
         return CmsPost::query()
             ->published()
-            ->with('category')
+            ->with('categories')
             ->orderByDesc('published_at')
             ->orderByDesc('created_at')
             ->take($limit)

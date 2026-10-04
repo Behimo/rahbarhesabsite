@@ -27,7 +27,7 @@ class CmsExtensionsTest extends TestCase
             ->assertOk();
     }
 
-    public function test_home_page_uses_rahbarhesab_theme(): void
+    public function test_home_page_renders_site_layout(): void
     {
         $this->get(route('home'))
             ->assertOk()

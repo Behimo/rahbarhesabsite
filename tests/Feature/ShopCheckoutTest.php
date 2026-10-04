@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\CmsAdmin;
+use App\Models\CmsSetting;
 use App\Models\Coupon;
 use App\Models\Course;
 use App\Models\Order;
@@ -16,6 +17,13 @@ use Tests\TestCase;
 class ShopCheckoutTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['cms.payment_gateway' => 'zibal']);
+    }
 
     public function test_toman_converts_to_rials(): void
     {
@@ -59,6 +67,7 @@ class ShopCheckoutTest extends TestCase
             'https://gateway.zibal.ir/v1/request' => Http::response(['result' => 100, 'trackId' => 777], 200),
             'https://gateway.zibal.ir/v1/verify' => Http::response([
                 'result' => 100,
+                'amount' => 1_000_000,
                 'refNumber' => 'REF-1',
                 'cardNumber' => '6274-****-1234',
                 'cardHash' => 'abc',
@@ -176,6 +185,173 @@ class ShopCheckoutTest extends TestCase
 
         $this->assertTrue($order->fresh()->isPaid());
         $this->assertTrue($user->fresh()->isEnrolledIn($product->course));
+    }
+
+    public function test_checkout_ignores_a_gateway_the_client_tries_to_force(): void
+    {
+        $user = User::factory()->create();
+        $product = $this->paidCourse();
+        $this->actingAs($user)->post(route('cart.add', $product));
+
+        Http::fake([
+            'https://gateway.zibal.ir/v1/request' => Http::response(['result' => 100, 'trackId' => 555], 200),
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('checkout.process'), ['gateway' => 'zarinpal'])
+            ->assertRedirect('https://gateway.zibal.ir/start/555');
+
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'zarinpal'));
+        $this->assertDatabaseHas('payments', [
+            'gateway' => 'zibal',
+            'authority' => '555',
+        ]);
+    }
+
+    public function test_callback_rejects_a_mismatched_gateway_amount(): void
+    {
+        $user = User::factory()->create();
+        $product = $this->paidCourse();
+        $this->actingAs($user)->post(route('cart.add', $product));
+
+        Http::fake([
+            'https://gateway.zibal.ir/v1/request' => Http::response(['result' => 100, 'trackId' => 321], 200),
+            'https://gateway.zibal.ir/v1/verify' => Http::response([
+                'result' => 100,
+                'amount' => 10,
+                'refNumber' => 'REF-BAD',
+            ], 200),
+        ]);
+
+        $this->actingAs($user)->post(route('checkout.process'));
+        $order = Order::query()->first();
+
+        $this->actingAs($user)
+            ->get(route('checkout.callback', ['gateway' => 'zibal', 'trackId' => 321, 'success' => 1]))
+            ->assertRedirect(route('checkout.failed', $order));
+
+        $this->assertSame(Order::STATUS_FAILED, $order->fresh()->status);
+        $this->assertDatabaseHas('payments', [
+            'authority' => '321',
+            'status' => 'failed',
+        ]);
+        $this->assertFalse($user->fresh()->isEnrolledIn($product->course));
+    }
+
+    public function test_unknown_callback_gateway_does_not_settle_the_payment(): void
+    {
+        $user = User::factory()->create();
+        $product = $this->paidCourse();
+        $this->actingAs($user)->post(route('cart.add', $product));
+
+        Http::fake([
+            'https://gateway.zibal.ir/v1/request' => Http::response(['result' => 100, 'trackId' => 444], 200),
+        ]);
+
+        $this->actingAs($user)->post(route('checkout.process'));
+        $order = Order::query()->first();
+
+        $this->actingAs($user)
+            ->get(route('checkout.callback', [
+                'gateway' => 'zarinpal',
+                'trackId' => 444,
+                'success' => 1,
+                'Status' => 'OK',
+                'Authority' => '444',
+            ]))
+            ->assertRedirect(route('checkout.failed'));
+
+        $this->assertSame(Order::STATUS_PENDING, $order->fresh()->status);
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'verify'));
+    }
+
+    public function test_admin_can_enable_one_gateway_and_checkout_uses_only_that(): void
+    {
+        config(['cms.zarinpal.sandbox' => true]);
+
+        $admin = CmsAdmin::query()->create([
+            'name' => 'Admin',
+            'email' => 'gateways@test.com',
+            'password' => bcrypt('password'),
+            'is_super' => true,
+        ]);
+
+        $this->actingAs($admin, 'cms')
+            ->put(route('admin.settings.gateways'), [
+                'gateways' => ['zibal' => '0', 'zarinpal' => '1'],
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertSame(
+            '{"zibal":false,"zarinpal":true}',
+            CmsSetting::get('payment_gateways')
+        );
+
+        $user = User::factory()->create();
+        $product = $this->paidCourse();
+        $this->actingAs($user)->post(route('cart.add', $product));
+
+        Http::fake([
+            'https://sandbox.zarinpal.com/pg/v4/payment/request.json' => Http::response([
+                'data' => ['authority' => 'AUTH1', 'code' => 100],
+            ], 200),
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('checkout.process'), ['gateway' => 'zibal'])
+            ->assertRedirect('https://sandbox.zarinpal.com/pg/StartPay/AUTH1');
+
+        $this->assertDatabaseHas('payments', [
+            'gateway' => 'zarinpal',
+            'authority' => 'AUTH1',
+        ]);
+    }
+
+    public function test_admin_cannot_disable_every_gateway(): void
+    {
+        $admin = CmsAdmin::query()->create([
+            'name' => 'Admin',
+            'email' => 'gateways-off@test.com',
+            'password' => bcrypt('password'),
+            'is_super' => true,
+        ]);
+
+        $this->actingAs($admin, 'cms')
+            ->put(route('admin.settings.gateways'), [
+                'gateways' => ['zibal' => '0', 'zarinpal' => '0'],
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertNull(CmsSetting::query()->where('key', 'payment_gateways')->first());
+    }
+
+    public function test_checkout_and_admin_settings_show_registered_gateways(): void
+    {
+        $user = User::factory()->create();
+        $product = $this->paidCourse();
+        $this->actingAs($user)->post(route('cart.add', $product));
+
+        $this->actingAs($user)
+            ->get(route('checkout.index'))
+            ->assertOk()
+            ->assertSee('زیبال')
+            ->assertDontSee('name="gateway"', false);
+
+        $admin = CmsAdmin::query()->create([
+            'name' => 'Admin',
+            'email' => 'gateways-ui@test.com',
+            'password' => bcrypt('password'),
+            'is_super' => true,
+        ]);
+
+        $this->actingAs($admin, 'cms')
+            ->get(route('admin.settings.index'))
+            ->assertOk()
+            ->assertSee('درگاه‌های پرداخت')
+            ->assertSee('زیبال')
+            ->assertSee('زرین‌پال');
     }
 
     private function paidCourse(): ShopProduct

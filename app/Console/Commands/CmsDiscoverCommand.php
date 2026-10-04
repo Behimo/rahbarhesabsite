@@ -2,22 +2,18 @@
 
 namespace App\Console\Commands;
 
-use App\Services\PluginService;
-use App\Services\TaxonomyService;
-use App\Services\ThemeService;
+use App\Services\CategoryService;
 use Illuminate\Console\Command;
 
 class CmsDiscoverCommand extends Command
 {
     protected $signature = 'cms:discover';
 
-    protected $description = 'Discover themes, plugins and default taxonomies';
+    protected $description = 'Ensure default tags exist';
 
-    public function handle(ThemeService $themes, PluginService $plugins, TaxonomyService $taxonomy): int
+    public function handle(CategoryService $categories): int
     {
-        $themes->discover();
-        $plugins->discover();
-        $taxonomy->ensureDefaults();
+        $categories->ensureDefaultTags();
 
         $this->info('CMS discovery completed.');
 

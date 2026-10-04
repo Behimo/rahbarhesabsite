@@ -3,35 +3,32 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\PostRequest;
-use App\Models\CmsCategory;
+use App\Models\Category;
 use App\Models\CmsPost;
 use App\Models\CmsPostRevision;
+use App\Models\Tag;
+use App\Services\CategoryService;
 use App\Services\SiteDataService;
-use App\Services\TaxonomyService;
-use App\Services\ThemeService;
 use App\Support\PersianSlug;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
 
 class PostController extends Controller
 {
     public function __construct(
-        private TaxonomyService $taxonomy,
+        private CategoryService $categories,
         private SiteDataService $siteData,
-        private ThemeService $theme,
     ) {}
 
     public function index(Request $request): View
     {
-        $this->taxonomy->ensureDefaults();
-
         $trashed = $request->boolean('trashed');
 
         $posts = CmsPost::query()
-            ->with(['category', 'taxonomyTerms'])
+            ->with(['categories', 'tags'])
             ->when($trashed, fn ($q) => $q->onlyTrashed())
             ->when($request->filled('q'), function ($q) use ($request) {
                 $term = $request->string('q')->toString();
@@ -41,7 +38,10 @@ class PostController extends Controller
                         ->orWhere('excerpt', 'like', "%{$term}%");
                 });
             })
-            ->when($request->filled('category'), fn ($q) => $q->where('category_id', $request->integer('category')))
+            ->when($request->filled('category'), fn ($q) => $q->whereHas(
+                'categories',
+                fn ($category) => $category->where('categories.id', $request->integer('category'))
+            ))
             ->when($request->filled('status'), function ($q) use ($request) {
                 $status = $request->string('status')->toString();
                 if ($status === 'draft') {
@@ -61,7 +61,7 @@ class PostController extends Controller
 
         return view('admin.posts.index', [
             'posts' => $posts,
-            'categories' => CmsCategory::query()->orderBy('sort_order')->get(),
+            'categories' => $this->categories->flat(Category::TYPE_POST),
             'filters' => [
                 'q' => $request->string('q')->toString(),
                 'category' => $request->input('category'),
@@ -74,8 +74,6 @@ class PostController extends Controller
 
     public function create(): View
     {
-        $this->taxonomy->ensureDefaults();
-
         return view('admin.posts.form', $this->formData(new CmsPost([
             'author' => config('cms.site_name_fa', 'راهبر حساب'),
             'is_published' => false,
@@ -83,10 +81,10 @@ class PostController extends Controller
         ])));
     }
 
-    public function store(PostRequest $request): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
-        $post = CmsPost::query()->create($request->postAttributes());
-        $this->taxonomy->syncTerms($post, $request->validated('term_ids') ?? []);
+        $post = CmsPost::query()->create($this->validatePost($request));
+        $this->syncTaxonomy($post, $request);
         $this->storeRevision($post, 'ایجاد اولیه');
 
         return redirect()->route('admin.posts.edit', $post)->with('success', 'مقاله ایجاد شد.');
@@ -94,16 +92,15 @@ class PostController extends Controller
 
     public function edit(CmsPost $post): View
     {
-        $this->taxonomy->ensureDefaults();
-        $post->load('taxonomyTerms');
+        $post->load(['categories', 'tags']);
 
         return view('admin.posts.form', $this->formData($post));
     }
 
-    public function update(PostRequest $request, CmsPost $post): RedirectResponse
+    public function update(Request $request, CmsPost $post): RedirectResponse
     {
-        $post->update($request->postAttributes());
-        $this->taxonomy->syncTerms($post, $request->validated('term_ids') ?? []);
+        $post->update($this->validatePost($request, $post));
+        $this->syncTaxonomy($post, $request);
         $this->storeRevision($post->fresh(), 'ذخیره تغییرات');
 
         return redirect()->route('admin.posts.edit', $post)->with('success', 'مقاله به‌روزرسانی شد.');
@@ -149,7 +146,11 @@ class PostController extends Controller
         $clone->views = 0;
         $clone->save();
 
-        $clone->taxonomyTerms()->sync($post->taxonomyTerms()->pluck('cms_taxonomy_terms.id')->all());
+        $clone->syncCategories(
+            $post->categories()->pluck('categories.id')->all(),
+            $post->category?->id
+        );
+        $clone->syncTags($post->tags()->pluck('tags.id')->all());
         $this->storeRevision($clone, 'کپی از مقاله #'.$post->id);
 
         return redirect()->route('admin.posts.edit', $clone)->with('success', 'کپی مقاله ایجاد شد.');
@@ -157,11 +158,15 @@ class PostController extends Controller
 
     public function preview(CmsPost $post): View
     {
-        $post->load(['category', 'taxonomyTerms']);
+        $post->load(['categories', 'tags']);
+        $primaryId = $post->category?->id;
         $related = CmsPost::query()
             ->published()
             ->where('id', '!=', $post->id)
-            ->when($post->category_id, fn ($q) => $q->where('category_id', $post->category_id))
+            ->when($primaryId, fn ($q) => $q->whereHas(
+                'categories',
+                fn ($category) => $category->where('categories.id', $primaryId)
+            ))
             ->latest('published_at')
             ->take(3)
             ->get();
@@ -172,7 +177,7 @@ class PostController extends Controller
             'robots' => 'noindex, nofollow',
         ];
 
-        return $this->theme->view('pages.blog.show', array_merge(
+        return view('pages.blog.show', array_merge(
             $this->siteData->sharedViewData(),
             [
                 'post' => $post,
@@ -210,12 +215,101 @@ class PostController extends Controller
     {
         return [
             'post' => $post,
-            'categories' => CmsCategory::query()->orderBy('sort_order')->get(),
-            'tags' => $this->taxonomy->termsFor('post-tag'),
-            'selectedTerms' => $post->exists
-                ? $post->taxonomyTerms()->pluck('cms_taxonomy_terms.id')->all()
+            'categories' => $this->categories->flat(Category::TYPE_POST),
+            'tags' => Tag::query()->orderBy('name')->get(),
+            'selectedTags' => $post->exists
+                ? $post->tags()->pluck('tags.id')->all()
                 : [],
         ];
+    }
+
+    private function syncTaxonomy(CmsPost $post, Request $request): void
+    {
+        $categoryId = $request->input('category_id') ? (int) $request->input('category_id') : null;
+        $post->syncCategories($categoryId ? [$categoryId] : [], $categoryId);
+        $post->syncTags($request->input('tag_ids', []));
+    }
+
+    private function validatePost(Request $request, ?CmsPost $post = null): array
+    {
+        $title = trim((string) $request->input('title'));
+        $slugInput = trim((string) $request->input('slug'));
+
+        if ($slugInput === '' && $title !== '') {
+            $slugInput = PersianSlug::unique(
+                $title,
+                fn (string $slug) => CmsPost::withTrashed()
+                    ->where('slug', $slug)
+                    ->when($post, fn ($q) => $q->where('id', '!=', $post->id))
+                    ->exists()
+            );
+            $request->merge(['slug' => $slugInput]);
+        } elseif ($slugInput !== '') {
+            $slugInput = PersianSlug::make($slugInput);
+            $request->merge(['slug' => $slugInput]);
+        }
+
+        $validated = $request->validate([
+            'slug' => [
+                'required',
+                'string',
+                'max:120',
+                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+                Rule::unique('cms_posts', 'slug')
+                    ->ignore($post?->id)
+                    ->whereNull('deleted_at'),
+            ],
+            'title' => ['required', 'string', 'max:200'],
+            'category_id' => ['nullable', Rule::exists('categories', 'id')->where('type', Category::TYPE_POST)],
+            'excerpt' => ['nullable', 'string', 'max:500'],
+            'body' => ['nullable', 'string'],
+            'featured_image' => ['nullable', 'string', 'max:500'],
+            'featured_image_alt' => ['nullable', 'string', 'max:200'],
+            'author' => ['nullable', 'string', 'max:100'],
+            'meta_title' => ['nullable', 'string', 'max:200'],
+            'meta_description' => ['nullable', 'string', 'max:500'],
+            'meta_keywords' => ['nullable', 'string', 'max:300'],
+            'og_image' => ['nullable', 'string', 'max:500'],
+            'published_at' => ['nullable', 'date'],
+            'status' => ['nullable', 'in:draft,published,scheduled'],
+            'tag_ids' => ['nullable', 'array'],
+            'tag_ids.*' => ['integer', 'exists:tags,id'],
+        ]);
+
+        $checkboxPublished = $request->boolean('is_published');
+        $requestedStatus = $validated['status'] ?? CmsPost::STATUS_DRAFT;
+        $publishedAt = ! empty($validated['published_at']) ? $validated['published_at'] : null;
+
+        // Checkbox OR status select can publish. Default status=draft must not
+        // undo a checked "منتشر شود" (previous bug kept every new post as draft).
+        $isPublished = $checkboxPublished
+            || in_array($requestedStatus, [
+                CmsPost::STATUS_PUBLISHED,
+                CmsPost::STATUS_SCHEDULED,
+            ], true);
+
+        if ($isPublished && $publishedAt && now()->lt($publishedAt)) {
+            $status = CmsPost::STATUS_SCHEDULED;
+        } elseif ($isPublished) {
+            $status = CmsPost::STATUS_PUBLISHED;
+            $publishedAt = $publishedAt ?: now()->toDateTimeString();
+        } else {
+            $status = CmsPost::STATUS_DRAFT;
+        }
+
+        $body = $validated['body'] ?? '';
+        $temp = new CmsPost(['body' => $body]);
+
+        $validated['is_published'] = $isPublished;
+        $validated['status'] = $status;
+        $validated['published_at'] = $publishedAt;
+        $validated['reading_time_minutes'] = $temp->estimateReadingTime();
+        $validated['author'] = ($validated['author'] ?? null) ?: config('cms.site_name_fa', 'راهبر حساب');
+        $validated['og_image'] = ($validated['og_image'] ?? null) ?: ($validated['featured_image'] ?? null);
+
+        unset($validated['category_id'], $validated['tag_ids']);
+
+        return $validated;
     }
 
     private function storeRevision(CmsPost $post, string $note): void

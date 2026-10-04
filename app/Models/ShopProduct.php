@@ -2,18 +2,20 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasCategories;
+use App\Models\Concerns\HasTags;
+use Database\Factories\ShopProductFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Collection;
 
 class ShopProduct extends Model
 {
-    /** @use HasFactory<\Database\Factories\ShopProductFactory> */
-    use HasFactory;
+    /** @use HasFactory<ShopProductFactory> */
+    use HasCategories, HasFactory, HasTags;
 
     public const TYPE_COURSE = 'course';
 
@@ -64,11 +66,6 @@ class ShopProduct extends Model
             ->filter()
             ->unique('id')
             ->values();
-    }
-
-    public function taxonomyTerms(): MorphToMany
-    {
-        return $this->morphToMany(CmsTaxonomyTerm::class, 'termable', 'cms_termables', 'termable_id', 'term_id');
     }
 
     public function scopePublished($query)

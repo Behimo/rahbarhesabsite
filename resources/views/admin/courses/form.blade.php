@@ -72,6 +72,9 @@
             <label class="form-label">پیش‌نیازها (هر خط یک مورد)</label>
             <textarea name="requirements" rows="2" class="form-control">{{ old('requirements', implode("\n", $course->requirements ?? [])) }}</textarea>
         </div>
+        <hr class="my-4">
+        <h5 class="mb-3">جایگاه در درخت محصول</h5>
+        @include('admin.partials.category-picker')
         <div class="form-check mb-3">
             <input type="checkbox" name="is_published" value="1" class="form-check-input" id="is_published" @checked(old('is_published', $product->is_published))>
             <label class="form-check-label" for="is_published">منتشر شده</label>

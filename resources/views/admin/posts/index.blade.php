@@ -3,13 +3,15 @@
 @section('title', 'بلاگ')
 
 @section('content')
+@include('admin.partials.category-ui')
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
         <h4 class="mb-1">مقالات بلاگ</h4>
         <p class="text-muted mb-0">مدیریت مقالات، پیش‌نویس‌ها و سطل زباله</p>
     </div>
     <div class="d-flex gap-2">
-        <a href="{{ route('admin.categories.index') }}" class="btn btn-label-secondary">دسته‌بندی‌ها</a>
+        <a href="{{ route('admin.categories.index', ['type' => 'post']) }}" class="btn btn-label-secondary">دسته‌بندی‌ها</a>
+        <a href="{{ route('admin.tags.index') }}" class="btn btn-label-secondary">برچسب‌ها</a>
         <a href="{{ route('admin.posts.index', ['trashed' => 1]) }}" class="btn btn-label-warning">
             سطل زباله @if ($trashCount > 0)<span class="badge bg-danger ms-1">{{ $trashCount }}</span>@endif
         </a>
@@ -31,7 +33,7 @@
                 <select name="category" class="form-select">
                     <option value="">همه</option>
                     @foreach ($categories as $category)
-                        <option value="{{ $category->id }}" @selected((string) $filters['category'] === (string) $category->id)>{{ $category->name }}</option>
+                        <option value="{{ $category->id }}" @selected((string) $filters['category'] === (string) $category->id)>{{ str_repeat('— ', $category->treeDepth) }}{{ $category->name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -79,7 +81,16 @@
                             <div class="fw-medium">{{ $post->title }}</div>
                             <small class="text-muted" dir="ltr">/blog/{{ $post->slug }}</small>
                         </td>
-                        <td>{{ $post->category?->name ?? '—' }}</td>
+                        <td>
+                            @if ($post->category)
+                                <div>{{ $post->category->name }}</div>
+                                @if ($post->category->parent_id)
+                                    <div class="cat-path">{{ $post->category->full_slug }}</div>
+                                @endif
+                            @else
+                                <span class="text-muted">—</span>
+                            @endif
+                        </td>
                         <td class="text-muted">{{ $post->published_at?->format('Y/m/d H:i') ?? '—' }}</td>
                         <td>
                             @if ($post->trashed())

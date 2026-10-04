@@ -107,6 +107,7 @@ class ShopController extends SiteController
         }
 
         return $this->render('pages.shop.checkout', $this->cartViewData() + [
+            'gateways' => $this->payments->enabledOptions(),
             'seo' => $this->seo->meta(['title' => 'تسویه حساب']),
         ]);
     }
@@ -115,6 +116,17 @@ class ShopController extends SiteController
     {
         if (! auth()->check()) {
             return redirect()->route('login');
+        }
+
+        $quote = $this->cartViewData();
+        $gateway = null;
+
+        if ($quote['total'] > 0) {
+            try {
+                $gateway = $this->payments->resolveForCheckout($request->input('gateway'));
+            } catch (\RuntimeException $e) {
+                return redirect()->route('checkout.index')->with('error', $e->getMessage());
+            }
         }
 
         try {
@@ -133,10 +145,8 @@ class ShopController extends SiteController
             return redirect()->route('checkout.success', $order);
         }
 
-        $gateway = $request->input('gateway', config('cms.payment_gateway', 'zibal'));
-
         try {
-            $paymentUrl = $this->payments->requestPayment($order, $gateway);
+            $paymentUrl = $this->payments->requestPayment($order, (string) $gateway);
 
             return redirect()->away($paymentUrl);
         } catch (\Throwable $e) {
@@ -152,9 +162,8 @@ class ShopController extends SiteController
             return redirect()->route('panel.orders')->with('error', 'این سفارش قابل پرداخت مجدد نیست.');
         }
 
-        $gateway = $request->input('gateway', config('cms.payment_gateway', 'zibal'));
-
         try {
+            $gateway = $this->payments->resolveForCheckout($request->input('gateway'));
             $order->update(['status' => Order::STATUS_PENDING]);
             $paymentUrl = $this->payments->requestPayment($order, $gateway);
 
@@ -166,7 +175,13 @@ class ShopController extends SiteController
 
     public function callback(Request $request): RedirectResponse
     {
-        $gateway = $request->query('gateway', config('cms.payment_gateway', 'zibal'));
+        $gateway = $request->query('gateway');
+
+        if (! is_string($gateway) || ! $this->payments->knows($gateway)) {
+            return redirect()
+                ->route('checkout.failed')
+                ->with('error', 'پرداخت ناموفق یا لغو شد. سبد خرید شما حفظ شده است.');
+        }
 
         $payment = $this->payments->verifyCallback($gateway, $request->query());
 
@@ -218,6 +233,7 @@ class ShopController extends SiteController
 
         return $this->render('pages.shop.failed', [
             'order' => $order,
+            'gateways' => $this->payments->enabledOptions(),
             'message' => session('error') ?? 'پرداخت ناموفق یا لغو شد. سبد خرید شما حفظ شده است.',
             'seo' => $this->seo->meta(['title' => 'پرداخت ناموفق']),
         ]);

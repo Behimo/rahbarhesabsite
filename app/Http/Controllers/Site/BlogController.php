@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers\Site;
 
-use App\Models\CmsCategory;
+use App\Models\Category;
 use App\Models\CmsPost;
+use App\Services\CategoryService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -18,21 +19,25 @@ class BlogController extends SiteController
         ]);
 
         $activeCategory = $request->string('category')->toString() ?: null;
+        $category = $activeCategory
+            ? app(CategoryService::class)->findByPath(Category::TYPE_POST, $activeCategory)
+            : null;
+        $categoryIds = $category ? $category->descendantsAndSelf()->pluck('id') : collect();
 
         $posts = CmsPost::query()
             ->published()
-            ->with('category')
-            ->when($activeCategory, fn ($q) => $q->whereHas('category', fn ($c) => $c->where('slug', $activeCategory)))
+            ->with('categories')
+            ->when($category, fn ($q) => $q->whereHas(
+                'categories',
+                fn ($related) => $related->whereIn('categories.id', $categoryIds)
+            ))
+            ->when($activeCategory && ! $category, fn ($q) => $q->whereRaw('0 = 1'))
             ->orderByDesc('published_at')
             ->orderByDesc('created_at')
             ->paginate(9)
             ->withQueryString();
 
-        $categories = CmsCategory::query()
-            ->whereHas('posts', fn ($q) => $q->published())
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+        $categories = app(CategoryService::class)->flat(Category::TYPE_POST, true);
 
         $featured = $posts->isNotEmpty() && $posts->currentPage() === 1
             ? $posts->getCollection()->first()
@@ -55,7 +60,7 @@ class BlogController extends SiteController
 
     public function show(string $slug): View
     {
-        $post = CmsPost::query()->published()->where('slug', $slug)->with(['category', 'taxonomyTerms'])->firstOrFail();
+        $post = CmsPost::query()->published()->where('slug', $slug)->with(['categories.ancestors', 'tags'])->firstOrFail();
 
         $post->increment('views');
 
@@ -70,7 +75,10 @@ class BlogController extends SiteController
         $related = CmsPost::query()
             ->published()
             ->where('id', '!=', $post->id)
-            ->when($post->category_id, fn ($q) => $q->where('category_id', $post->category_id))
+            ->when($post->category, fn ($q) => $q->whereHas(
+                'categories',
+                fn ($category) => $category->where('categories.id', $post->category->id)
+            ))
             ->latest('published_at')
             ->take(3)
             ->get();
