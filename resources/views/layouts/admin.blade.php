@@ -12,7 +12,8 @@ $menuFixed = $configData['menuFixed'] ?? true;
 $navbarType = $configData['navbarType'] ?? '';
 $footerFixed = $configData['footerFixed'] ?? false;
 $menuCollapsed = $configData['menuCollapsed'] ?? false;
-$container = ($configData['contentLayout'] ?? 'compact') === 'compact' ? 'container-xxl' : 'container-fluid';
+$configData['contentLayout'] = 'wide';
+$container = 'container-fluid';
 @endphp
 @extends('layouts.vuexy.commonMaster')
 
@@ -25,7 +26,8 @@ $container = ($configData['contentLayout'] ?? 'compact') === 'compact' ? 'contai
       @include('layouts.vuexy.sections.navbar.navbar-admin')
 
       <div class="content-wrapper">
-        <div class="{{ $container }} flex-grow-1 container-p-y">
+        <div class="{{ $container }} flex-grow-1 container-p-y admin-shell">
+          @include('admin.partials.page-header')
           <x-admin.feedback />
           @yield('content')
         </div>

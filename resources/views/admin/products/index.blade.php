@@ -2,16 +2,15 @@
 
 @section('title', 'محصولات')
 
-@section('content')
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-    <div>
-        <h4 class="mb-1">محصولات</h4>
-        <p class="text-muted mb-0">مدیریت محصولات سایت</p>
-    </div>
+@section('lede', 'مدیریت محصولات سایت')
+
+@section('actions')
     <a href="{{ route('admin.products.create') }}" class="btn btn-primary">
         <i class="ti ti-plus me-1"></i>محصول جدید
     </a>
-</div>
+@endsection
+
+@section('content')
 
 <div class="card">
     <div class="table-responsive">

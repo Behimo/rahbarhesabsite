@@ -3,7 +3,6 @@
 @section('title', 'سفارش‌ها')
 
 @section('content')
-<h4 class="mb-4">سفارش‌ها</h4>
 
 <div class="card">
     <div class="table-responsive">

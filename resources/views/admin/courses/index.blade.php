@@ -1,20 +1,17 @@
 @extends('layouts.admin')
 
-@section('title', 'دوره‌های LMS')
+@section('title', 'دوره‌ها')
+
+@section('lede', 'مدیریت دوره‌های آموزشی و فروش')
+
+@section('actions')
+    <a href="{{ route('admin.categories.index', ['type' => 'product']) }}" class="btn btn-label-secondary">دسته‌بندی‌ها</a>
+    <a href="{{ route('admin.courses.create') }}" class="btn btn-primary">
+        <i class="ti ti-plus me-1"></i>دوره جدید
+    </a>
+@endsection
 
 @section('content')
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-    <div>
-        <h4 class="mb-1">دوره‌های LMS</h4>
-        <p class="text-muted mb-0">مدیریت دوره‌های آموزشی و فروش</p>
-    </div>
-    <div class="d-flex gap-2">
-        <a href="{{ route('admin.categories.index', ['type' => 'product']) }}" class="btn btn-label-secondary">دسته‌بندی‌ها</a>
-        <a href="{{ route('admin.courses.create') }}" class="btn btn-primary">
-        <i class="ti ti-plus me-1"></i>دوره جدید
-        </a>
-    </div>
-</div>
 
 <div class="card">
     <div class="table-responsive">

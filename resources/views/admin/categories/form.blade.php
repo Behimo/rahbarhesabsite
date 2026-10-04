@@ -1,6 +1,28 @@
 @extends('layouts.admin')
 
+@php
+    $isPost = $type === 'post';
+    $typeLabel = $isPost ? 'بلاگ' : 'محصول و دوره';
+    $publicBase = $isPost ? route('blog.index', [], false) : route('courses.index', [], false);
+    $selectedParent = (string) old('parent_id', $category->parent_id);
+    $active = (string) old('is_active', ($category->is_active ?? true) ? '1' : '0') === '1';
+@endphp
+
 @section('title', $category->exists ? 'ویرایش دسته' : 'دسته جدید')
+
+@section('heading', $category->exists ? 'ویرایش: '.$category->name : 'دستهٔ جدید '.$typeLabel)
+
+@section('lede', $isPost
+    ? 'این دسته در فیلتر مقالات دیده می‌شود. انتخاب دستهٔ والد، مطالب زیردسته را هم در فیلتر والد نشان می‌دهد.'
+    : 'این دسته در فیلتر دوره‌ها و محصولات دیده می‌شود. یک محصول می‌تواند در چند دسته باشد.')
+
+@section('actions')
+    @if ($category->exists)
+        <a href="{{ route('admin.categories.create', ['type' => $type, 'parent_id' => $category->id]) }}" class="btn btn-label-secondary">
+            <i class="ti ti-plus me-1"></i>زیردسته
+        </a>
+    @endif
+@endsection
 
 @section('page-style')
 <style>
@@ -36,31 +58,6 @@
 
 @section('content')
 @include('admin.partials.category-ui')
-
-@php
-    $isPost = $type === 'post';
-    $typeLabel = $isPost ? 'بلاگ' : 'محصول و دوره';
-    $publicBase = $isPost ? route('blog.index', [], false) : route('courses.index', [], false);
-    $selectedParent = (string) old('parent_id', $category->parent_id);
-    $active = (string) old('is_active', ($category->is_active ?? true) ? '1' : '0') === '1';
-@endphp
-
-<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
-    <div>
-        <a href="{{ route('admin.categories.index', ['type' => $type]) }}" class="text-muted"><i class="ti ti-arrow-right me-1"></i>بازگشت به درخت</a>
-        <h4 class="mt-2 mb-1">{{ $category->exists ? 'ویرایش: '.$category->name : 'دستهٔ جدید '.$typeLabel }}</h4>
-        <p class="text-muted mb-0">
-            {{ $isPost
-                ? 'این دسته در فیلتر مقالات دیده می‌شود. انتخاب دستهٔ والد، مطالب زیردسته را هم در فیلتر والد نشان می‌دهد.'
-                : 'این دسته در فیلتر دوره‌ها و محصولات دیده می‌شود. یک محصول می‌تواند در چند دسته باشد.' }}
-        </p>
-    </div>
-    @if ($category->exists)
-        <a href="{{ route('admin.categories.create', ['type' => $type, 'parent_id' => $category->id]) }}" class="btn btn-label-secondary">
-            <i class="ti ti-plus me-1"></i>زیردسته
-        </a>
-    @endif
-</div>
 
 @if ($errors->any())
     <div class="alert alert-danger" role="alert">

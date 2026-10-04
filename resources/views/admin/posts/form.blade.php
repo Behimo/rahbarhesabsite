@@ -2,6 +2,22 @@
 
 @section('title', $post->exists ? 'ویرایش مقاله' : 'مقاله جدید')
 
+@section('heading', $post->exists ? 'ویرایش: '.$post->title : 'مقاله جدید')
+
+@section('actions')
+    @if ($post->exists)
+        <a href="{{ route('admin.posts.preview', $post) }}" class="btn btn-label-secondary" target="_blank" rel="noopener">پیش‌نمایش</a>
+        @if ($post->isLive())
+            <a href="{{ route('blog.show', $post->slug) }}" class="btn btn-label-primary" target="_blank" rel="noopener">مشاهده در سایت</a>
+        @endif
+        <a href="{{ route('admin.posts.revisions', $post) }}" class="btn btn-label-secondary">تاریخچه</a>
+        <form method="POST" action="{{ route('admin.posts.duplicate', $post) }}">
+            @csrf
+            <button class="btn btn-label-info">کپی مقاله</button>
+        </form>
+    @endif
+@endsection
+
 @section('vendor-style')
 <style>
     .media-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: .75rem; max-height: 360px; overflow: auto; }
@@ -16,26 +32,6 @@
 @endsection
 
 @section('content')
-<div class="d-flex flex-wrap justify-content-between align-items-start mb-4 gap-3">
-    <div>
-        <a href="{{ route('admin.posts.index') }}" class="text-muted"><i class="ti ti-arrow-right me-1"></i>بازگشت</a>
-        <h4 class="mt-2 mb-0">{{ $post->exists ? 'ویرایش: '.$post->title : 'مقاله جدید' }}</h4>
-    </div>
-    @if ($post->exists)
-        <div class="d-flex flex-wrap gap-2">
-            <a href="{{ route('admin.posts.preview', $post) }}" class="btn btn-label-secondary" target="_blank" rel="noopener">پیش‌نمایش</a>
-            @if ($post->isLive())
-                <a href="{{ route('blog.show', $post->slug) }}" class="btn btn-label-primary" target="_blank" rel="noopener">مشاهده در سایت</a>
-            @endif
-            <a href="{{ route('admin.posts.revisions', $post) }}" class="btn btn-label-secondary">تاریخچه</a>
-            <form method="POST" action="{{ route('admin.posts.duplicate', $post) }}">
-                @csrf
-                <button class="btn btn-label-info">کپی مقاله</button>
-            </form>
-        </div>
-    @endif
-</div>
-
 <form method="POST" action="{{ $post->exists ? route('admin.posts.update', $post) : route('admin.posts.store') }}" id="post-form">
     @csrf
     @if ($post->exists) @method('PUT') @endif
@@ -102,7 +98,7 @@
             </div>
         </div>
 
-        <div class="col-xl-4">
+        <div class="col-xl-4 admin-form-side">
             <div class="card mb-4">
                 <div class="card-header"><h5 class="mb-0">انتشار</h5></div>
                 <div class="card-body">

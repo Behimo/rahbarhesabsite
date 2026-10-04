@@ -2,11 +2,9 @@
 
 @section('title', 'تاریخچه صفحه')
 
+@section('heading', 'تاریخچه: '.$page->title)
+
 @section('content')
-<div class="mb-4">
-    <a href="{{ route('admin.pages.builder', $page) }}" class="text-muted"><i class="ti ti-arrow-right me-1"></i>بازگشت به صفحه‌ساز</a>
-    <h4 class="mt-2 mb-0">تاریخچه: {{ $page->title }}</h4>
-</div>
 
 <div class="card">
     <div class="table-responsive">

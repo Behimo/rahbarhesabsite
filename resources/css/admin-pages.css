@@ -1,0 +1,126 @@
+/* Shared admin page chrome: one header, full-width forms, same control sizes. */
+
+.admin-page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.admin-page-head__main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem 1rem;
+  min-width: min(100%, 18rem);
+  flex: 1 1 16rem;
+}
+
+.admin-page-head__text {
+  min-width: 0;
+  flex: 1 1 12rem;
+}
+
+.admin-page-title {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.admin-page-lede {
+  margin: 0.35rem 0 0;
+  max-width: 65ch;
+  color: var(--bs-secondary-color);
+  line-height: 1.6;
+}
+
+.admin-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.85rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.5rem;
+  background: var(--bs-paper-bg, var(--bs-body-bg));
+  color: var(--bs-heading-color, var(--bs-body-color));
+  font-weight: 500;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.admin-back:hover {
+  color: var(--bs-primary);
+  border-color: var(--bs-primary);
+  background: rgba(var(--bs-primary-rgb), 0.08);
+}
+
+.admin-back:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: 2px;
+}
+
+.admin-page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-inline-start: auto;
+}
+
+.admin-page-actions .btn,
+.admin-form-actions .btn {
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--bs-border-color);
+}
+
+.admin-shell .form-control:not(textarea):not(.form-control-sm),
+.admin-shell .form-select:not(.form-select-sm) {
+  min-height: 2.75rem;
+}
+
+.admin-shell .card-header h5 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.admin-prose {
+  max-width: 70ch;
+  line-height: 1.75;
+  white-space: pre-wrap;
+}
+
+@media (min-width: 1200px) {
+  .admin-form-side {
+    position: sticky;
+    top: 5.5rem;
+    align-self: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-back {
+    transition: none;
+  }
+}

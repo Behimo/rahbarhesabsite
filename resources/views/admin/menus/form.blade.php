@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 @section('title', $menu->exists ? 'ویرایش منو' : 'منوی جدید')
+@section('heading', $menu->exists ? 'ویرایش: '.$menu->name : 'منوی جدید')
 @section('content')
-<h4 class="mb-4">{{ $menu->exists ? 'ویرایش منو' : 'منوی جدید' }}</h4>
 <form method="POST" action="{{ $menu->exists ? route('admin.menus.update', $menu) : route('admin.menus.store') }}" class="card mb-4">
     @csrf @if($menu->exists) @method('PUT') @endif
     <div class="card-body row g-3">
@@ -12,7 +12,7 @@
             <input name="location" class="form-control" value="{{ old('location', $menu->location) }}" placeholder="primary">
             <div class="form-text">برای نوار اصلی سایت مقدار <code>primary</code> را بگذارید.</div>
         </div>
-        <div class="col-12"><button class="btn btn-primary">ذخیره مشخصات</button></div>
+        <div class="col-12 admin-form-actions"><button class="btn btn-primary">ذخیره مشخصات</button></div>
     </div>
 </form>
 

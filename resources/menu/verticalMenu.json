@@ -1,8 +1,10 @@
 {
   "menu": [
-    { "menuHeader": "مدیریت محتوا" },
+    { "menuHeader": "اصلی" },
     { "url": "admin", "name": "داشبورد", "icon": "menu-icon tf-icons ti ti-smart-home", "slug": "admin.dashboard" },
     { "url": "admin/search", "name": "جستجو", "icon": "menu-icon tf-icons ti ti-search", "slug": "admin.search" },
+
+    { "menuHeader": "محتوا" },
     { "url": "admin/home", "name": "صفحه اصلی", "icon": "menu-icon tf-icons ti ti-home", "slug": "admin.home" },
     { "url": "admin/pages", "name": "صفحات", "icon": "menu-icon tf-icons ti ti-file-text", "slug": "admin.pages" },
     { "url": "admin/posts", "name": "بلاگ", "icon": "menu-icon tf-icons ti ti-article", "slug": "admin.posts" },
@@ -13,22 +15,28 @@
       "submenu": [
         { "url": "admin/categories?type=post", "name": "دسته‌های بلاگ", "slug": "admin.categories.index" },
         { "url": "admin/categories?type=product", "name": "دسته‌های محصول", "slug": "admin.categories.index" },
-        { "url": "admin/tags", "name": "برچسب‌ها", "slug": "admin.tags.index" }
+        { "url": "admin/tags", "name": "برچسب‌ها", "slug": "admin.tags" }
       ]
     },
-    { "url": "admin/menus", "name": "منوساز", "icon": "menu-icon tf-icons ti ti-menu-2", "slug": "admin.menus" },
-    { "url": "admin/products", "name": "محصولات", "icon": "menu-icon tf-icons ti ti-package", "slug": "admin.products" },
-    { "url": "admin/courses", "name": "دوره‌های LMS", "icon": "menu-icon tf-icons ti ti-school", "slug": "admin.courses" },
+    { "url": "admin/menus", "name": "منوها", "icon": "menu-icon tf-icons ti ti-menu-2", "slug": "admin.menus" },
     { "url": "admin/media", "name": "رسانه", "icon": "menu-icon tf-icons ti ti-photo", "slug": "admin.media" },
+
+    { "menuHeader": "آموزش" },
+    { "url": "admin/courses", "name": "دوره‌ها", "icon": "menu-icon tf-icons ti ti-school", "slug": "admin.courses" },
+
     { "menuHeader": "فروشگاه" },
+    { "url": "admin/products", "name": "محصولات", "icon": "menu-icon tf-icons ti ti-package", "slug": "admin.products" },
     { "url": "admin/orders", "name": "سفارش‌ها", "icon": "menu-icon tf-icons ti ti-shopping-cart", "slug": "admin.orders" },
     { "url": "admin/licenses", "name": "لایسنس‌ها", "icon": "menu-icon tf-icons ti ti-key", "slug": "admin.licenses" },
     { "url": "admin/coupons", "name": "کدهای تخفیف", "icon": "menu-icon tf-icons ti ti-discount-2", "slug": "admin.coupons" },
     { "url": "admin/gateways", "name": "درگاه‌های پرداخت", "icon": "menu-icon tf-icons ti ti-credit-card", "slug": "admin.gateways" },
-    { "url": "admin/redirects", "name": "ریدایرکت‌ها", "icon": "menu-icon tf-icons ti ti-arrow-forward", "slug": "admin.redirects" },
+
+    { "menuHeader": "کاربران" },
     { "url": "admin/users", "name": "کاربران", "icon": "menu-icon tf-icons ti ti-users", "slug": "admin.users" },
-    { "menuHeader": "ارتباطات" },
     { "url": "admin/messages", "name": "پیام‌ها", "icon": "menu-icon tf-icons ti ti-mail", "slug": "admin.messages" },
+
+    { "menuHeader": "سیستم" },
+    { "url": "admin/redirects", "name": "ریدایرکت‌ها", "icon": "menu-icon tf-icons ti ti-route", "slug": "admin.redirects" },
     { "url": "admin/settings", "name": "تنظیمات", "icon": "menu-icon tf-icons ti ti-settings", "slug": "admin.settings" }
   ]
 }

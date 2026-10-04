@@ -2,11 +2,12 @@
 
 @section('title', 'ریدایرکت‌ها')
 
+@section('lede', 'مسیر قدیمی را با کد ۳۰۱ یا ۳۰۲ به آدرس جدید بفرستید.')
+
 @section('content')
-<h4 class="mb-4">ریدایرکت‌های ۳۰۱/۳۰۲</h4>
 
 <div class="card mb-4">
-    <div class="card-header">افزودن ریدایرکت</div>
+    <div class="card-header"><h5 class="mb-0">افزودن ریدایرکت</h5></div>
     <div class="card-body">
         <form method="POST" action="{{ route('admin.redirects.store') }}" class="row g-3 align-items-end">
             @csrf
@@ -34,11 +35,12 @@
 </div>
 
 <div class="card mb-4">
-    <div class="card-header">ورود دسته‌ای (هر خط: from to [code])</div>
+    <div class="card-header"><h5 class="mb-0">ورود دسته‌ای</h5></div>
     <div class="card-body">
         <form method="POST" action="{{ route('admin.redirects.import') }}">
             @csrf
-            <textarea name="rows" rows="5" class="form-control mb-3" dir="ltr" placeholder="/product/old /courses/new 301"></textarea>
+            <label class="form-label" for="redirect-rows">هر خط: مسیر قدیم، مسیر جدید، کد</label>
+            <textarea id="redirect-rows" name="rows" rows="5" class="form-control mb-3" dir="ltr" placeholder="/product/old /courses/new 301"></textarea>
             <button class="btn btn-outline-primary">ورود</button>
         </form>
     </div>

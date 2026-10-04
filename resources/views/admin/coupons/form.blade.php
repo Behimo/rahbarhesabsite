@@ -2,13 +2,10 @@
 
 @section('title', $coupon->exists ? 'ویرایش کد تخفیف' : 'کد تخفیف جدید')
 
-@section('content')
-<div class="mb-4">
-    <a href="{{ route('admin.coupons.index') }}" class="text-muted"><i class="ti ti-arrow-right me-1"></i>بازگشت</a>
-    <h4 class="mt-2 mb-0">{{ $coupon->exists ? 'ویرایش: '.$coupon->code : 'کد تخفیف جدید' }}</h4>
-</div>
+@section('heading', $coupon->exists ? 'ویرایش: '.$coupon->code : 'کد تخفیف جدید')
 
-<form method="POST" action="{{ $coupon->exists ? route('admin.coupons.update', $coupon) : route('admin.coupons.store') }}" class="card" style="max-width: 44rem;">
+@section('content')
+<form method="POST" action="{{ $coupon->exists ? route('admin.coupons.update', $coupon) : route('admin.coupons.store') }}" class="card">
     @csrf
     @if ($coupon->exists) @method('PUT') @endif
     <div class="card-body">
@@ -70,7 +67,9 @@
                 </div>
             </div>
         </div>
-        <button type="submit" class="btn btn-primary mt-4">ذخیره</button>
+        <div class="admin-form-actions">
+            <button type="submit" class="btn btn-primary">ذخیره</button>
+        </div>
     </div>
 </form>
 @endsection

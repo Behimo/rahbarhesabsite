@@ -1,25 +1,22 @@
 @extends('layouts.admin')
 
-@section('title', 'بلاگ')
+@section('title', request()->boolean('trashed') ? 'سطل زباله' : 'بلاگ')
+
+@section('lede', 'مدیریت مقالات، پیش‌نویس‌ها و سطل زباله')
+
+@section('actions')
+    <a href="{{ route('admin.categories.index', ['type' => 'post']) }}" class="btn btn-label-secondary">دسته‌بندی‌ها</a>
+    <a href="{{ route('admin.tags.index') }}" class="btn btn-label-secondary">برچسب‌ها</a>
+    <a href="{{ route('admin.posts.index', ['trashed' => 1]) }}" class="btn btn-label-warning">
+        سطل زباله @if ($trashCount > 0)<span class="badge bg-danger ms-1">{{ $trashCount }}</span>@endif
+    </a>
+    <a href="{{ route('admin.posts.create') }}" class="btn btn-primary">
+        <i class="ti ti-plus me-1"></i>مقاله جدید
+    </a>
+@endsection
 
 @section('content')
 @include('admin.partials.category-ui')
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-    <div>
-        <h4 class="mb-1">مقالات بلاگ</h4>
-        <p class="text-muted mb-0">مدیریت مقالات، پیش‌نویس‌ها و سطل زباله</p>
-    </div>
-    <div class="d-flex gap-2">
-        <a href="{{ route('admin.categories.index', ['type' => 'post']) }}" class="btn btn-label-secondary">دسته‌بندی‌ها</a>
-        <a href="{{ route('admin.tags.index') }}" class="btn btn-label-secondary">برچسب‌ها</a>
-        <a href="{{ route('admin.posts.index', ['trashed' => 1]) }}" class="btn btn-label-warning">
-            سطل زباله @if ($trashCount > 0)<span class="badge bg-danger ms-1">{{ $trashCount }}</span>@endif
-        </a>
-        <a href="{{ route('admin.posts.create') }}" class="btn btn-primary">
-            <i class="ti ti-plus me-1"></i>مقاله جدید
-        </a>
-    </div>
-</div>
 
 <form method="GET" class="card mb-4">
     <div class="card-body">

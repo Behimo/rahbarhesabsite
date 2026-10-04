@@ -1,8 +1,20 @@
 @extends('layouts.admin')
 @section('title', 'جستجو')
+@section('lede', 'صفحات، نوشته‌ها و دوره‌ها')
 @section('content')
-<h4 class="mb-4">جستجوی داخلی</h4>
-<form class="mb-4"><input name="q" value="{{ $q }}" class="form-control" placeholder="جستجو..."></form>
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" action="{{ route('admin.search') }}" class="row g-3 align-items-end">
+            <div class="col-md-8 col-lg-6">
+                <label class="form-label" for="admin-search-q">عبارت</label>
+                <input id="admin-search-q" name="q" value="{{ $q }}" class="form-control">
+            </div>
+            <div class="col-md-4 col-lg-3">
+                <button type="submit" class="btn btn-primary">جستجو</button>
+            </div>
+        </form>
+    </div>
+</div>
 @if($q)
 <div class="row g-4">
     <div class="col-md-4"><h5>صفحات</h5><ul>@foreach($pages as $p)<li><a href="{{ route('admin.pages.edit', $p) }}">{{ $p->title }}</a></li>@endforeach</ul></div>

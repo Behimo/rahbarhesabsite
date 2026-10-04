@@ -1,23 +1,19 @@
 @extends('layouts.admin')
 
-@section('title', $type === 'post' ? 'دسته‌های بلاگ' : 'دسته‌های محصول')
+@section('title', $type === 'post' ? 'دسته‌های بلاگ' : 'دسته‌های محصول و دوره')
 
-@section('content')
-@include('admin.partials.category-ui')
+@section('lede', $type === 'post'
+    ? 'هر مطلب یک دستهٔ اصلی دارد. زیردسته در فیلتر بلاگ، مطالب فرزند را هم نشان می‌دهد.'
+    : 'هر دوره می‌تواند در چند دسته باشد. یکی را به‌عنوان دستهٔ اصلی برای مسیر صفحه انتخاب کنید.')
 
-<div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
-    <div>
-        <h4 class="mb-1">{{ $type === 'post' ? 'دسته‌های بلاگ' : 'دسته‌های محصول و دوره' }}</h4>
-        <p class="text-muted mb-0">
-            {{ $type === 'post'
-                ? 'هر مطلب یک دستهٔ اصلی دارد. زیردسته در فیلتر بلاگ، مطالب فرزند را هم نشان می‌دهد.'
-                : 'هر دوره می‌تواند در چند دسته باشد. یکی را به‌عنوان دستهٔ اصلی برای مسیر صفحه انتخاب کنید.' }}
-        </p>
-    </div>
+@section('actions')
     <a href="{{ route('admin.categories.create', ['type' => $type]) }}" class="btn btn-primary">
         <i class="ti ti-plus me-1"></i>دسته جدید
     </a>
-</div>
+@endsection
+
+@section('content')
+@include('admin.partials.category-ui')
 
 <div class="card">
     @if ($categories->isEmpty())

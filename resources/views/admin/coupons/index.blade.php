@@ -2,11 +2,13 @@
 
 @section('title', 'کدهای تخفیف')
 
+@section('actions')
+    <a href="{{ route('admin.coupons.create') }}" class="btn btn-primary">
+        <i class="ti ti-plus me-1"></i>کد جدید
+    </a>
+@endsection
+
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="mb-0">کدهای تخفیف</h4>
-    <a href="{{ route('admin.coupons.create') }}" class="btn btn-primary">کد جدید</a>
-</div>
 
 <div class="card">
     <div class="table-responsive">

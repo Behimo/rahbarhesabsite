@@ -2,6 +2,21 @@
 
 @section('title', 'جزئیات لایسنس')
 
+@section('heading', 'لایسنس #'.$license->id)
+
+@section('actions')
+    <form method="POST" action="{{ route('admin.licenses.reissue', $license) }}" onsubmit="return confirm('صدور مجدد لایسنس انجام شود؟')">
+        @csrf
+        <button type="submit" class="btn btn-label-warning">صدور مجدد</button>
+    </form>
+    @if ($license->order_id)
+        <a href="{{ route('admin.orders.show', $license->order_id) }}" class="btn btn-label-primary">مشاهده سفارش</a>
+    @endif
+    @if ($license->course?->product)
+        <a href="{{ route('admin.courses.edit', $license->course->product) }}" class="btn btn-label-secondary">ویرایش دوره</a>
+    @endif
+@endsection
+
 @section('content')
 @php
     $statusLabels = [
@@ -16,28 +31,10 @@
     ];
 @endphp
 
-<div class="mb-4">
-    <a href="{{ route('admin.licenses.index') }}" class="text-muted"><i class="ti ti-arrow-right me-1"></i>بازگشت</a>
-    <h4 class="mt-2 mb-0">لایسنس #{{ $license->id }}</h4>
-</div>
-
-<div class="d-flex flex-wrap gap-2 mb-4">
-    <form method="POST" action="{{ route('admin.licenses.reissue', $license) }}" onsubmit="return confirm('صدور مجدد لایسنس انجام شود؟')">
-        @csrf
-        <button type="submit" class="btn btn-warning">صدور مجدد</button>
-    </form>
-    @if ($license->order_id)
-        <a href="{{ route('admin.orders.show', $license->order_id) }}" class="btn btn-outline-primary">مشاهده سفارش</a>
-    @endif
-    @if ($license->course?->product)
-        <a href="{{ route('admin.courses.edit', $license->course->product) }}" class="btn btn-outline-secondary">ویرایش دوره</a>
-    @endif
-</div>
-
 <div class="row g-4">
     <div class="col-md-7">
         <div class="card mb-4">
-            <div class="card-header">اطلاعات لایسنس</div>
+            <div class="card-header"><h5 class="mb-0">اطلاعات لایسنس</h5></div>
             <div class="card-body">
                 <dl class="row mb-0">
                     <dt class="col-sm-4">وضعیت</dt>
@@ -97,7 +94,7 @@
 
     <div class="col-md-5">
         <div class="card">
-            <div class="card-header">پاسخ API / خطای تشخیصی</div>
+            <div class="card-header"><h5 class="mb-0">پاسخ API / خطای تشخیصی</h5></div>
             <div class="card-body">
                 @if (! empty($license->api_response))
                     <pre class="mb-0 small bg-light p-3 rounded" style="max-height: 420px; overflow: auto; white-space: pre-wrap; direction: ltr; text-align: left;">{{ json_encode($license->api_response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}</pre>

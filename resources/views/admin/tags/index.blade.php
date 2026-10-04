@@ -2,11 +2,9 @@
 
 @section('title', 'برچسب‌ها')
 
+@section('lede', 'برچسب‌ها درخت نیستند. یک برچسب می‌تواند به چند مطلب وصل شود و دستهٔ اصلی مطلب را عوض نمی‌کند.')
+
 @section('content')
-<div class="mb-4">
-    <h4 class="mb-1">برچسب‌ها</h4>
-    <p class="text-muted mb-0">برچسب‌ها درخت نیستند. یک برچسب می‌تواند به چند مطلب وصل شود و دستهٔ اصلی مطلب را عوض نمی‌کند.</p>
-</div>
 
 @if ($errors->any())
     <div class="alert alert-danger">
@@ -18,7 +16,7 @@
     </div>
 @endif
 
-<div class="card mb-4" style="max-width: 42rem;">
+<div class="card mb-4">
     <div class="card-header"><h5 class="mb-0">برچسب جدید</h5></div>
     <div class="card-body">
         <form method="POST" action="{{ route('admin.tags.store') }}" class="row g-3">

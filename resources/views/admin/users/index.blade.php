@@ -2,16 +2,15 @@
 
 @section('title', 'کاربران')
 
-@section('content')
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-    <div>
-        <h4 class="mb-1">کاربران</h4>
-        <p class="text-muted mb-0">مدیریت کاربران و دسترسی‌ها</p>
-    </div>
+@section('lede', 'مدیریت کاربران و دسترسی‌ها')
+
+@section('actions')
     <a href="{{ route('admin.users.create') }}" class="btn btn-primary">
         <i class="ti ti-plus me-1"></i>کاربر جدید
     </a>
-</div>
+@endsection
+
+@section('content')
 
 <div class="card">
     <div class="table-responsive">

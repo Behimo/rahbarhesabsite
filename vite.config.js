@@ -26,6 +26,8 @@ export default defineConfig({
         'resources/css/admin-font.css',
         'resources/css/rtl.css',
         'resources/assets/css/demo.css',
+        'resources/css/admin-menu.css',
+        'resources/css/admin-pages.css',
         'resources/assets/vendor/fonts/tabler-icons.scss',
         'resources/assets/vendor/fonts/fontawesome.scss',
         'resources/assets/vendor/fonts/flag-icons.scss',

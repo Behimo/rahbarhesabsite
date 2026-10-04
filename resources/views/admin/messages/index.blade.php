@@ -2,11 +2,9 @@
 
 @section('title', 'پیام‌ها')
 
+@section('lede', 'پیام‌های دریافتی از فرم تماس سایت')
+
 @section('content')
-<div class="mb-4">
-    <h4 class="mb-1">پیام‌های تماس</h4>
-    <p class="text-muted mb-0">پیام‌های دریافتی از فرم تماس سایت</p>
-</div>
 
 <div class="card">
     <div class="table-responsive">

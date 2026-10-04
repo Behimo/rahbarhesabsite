@@ -2,13 +2,17 @@
 
 @section('title', 'مشاهده پیام')
 
-@section('content')
-<div class="mb-4">
-    <a href="{{ route('admin.messages.index') }}" class="text-muted"><i class="ti ti-arrow-right me-1"></i>بازگشت</a>
-    <h4 class="mt-2 mb-0">پیام از {{ $message->name }}</h4>
-</div>
+@section('heading', 'پیام از '.$message->name)
 
-<div class="card" style="max-width: 42rem;">
+@section('actions')
+    <form method="POST" action="{{ route('admin.messages.destroy', $message) }}" onsubmit="return confirm('حذف شود؟')">
+        @csrf @method('DELETE')
+        <button type="submit" class="btn btn-label-danger">حذف پیام</button>
+    </form>
+@endsection
+
+@section('content')
+<div class="card">
     <div class="card-body">
         <div class="row g-3 mb-4">
             @if ($message->email)
@@ -35,12 +39,7 @@
             </div>
         </div>
         <hr>
-        <div class="lh-lg" style="white-space: pre-wrap;">{{ $message->message }}</div>
-        <hr>
-        <form method="POST" action="{{ route('admin.messages.destroy', $message) }}" onsubmit="return confirm('حذف شود؟')">
-            @csrf @method('DELETE')
-            <button type="submit" class="btn btn-sm btn-label-danger">حذف پیام</button>
-        </form>
+        <div class="admin-prose">{{ $message->message }}</div>
     </div>
 </div>
 @endsection

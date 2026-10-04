@@ -2,24 +2,22 @@
 
 @section('title', 'جزئیات سفارش')
 
-@section('content')
-<div class="mb-4">
-    <a href="{{ route('admin.orders.index') }}" class="text-muted"><i class="ti ti-arrow-right me-1"></i>بازگشت</a>
-    <h4 class="mt-2 mb-0">سفارش {{ $order->order_number }}</h4>
-</div>
+@section('heading', 'سفارش '.$order->order_number)
 
-<div class="d-flex flex-wrap gap-2 mb-4">
+@section('actions')
     @unless ($order->isPaid())
         <form method="POST" action="{{ route('admin.orders.mark-paid', $order) }}" onsubmit="return confirm('سفارش پرداخت‌شده شود و دسترسی صادر گردد؟')">
             @csrf
-            <button class="btn btn-success">علامت پرداخت دستی</button>
+            <button class="btn btn-label-success">علامت پرداخت دستی</button>
         </form>
     @endunless
     <form method="POST" action="{{ route('admin.orders.retry-licenses', $order) }}">
         @csrf
-        <button class="btn btn-outline-primary">صدور مجدد لایسنس</button>
+        <button class="btn btn-label-primary">صدور مجدد لایسنس</button>
     </form>
-</div>
+@endsection
+
+@section('content')
 
 <div class="row g-4">
     <div class="col-md-8">
@@ -42,7 +40,7 @@
         </div>
 
         <div class="card mb-4">
-            <div class="card-header">ثبت‌نام دستی / هدیه</div>
+            <div class="card-header"><h5 class="mb-0">ثبت‌نام دستی / هدیه</h5></div>
             <div class="card-body">
                 <form method="POST" action="{{ route('admin.orders.enroll') }}" class="row g-3 align-items-end">
                     @csrf
@@ -71,7 +69,7 @@
         </div>
 
         <div class="card">
-            <div class="card-header">دسترسی‌های کاربر</div>
+            <div class="card-header"><h5 class="mb-0">دسترسی‌های کاربر</h5></div>
             <div class="table-responsive">
                 <table class="table mb-0">
                     <thead><tr><th>دوره</th><th>منبع</th><th>وضعیت</th><th></th></tr></thead>
@@ -119,7 +117,7 @@
             </div>
         </div>
         <div class="card">
-            <div class="card-header">لایسنس اسپات‌پلیر</div>
+            <div class="card-header"><h5 class="mb-0">لایسنس اسپات‌پلیر</h5></div>
             <div class="card-body">
                 @forelse ($licenses as $license)
                     <p class="mb-2">

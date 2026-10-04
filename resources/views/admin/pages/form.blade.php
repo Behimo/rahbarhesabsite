@@ -2,18 +2,18 @@
 
 @section('title', $page->exists ? 'ویرایش صفحه' : 'صفحه جدید')
 
-@section('content')
-<div class="mb-4">
-    <a href="{{ route('admin.pages.index') }}" class="text-muted"><i class="ti ti-arrow-right me-1"></i>بازگشت</a>
-    <h4 class="mt-2 mb-0">{{ $page->exists ? 'ویرایش: '.$page->title : 'صفحه جدید' }}</h4>
-</div>
+@section('heading', $page->exists ? 'ویرایش: '.$page->title : 'صفحه جدید')
 
-@if ($page->exists && ! $page->is_system)
-    <form method="POST" action="{{ route('admin.pages.destroy', $page) }}" class="mb-3" onsubmit="return confirm('حذف شود؟')">
-        @csrf @method('DELETE')
-        <button type="submit" class="btn btn-sm btn-label-danger">حذف صفحه</button>
-    </form>
-@endif
+@section('actions')
+    @if ($page->exists && ! $page->is_system)
+        <form method="POST" action="{{ route('admin.pages.destroy', $page) }}" onsubmit="return confirm('حذف شود؟')">
+            @csrf @method('DELETE')
+            <button type="submit" class="btn btn-label-danger">حذف صفحه</button>
+        </form>
+    @endif
+@endsection
+
+@section('content')
 
 <form method="POST" action="{{ $page->exists ? route('admin.pages.update', $page) : route('admin.pages.store') }}">
     @csrf
@@ -99,6 +99,8 @@
         </div>
     </div>
 
-    <button type="submit" class="btn btn-primary">ذخیره تغییرات</button>
+    <div class="admin-form-actions">
+        <button type="submit" class="btn btn-primary">ذخیره تغییرات</button>
+    </div>
 </form>
 @endsection

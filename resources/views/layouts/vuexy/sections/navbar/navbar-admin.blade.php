@@ -11,9 +11,7 @@ $admin = Auth::guard('cms')->user();
   </div>
 
   <div class="navbar-nav-right d-flex align-items-center flex-grow-1" id="navbar-collapse">
-    <div class="navbar-nav align-items-center flex-grow-1">
-      <span class="text-muted d-none d-md-inline">@yield('title', 'پنل مدیریت')</span>
-    </div>
+    <div class="navbar-nav align-items-center flex-grow-1"></div>
 
     <ul class="navbar-nav flex-row align-items-center ms-auto">
       <li class="nav-item me-2">

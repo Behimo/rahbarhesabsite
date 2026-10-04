@@ -1,0 +1,114 @@
+/* Admin sidebar: even rows, readable Persian section labels, full-width links. */
+
+#layout-menu.menu-vertical .app-brand.demo {
+  height: 4.25rem;
+  margin: 0 0 0.25rem;
+  padding: 0 1.15rem;
+  border-bottom: 1px solid rgba(67, 89, 113, 0.12);
+}
+
+.dark-style #layout-menu.menu-vertical .app-brand.demo {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+html:not(.layout-menu-collapsed) #layout-menu .app-brand-link,
+.layout-menu-hover #layout-menu .app-brand-link {
+  min-width: 0;
+  gap: 0.65rem;
+}
+
+html:not(.layout-menu-collapsed) #layout-menu .app-brand-logo.demo,
+.layout-menu-hover #layout-menu .app-brand-logo.demo {
+  width: auto;
+  height: 2rem;
+  overflow: visible;
+}
+
+html:not(.layout-menu-collapsed) #layout-menu .app-brand-logo.demo img,
+.layout-menu-hover #layout-menu .app-brand-logo.demo img {
+  display: block;
+  width: auto;
+  height: 2rem;
+  max-width: 2.25rem;
+  object-fit: contain;
+}
+
+html:not(.layout-menu-collapsed) #layout-menu .app-brand-text.demo,
+.layout-menu-hover #layout-menu .app-brand-text.demo {
+  margin: 0 !important;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#layout-menu.menu-vertical .menu-inner {
+  padding-top: 0.35rem;
+  padding-bottom: 1.5rem;
+}
+
+#layout-menu.menu-vertical .menu-header {
+  margin-top: 0.85rem;
+  padding: 0.2rem 1.35rem 0.35rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+#layout-menu.menu-vertical .menu-inner > .menu-header:first-child {
+  margin-top: 0.35rem;
+}
+
+#layout-menu.menu-vertical .menu-header .menu-header-text {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.5;
+  opacity: 0.7;
+}
+
+#layout-menu.menu-vertical .menu-item {
+  width: 100%;
+}
+
+#layout-menu.menu-vertical .menu-item .menu-link {
+  min-height: 2.5rem;
+  border-radius: 0.5rem;
+}
+
+#layout-menu.menu-vertical .menu-item .menu-link > div {
+  min-width: 0;
+  line-height: 1.45;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#layout-menu.menu-vertical .menu-icon {
+  width: 1.5rem;
+  font-size: 1.25rem;
+  text-align: center;
+}
+
+#layout-menu.menu-vertical .menu-sub {
+  line-height: 1.45;
+}
+
+#layout-menu.menu-vertical .menu-sub .menu-link {
+  min-height: 2.25rem;
+}
+
+#layout-menu .menu-link:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #layout-menu .menu-link,
+  #layout-menu .menu-icon {
+    transition: none;
+  }
+}

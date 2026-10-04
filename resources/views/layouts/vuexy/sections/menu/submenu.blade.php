@@ -11,10 +11,7 @@
       $menuUrl = (string) ($submenu->url ?? '');
       $menuHasQuery = str_contains($menuUrl, '?');
 
-      if (! $menuHasQuery && $currentRouteName === $submenu->slug) {
-          $activeClass = 'active';
-      }
-      elseif ($menuHasQuery) {
+      if ($menuHasQuery) {
           $targetPath = trim((string) parse_url($menuUrl, PHP_URL_PATH), '/');
           $targetQuery = [];
           parse_str((string) parse_url($menuUrl, PHP_URL_QUERY), $targetQuery);
@@ -28,6 +25,12 @@
           if ($pathMatches && $queryMatches) {
               $activeClass = 'active';
           }
+      }
+      elseif (isset($menuSlugActive) && $menuSlugActive($submenu->slug ?? null)) {
+          $activeClass = isset($submenu->submenu) ? $active : 'active';
+      }
+      elseif (! $menuHasQuery && $currentRouteName === ($submenu->slug ?? null)) {
+          $activeClass = 'active';
       }
       elseif (isset($submenu->submenu)) {
         if (gettype($submenu->slug) === 'array') {
@@ -46,7 +49,7 @@
     @endphp
 
       <li class="menu-item {{$activeClass}}">
-        <a href="{{ isset($submenu->url) ? url($submenu->url) : 'javascript:void(0)' }}" class="{{ isset($submenu->submenu) ? 'menu-link menu-toggle' : 'menu-link' }}" @if (isset($submenu->target) and !empty($submenu->target)) target="_blank" @endif>
+        <a href="{{ isset($submenu->url) ? url($submenu->url) : 'javascript:void(0)' }}" class="{{ isset($submenu->submenu) ? 'menu-link menu-toggle' : 'menu-link' }}" @if ($activeClass === 'active') aria-current="page" @endif @if (isset($submenu->target) and !empty($submenu->target)) target="_blank" @endif>
           @if (isset($submenu->icon))
           <i class="{{ $submenu->icon }}"></i>
           @endif

@@ -1,11 +1,14 @@
 @extends('layouts.admin')
 @section('title', 'منوها')
+@section('actions')
+    <a href="{{ route('admin.menus.create') }}" class="btn btn-primary">
+        <i class="ti ti-plus me-1"></i>منوی جدید
+    </a>
+@endsection
 @section('content')
-<div class="d-flex justify-content-between mb-4">
-    <h4 class="mb-0">منوساز</h4>
-    <a href="{{ route('admin.menus.create') }}" class="btn btn-primary">منوی جدید</a>
-</div>
-<table class="table card-table">
+<div class="card">
+<div class="table-responsive">
+<table class="table table-hover mb-0">
     <thead><tr><th>نام</th><th>slug</th><th>محل</th><th>آیتم‌ها</th><th></th></tr></thead>
     <tbody>
         @foreach($menus as $menu)
@@ -14,9 +17,11 @@
                 <td dir="ltr">{{ $menu->slug }}</td>
                 <td>{{ $menu->location }}</td>
                 <td>{{ $menu->all_items_count }}</td>
-                <td><a href="{{ route('admin.menus.edit', $menu) }}" class="btn btn-sm btn-outline-primary">ویرایش</a></td>
+                <td><a href="{{ route('admin.menus.edit', $menu) }}" class="btn btn-sm btn-label-primary">ویرایش</a></td>
             </tr>
         @endforeach
     </tbody>
 </table>
+</div>
+</div>
 @endsection

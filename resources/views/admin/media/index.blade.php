@@ -2,26 +2,25 @@
 
 @section('title', 'رسانه')
 
-@section('content')
-<div class="mb-4">
-    <h4 class="mb-1">مدیریت رسانه</h4>
-    <p class="text-muted mb-0">آپلود و مدیریت فایل‌های تصویری</p>
-</div>
+@section('lede', 'آپلود و مدیریت فایل‌های تصویری')
 
-<div class="card mb-4" style="max-width: 36rem;">
+@section('content')
+<div class="card mb-4">
     <div class="card-header"><h5 class="mb-0">آپلود فایل</h5></div>
     <div class="card-body">
-        <form method="POST" action="{{ route('admin.media.store') }}" enctype="multipart/form-data">
+        <form method="POST" action="{{ route('admin.media.store') }}" enctype="multipart/form-data" class="row g-3 align-items-end">
             @csrf
-            <div class="mb-3">
+            <div class="col-md-5">
                 <label class="form-label">فایل (تصویر یا PDF، حداکثر ۵ مگ)</label>
                 <input type="file" name="file" accept="image/*,.pdf" class="form-control" required>
             </div>
-            <div class="mb-3">
-                <label class="form-label">متن جایگزین (alt)</label>
+            <div class="col-md-5">
+                <label class="form-label">متن جایگزین</label>
                 <input type="text" name="alt" class="form-control">
             </div>
-            <button type="submit" class="btn btn-primary">آپلود</button>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">آپلود</button>
+            </div>
         </form>
     </div>
 </div>

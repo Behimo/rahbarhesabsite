@@ -2,22 +2,21 @@
 
 @section('title', 'درگاه‌های پرداخت')
 
-@section('content')
 @php
     $activeCount = collect($gateways)->where('enabled', true)->count();
     $gatewayCount = count($gateways);
 @endphp
 
+@section('lede', 'در صفحه خرید فقط درگاه‌های فعال نشان داده می‌شوند.')
+
+@section('actions')
+    @if ($gatewayCount > 0)
+        <p class="gw-summary mb-0" data-gw-summary role="status" aria-atomic="true">{{ $activeCount }} از {{ $gatewayCount }} درگاه فعال است.</p>
+    @endif
+@endsection
+
+@section('content')
 <div class="gw">
-    <div class="gw-head">
-        <div>
-            <h4 class="mb-1">درگاه‌های پرداخت</h4>
-            <p class="text-muted mb-0">در صفحه خرید فقط درگاه‌های فعال نشان داده می‌شوند.</p>
-        </div>
-        @if ($gatewayCount > 0)
-            <p class="gw-summary mb-0" data-gw-summary role="status" aria-atomic="true">{{ $activeCount }} از {{ $gatewayCount }} درگاه فعال است.</p>
-        @endif
-    </div>
 
     @if ($gatewayCount === 0)
         <div class="card">
@@ -121,24 +120,14 @@
 
 @section('page-style')
 <style>
-    .gw {
-        max-width: 46rem;
-    }
-
-    .gw-head {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: 0.75rem 1.5rem;
-        margin-bottom: 1.25rem;
-    }
-
     .gw-summary {
         color: var(--bs-secondary-color);
         background: var(--bs-paper-bg, var(--bs-card-bg, #fff));
         border: 1px solid var(--bs-border-color);
         border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        min-height: 2.75rem;
         padding: 0.4rem 0.85rem;
         line-height: 1.4;
     }
@@ -146,6 +135,13 @@
     .gw-list {
         display: grid;
         gap: 1rem;
+        grid-template-columns: 1fr;
+    }
+
+    @media (min-width: 1400px) {
+        .gw-list {
+            grid-template-columns: 1fr 1fr;
+        }
     }
 
     .gw-card {

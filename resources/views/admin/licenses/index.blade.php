@@ -1,6 +1,8 @@
 @extends('layouts.admin')
 
-@section('title', 'لایسنس‌های اسپات‌پلیر')
+@section('title', 'لایسنس‌ها')
+
+@section('lede', 'صدور، وضعیت و پیگیری دسترسی دوره‌ها')
 
 @section('content')
 @php
@@ -15,13 +17,6 @@
         'failed' => 'bg-label-danger',
     ];
 @endphp
-
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-    <div>
-        <h4 class="mb-1">لایسنس‌های اسپات‌پلیر</h4>
-        <p class="text-muted mb-0">صدور، وضعیت و پیگیری دسترسی دوره‌ها</p>
-    </div>
-</div>
 
 <div class="row g-3 mb-4">
     <div class="col-6 col-md-3">

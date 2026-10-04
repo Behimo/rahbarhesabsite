@@ -2,11 +2,11 @@
 
 @section('title', 'صفحه اصلی')
 
+@section('heading', 'ویرایش صفحه اصلی')
+
+@section('lede', 'چیدمان صفحه ثابت است. اینجا فقط متن معرفی، عنوان بخش‌ها و سوالات پرتکرار عوض می‌شود. دوره‌ها از فهرست دوره‌ها و اخبار از بلاگ می‌آیند.')
+
 @section('content')
-<div class="mb-4">
-    <h4 class="mb-1">ویرایش صفحه اصلی</h4>
-    <p class="text-muted mb-0">چیدمان صفحه ثابت است. اینجا فقط متن معرفی، عنوان بخش‌ها و سوالات پرتکرار عوض می‌شود. دوره‌ها از فهرست دوره‌ها و اخبار از بلاگ می‌آیند.</p>
-</div>
 
 <form method="POST" action="{{ route('admin.home.update') }}">
     @csrf @method('PUT')
@@ -79,6 +79,8 @@
         </div>
     </div>
 
-    <button type="submit" class="btn btn-primary">ذخیره صفحه اصلی</button>
+    <div class="admin-form-actions">
+        <button type="submit" class="btn btn-primary">ذخیره صفحه اصلی</button>
+    </div>
 </form>
 @endsection

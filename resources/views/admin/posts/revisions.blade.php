@@ -2,11 +2,9 @@
 
 @section('title', 'تاریخچه مقاله')
 
+@section('heading', 'تاریخچه: '.$post->title)
+
 @section('content')
-<div class="mb-4">
-    <a href="{{ route('admin.posts.edit', $post) }}" class="text-muted"><i class="ti ti-arrow-right me-1"></i>بازگشت به ویرایش</a>
-    <h4 class="mt-2 mb-0">تاریخچه: {{ $post->title }}</h4>
-</div>
 
 <div class="card">
     <div class="table-responsive">

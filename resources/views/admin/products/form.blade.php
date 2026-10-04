@@ -2,13 +2,10 @@
 
 @section('title', $product->exists ? 'ویرایش محصول' : 'محصول جدید')
 
-@section('content')
-<div class="mb-4">
-    <a href="{{ route('admin.products.index') }}" class="text-muted"><i class="ti ti-arrow-right me-1"></i>بازگشت</a>
-    <h4 class="mt-2 mb-0">{{ $product->exists ? 'ویرایش: '.$product->title : 'محصول جدید' }}</h4>
-</div>
+@section('heading', $product->exists ? 'ویرایش: '.$product->title : 'محصول جدید')
 
-<form method="POST" action="{{ $product->exists ? route('admin.products.update', $product) : route('admin.products.store') }}" class="card" style="max-width: 48rem;" enctype="multipart/form-data">
+@section('content')
+<form method="POST" action="{{ $product->exists ? route('admin.products.update', $product) : route('admin.products.store') }}" class="card" enctype="multipart/form-data">
     @csrf
     @if ($product->exists) @method('PUT') @endif
     <div class="card-body">
@@ -147,7 +144,9 @@
             </div>
         </div>
 
-        <button type="submit" class="btn btn-primary">ذخیره</button>
+        <div class="admin-form-actions">
+            <button type="submit" class="btn btn-primary">ذخیره</button>
+        </div>
     </div>
 </form>
 @endsection

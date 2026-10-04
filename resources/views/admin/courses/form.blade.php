@@ -2,11 +2,9 @@
 
 @section('title', $product->exists ? 'ویرایش دوره' : 'دوره جدید')
 
+@section('heading', $product->exists ? 'ویرایش: '.$product->title : 'دوره جدید')
+
 @section('content')
-<div class="mb-4">
-    <a href="{{ route('admin.courses.index') }}" class="text-muted"><i class="ti ti-arrow-right me-1"></i>بازگشت</a>
-    <h4 class="mt-2 mb-0">{{ $product->exists ? 'ویرایش: '.$product->title : 'دوره جدید' }}</h4>
-</div>
 
 <form method="POST" action="{{ $product->exists ? route('admin.courses.update', $product) : route('admin.courses.store') }}" class="card mb-4">
     @csrf
@@ -79,21 +77,25 @@
             <input type="checkbox" name="is_published" value="1" class="form-check-input" id="is_published" @checked(old('is_published', $product->is_published))>
             <label class="form-check-label" for="is_published">منتشر شده</label>
         </div>
-        <button type="submit" class="btn btn-primary">ذخیره دوره</button>
+        <div class="admin-form-actions">
+            <button type="submit" class="btn btn-primary">ذخیره دوره</button>
+        </div>
     </div>
 </form>
 
 @if ($product->exists && $course->exists)
     <div class="card mb-4">
+        <div class="card-header"><h5 class="mb-0">افزودن فصل</h5></div>
         <div class="card-body">
-            <h5 class="mb-3">افزودن فصل</h5>
-            <form method="POST" action="{{ route('admin.courses.sections.store', $product) }}" class="row g-2">
+            <form method="POST" action="{{ route('admin.courses.sections.store', $product) }}" class="row g-3 align-items-end">
                 @csrf
                 <div class="col-md-8">
-                    <input type="text" name="title" class="form-control" placeholder="عنوان فصل" required>
+                    <label class="form-label" for="section-title">عنوان فصل</label>
+                    <input id="section-title" type="text" name="title" class="form-control" required>
                 </div>
                 <div class="col-md-2">
-                    <input type="number" name="sort_order" class="form-control" placeholder="ترتیب" value="0">
+                    <label class="form-label" for="section-order">ترتیب</label>
+                    <input id="section-order" type="number" name="sort_order" class="form-control" value="0">
                 </div>
                 <div class="col-md-2">
                     <button type="submit" class="btn btn-outline-primary w-100">افزودن</button>
@@ -105,7 +107,7 @@
     @foreach ($course->sections as $section)
         <div class="card mb-3">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <strong>{{ $section->title }}</strong>
+                <h5 class="mb-0">{{ $section->title }}</h5>
                 <form method="POST" action="{{ route('admin.courses.sections.destroy', [$product, $section]) }}" onsubmit="return confirm('فصل حذف شود؟')">
                     @csrf @method('DELETE')
                     <button type="submit" class="btn btn-sm btn-label-danger">حذف فصل</button>
@@ -125,9 +127,9 @@
                 </ul>
                 <form method="POST" action="{{ route('admin.courses.lessons.store', [$product, $section]) }}" class="row g-2">
                     @csrf
-                    <div class="col-md-4"><input type="text" name="title" class="form-control form-control-sm" placeholder="عنوان درس" required></div>
-                    <div class="col-md-3"><input type="text" name="slug" class="form-control form-control-sm" placeholder="slug" dir="ltr" required></div>
-                    <div class="col-md-3"><input type="text" name="video_url" class="form-control form-control-sm" placeholder="لینک ویدیو" dir="ltr"></div>
+                    <div class="col-md-4"><input type="text" name="title" class="form-control form-control-sm" placeholder="عنوان درس" aria-label="عنوان درس" required></div>
+                    <div class="col-md-3"><input type="text" name="slug" class="form-control form-control-sm" placeholder="slug" aria-label="نامک درس" dir="ltr" required></div>
+                    <div class="col-md-3"><input type="text" name="video_url" class="form-control form-control-sm" placeholder="لینک ویدیو" aria-label="لینک ویدیو" dir="ltr"></div>
                     <div class="col-md-2"><button type="submit" class="btn btn-sm btn-outline-primary w-100">افزودن درس</button></div>
                 </form>
             </div>

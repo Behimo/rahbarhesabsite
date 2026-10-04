@@ -1,5 +1,13 @@
 @extends('layouts.admin')
 @section('title', 'صفحه‌ساز — '.$page->title)
+@section('heading', 'صفحه‌ساز: '.$page->title)
+@section('actions')
+    @if($page->slug && ! $page->is_system)
+        <a href="{{ route('pages.show', $page->slug) }}" target="_blank" rel="noopener" class="btn btn-label-secondary">مشاهده صفحه</a>
+    @endif
+    <a href="{{ route('admin.pages.edit', $page) }}" class="btn btn-label-secondary">تنظیمات صفحه</a>
+    <a href="{{ route('admin.pages.revisions', $page) }}" class="btn btn-label-secondary">تاریخچه</a>
+@endsection
 @section('content')
 <style>
     .builder-block { border: 1px solid var(--bs-border-color); border-radius: .5rem; margin-bottom: .75rem; background: var(--bs-body-bg); }
@@ -38,17 +46,6 @@
         transition: color .15s ease, background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
     }
 </style>
-
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0">صفحه‌ساز: {{ $page->title }}</h4>
-    <div class="d-flex gap-2">
-        @if($page->slug && ! $page->is_system)
-            <a href="{{ route('pages.show', $page->slug) }}" target="_blank" class="btn btn-outline-secondary">مشاهده صفحه</a>
-        @endif
-        <a href="{{ route('admin.pages.edit', $page) }}" class="btn btn-outline-secondary">تنظیمات صفحه</a>
-        <a href="{{ route('admin.pages.revisions', $page) }}" class="btn btn-outline-secondary">تاریخچه</a>
-    </div>
-</div>
 
 @if (session('success'))
     <div class="alert alert-success">{{ session('success') }}</div>
