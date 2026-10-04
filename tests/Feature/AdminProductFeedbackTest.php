@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\CmsAdmin;
 use App\Models\CmsProduct;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,7 +15,7 @@ class AdminProductFeedbackTest extends TestCase
     {
         $admin = $this->admin();
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->from(route('admin.products.create'))
             ->followingRedirects()
             ->post(route('admin.products.store'), [
@@ -33,7 +33,7 @@ class AdminProductFeedbackTest extends TestCase
     {
         $admin = $this->admin();
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->followingRedirects()
             ->post(route('admin.products.store'), [
                 'title' => 'محصول جدید',
@@ -60,7 +60,7 @@ class AdminProductFeedbackTest extends TestCase
             'accent' => 'orange',
         ]);
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->from(route('admin.products.create'))
             ->post(route('admin.products.store'), [
                 'title' => 'محصول فارسی',
@@ -70,7 +70,7 @@ class AdminProductFeedbackTest extends TestCase
             ->assertRedirect(route('admin.products.create'))
             ->assertSessionHasErrors('slug');
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->from(route('admin.products.edit', $product))
             ->put(route('admin.products.update', $product), [
                 'title' => 'راهبر',
@@ -95,7 +95,7 @@ class AdminProductFeedbackTest extends TestCase
             'accent' => 'orange',
         ]);
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->from(route('admin.products.create'))
             ->post(route('admin.products.store'), [
                 'title' => 'تکراری',
@@ -106,13 +106,8 @@ class AdminProductFeedbackTest extends TestCase
             ->assertSessionHasErrors('slug');
     }
 
-    private function admin(): CmsAdmin
+    private function admin(): User
     {
-        return CmsAdmin::query()->create([
-            'name' => 'Admin',
-            'email' => 'products@test.com',
-            'password' => 'password',
-            'is_super' => true,
-        ]);
+        return $this->makeAdmin(['email' => 'products@test.com']);
     }
 }

@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\CmsAdmin;
 use App\Models\CmsSetting;
 use App\Models\Coupon;
 use App\Models\Course;
@@ -156,12 +155,7 @@ class ShopCheckoutTest extends TestCase
 
     public function test_admin_can_mark_order_paid(): void
     {
-        $admin = CmsAdmin::query()->create([
-            'name' => 'Admin',
-            'email' => 'admin@test.com',
-            'password' => bcrypt('password'),
-            'is_super' => true,
-        ]);
+        $admin = $this->makeAdmin(['email' => 'admin@test.com']);
         $user = User::factory()->create();
         $product = $this->paidCourse();
         $order = Order::query()->create([
@@ -179,7 +173,7 @@ class ShopCheckoutTest extends TestCase
             'quantity' => 1,
         ]);
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->post(route('admin.orders.mark-paid', $order))
             ->assertRedirect();
 
@@ -269,14 +263,9 @@ class ShopCheckoutTest extends TestCase
     {
         config(['cms.zarinpal.sandbox' => true]);
 
-        $admin = CmsAdmin::query()->create([
-            'name' => 'Admin',
-            'email' => 'gateways@test.com',
-            'password' => bcrypt('password'),
-            'is_super' => true,
-        ]);
+        $admin = $this->makeAdmin(['email' => 'gateways@test.com']);
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->put(route('admin.settings.gateways'), [
                 'gateways' => ['zibal' => '0', 'zarinpal' => '1'],
             ])
@@ -310,14 +299,9 @@ class ShopCheckoutTest extends TestCase
 
     public function test_admin_cannot_disable_every_gateway(): void
     {
-        $admin = CmsAdmin::query()->create([
-            'name' => 'Admin',
-            'email' => 'gateways-off@test.com',
-            'password' => bcrypt('password'),
-            'is_super' => true,
-        ]);
+        $admin = $this->makeAdmin(['email' => 'gateways-off@test.com']);
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->put(route('admin.settings.gateways'), [
                 'gateways' => ['zibal' => '0', 'zarinpal' => '0'],
             ])
@@ -339,21 +323,16 @@ class ShopCheckoutTest extends TestCase
             ->assertSee('زیبال')
             ->assertDontSee('name="gateway"', false);
 
-        $admin = CmsAdmin::query()->create([
-            'name' => 'Admin',
-            'email' => 'gateways-ui@test.com',
-            'password' => bcrypt('password'),
-            'is_super' => true,
-        ]);
+        $admin = $this->makeAdmin(['email' => 'gateways-ui@test.com']);
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->get(route('admin.settings.index'))
             ->assertOk()
             ->assertSee('درگاه‌های پرداخت')
             ->assertSee('زیبال')
             ->assertSee('زرین‌پال');
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->get(route('admin.gateways.index'))
             ->assertOk()
             ->assertSee('مرچنت')
@@ -365,14 +344,9 @@ class ShopCheckoutTest extends TestCase
 
     public function test_admin_gateway_page_credentials_are_sent_to_the_driver(): void
     {
-        $admin = CmsAdmin::query()->create([
-            'name' => 'Admin',
-            'email' => 'gateways-cred@test.com',
-            'password' => bcrypt('password'),
-            'is_super' => true,
-        ]);
+        $admin = $this->makeAdmin(['email' => 'gateways-cred@test.com']);
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->put(route('admin.gateways.update'), [
                 'gateways' => ['zibal' => '1', 'zarinpal' => '0'],
                 'credentials' => [

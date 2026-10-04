@@ -2,12 +2,14 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
+use App\Support\AccessCatalog;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ * @extends Factory<User>
  */
 class UserFactory extends Factory
 {
@@ -33,7 +35,6 @@ class UserFactory extends Factory
             'status' => 'active',
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
-            'role' => 'user',
             'remember_token' => Str::random(10),
         ];
     }
@@ -50,8 +51,8 @@ class UserFactory extends Factory
 
     public function instructor(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'role' => 'instructor',
-        ]);
+        return $this->afterCreating(function (User $user): void {
+            $user->assignRoleIfExists(AccessCatalog::ROLE_INSTRUCTOR);
+        });
     }
 }

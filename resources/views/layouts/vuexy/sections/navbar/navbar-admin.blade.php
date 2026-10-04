@@ -1,6 +1,6 @@
 @php
 $containerNav = ($configData['contentLayout'] === 'compact') ? 'container-xxl' : 'container-fluid';
-$admin = Auth::guard('cms')->user();
+$admin = Auth::user();
 @endphp
 
 <nav class="layout-navbar {{ $containerNav }} navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme" id="layout-navbar">

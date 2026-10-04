@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Course;
 use App\Models\ShopProduct;
 use App\Models\User;
+use App\Support\AccessCatalog;
 use Illuminate\Database\Seeder;
 
 /**
@@ -25,6 +26,8 @@ class ProductCategorySeeder extends Seeder
         $hardware = $this->category('hardware', 'تجهیزات', null, 3, 'سخت‌افزار فروش');
         $pos = $this->category('pos', 'کارت‌خوان', $hardware, 1, 'دستگاه کارت‌خوان');
 
+        $this->call(RolesAndPermissionsSeeder::class);
+
         $instructor = User::query()->updateOrCreate(
             ['phone' => '09120000001'],
             [
@@ -32,10 +35,10 @@ class ProductCategorySeeder extends Seeder
                 'email' => 'instructor@rahbarhesab.com',
                 'mobile' => '09120000001',
                 'password' => 'password',
-                'role' => User::ROLE_INSTRUCTOR,
                 'status' => 'active',
             ]
         );
+        $instructor->syncRoles([AccessCatalog::ROLE_INSTRUCTOR]);
 
         $taxCourse = $this->product('demo-tax-return-course', [
             'title' => 'دوره اظهارنامه مالیاتی',

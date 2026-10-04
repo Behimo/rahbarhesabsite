@@ -42,7 +42,7 @@ class PageBuilderController extends Controller
         $builderContent = $request->validated('builder_content');
         CmsPageRevision::query()->create([
             'page_id' => $page->id,
-            'admin_id' => auth('cms')->id(),
+            'admin_id' => auth()->id(),
             'content' => $page->content,
             'builder_content' => $page->builder_content,
             'note' => $request->validated('note'),

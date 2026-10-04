@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UserRequest;
 use App\Models\User;
-use App\Support\Permission;
+use App\Support\AccessCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -13,39 +13,63 @@ class UserController extends Controller
 {
     public function index(): View
     {
-        $users = User::query()->latest()->paginate(20);
+        $users = User::query()->with('roles')->latest()->paginate(20);
 
-        return view('admin.users.index', compact('users'));
+        return view('admin.users.index', [
+            'users' => $users,
+            'roleLabels' => AccessCatalog::roles(),
+        ]);
     }
 
     public function create(): View
     {
         return view('admin.users.form', [
-            'user' => new User(['role' => User::ROLE_USER]),
-            'roles' => Permission::roles(),
-            'permissions' => Permission::labels(),
+            'user' => new User,
+            'roles' => AccessCatalog::roles(),
+            'permissions' => AccessCatalog::labels(),
+            'currentRole' => AccessCatalog::ROLE_USER,
+            'directPermissions' => [],
         ]);
     }
 
     public function store(UserRequest $request): RedirectResponse
     {
-        User::query()->create($request->userAttributes());
+        $user = User::query()->create($request->userAttributes());
+        $this->syncAccess($request, $user);
 
         return redirect()->route('admin.users.index')->with('success', 'کاربر ایجاد شد.');
     }
 
     public function edit(User $user): View
     {
+        $user->load(['roles', 'permissions']);
+
         return view('admin.users.form', [
             'user' => $user,
-            'roles' => Permission::roles(),
-            'permissions' => Permission::labels(),
+            'roles' => AccessCatalog::roles(),
+            'permissions' => AccessCatalog::labels(),
+            'currentRole' => $user->roles->first()?->name ?? AccessCatalog::ROLE_USER,
+            'directPermissions' => $user->getDirectPermissions()->pluck('name')->all(),
         ]);
     }
 
     public function update(UserRequest $request, User $user): RedirectResponse
     {
+        $role = (string) $request->validated('role');
+
+        if ($request->user()?->is($user) && $role !== AccessCatalog::ROLE_ADMIN) {
+            return back()->withErrors(['role' => 'نمی‌توانید نقش خودتان را تغییر دهید.'])->withInput();
+        }
+
+        if ($user->hasRole(AccessCatalog::ROLE_ADMIN) && $role !== AccessCatalog::ROLE_ADMIN) {
+            $adminCount = User::query()->role(AccessCatalog::ROLE_ADMIN)->count();
+            if ($adminCount <= 1) {
+                return back()->withErrors(['role' => 'حداقل یک مدیر سیستم باید باقی بماند.'])->withInput();
+            }
+        }
+
         $user->update($request->userAttributes());
+        $this->syncAccess($request, $user);
 
         return redirect()->route('admin.users.index')->with('success', 'کاربر به‌روزرسانی شد.');
     }
@@ -56,8 +80,18 @@ class UserController extends Controller
             return back()->withErrors(['user' => 'نمی‌توانید خودتان را حذف کنید.']);
         }
 
+        if ($user->hasRole(AccessCatalog::ROLE_ADMIN) && User::query()->role(AccessCatalog::ROLE_ADMIN)->count() <= 1) {
+            return back()->withErrors(['user' => 'حداقل یک مدیر سیستم باید باقی بماند.']);
+        }
+
         $user->delete();
 
         return redirect()->route('admin.users.index')->with('success', 'کاربر حذف شد.');
+    }
+
+    private function syncAccess(UserRequest $request, User $user): void
+    {
+        $user->syncRoles([(string) $request->validated('role')]);
+        $user->syncPermissions($request->validated('permissions') ?? []);
     }
 }

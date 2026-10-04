@@ -11,6 +11,7 @@ use App\Models\ShopProduct;
 use App\Models\User;
 use App\Rules\EnglishSlug;
 use App\Services\CategoryService;
+use App\Support\AccessCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -33,7 +34,7 @@ class CourseController extends Controller
 
     public function create(): View
     {
-        $instructors = User::query()->whereIn('role', [User::ROLE_INSTRUCTOR, User::ROLE_ADMIN])->get();
+        $instructors = User::query()->role([AccessCatalog::ROLE_INSTRUCTOR, AccessCatalog::ROLE_ADMIN])->orderBy('name')->get();
 
         return view('admin.courses.form', [
             'product' => new ShopProduct(['type' => ShopProduct::TYPE_COURSE, 'is_published' => false]),
@@ -61,7 +62,7 @@ class CourseController extends Controller
         abort_unless($course->type === ShopProduct::TYPE_COURSE, 404);
 
         $course->load(['course.sections.lessons']);
-        $instructors = User::query()->whereIn('role', [User::ROLE_INSTRUCTOR, User::ROLE_ADMIN])->get();
+        $instructors = User::query()->role([AccessCatalog::ROLE_INSTRUCTOR, AccessCatalog::ROLE_ADMIN])->orderBy('name')->get();
 
         $selected = $course->categories()->pluck('categories.id')->all();
 

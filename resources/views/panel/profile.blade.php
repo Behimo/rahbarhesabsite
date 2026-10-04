@@ -9,14 +9,7 @@
     $email = old('email', $user->email);
     $identityErrors = $errors->getBag('default');
     $passwordErrors = $errors->getBag('password');
-    $roleLabels = [
-        'user' => 'هنرجو',
-        'instructor' => 'مدرس',
-        'editor' => 'ویراستار',
-        'shop_manager' => 'مدیر فروشگاه',
-        'admin' => 'مدیر',
-    ];
-    $roleLabel = $roleLabels[$user->role] ?? 'هنرجو';
+    $roleLabel = \App\Support\AccessCatalog::roles()[$user->roles->first()?->name] ?? 'هنرجو';
 @endphp
 
 @section('content')

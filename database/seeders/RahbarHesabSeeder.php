@@ -3,13 +3,13 @@
 namespace Database\Seeders;
 
 use App\Models\CmsPage;
-use App\Models\CmsPost;
 use App\Models\CmsSetting;
 use App\Models\Course;
 use App\Models\CourseLesson;
 use App\Models\CourseSection;
 use App\Models\ShopProduct;
 use App\Models\User;
+use App\Support\AccessCatalog;
 use Illuminate\Database\Seeder;
 
 class RahbarHesabSeeder extends Seeder
@@ -26,15 +26,19 @@ class RahbarHesabSeeder extends Seeder
             CmsSetting::query()->updateOrCreate(['key' => $key], ['value' => $value]);
         }
 
+        $this->call(RolesAndPermissionsSeeder::class);
+
         $instructor = User::query()->updateOrCreate(
             ['phone' => '09120000001'],
             [
                 'name' => 'مرتضی رهبر',
                 'email' => 'instructor@rahbarhesab.com',
+                'mobile' => '09120000001',
                 'password' => 'password',
-                'role' => User::ROLE_INSTRUCTOR,
+                'status' => 'active',
             ]
         );
+        $instructor->syncRoles([AccessCatalog::ROLE_INSTRUCTOR]);
 
         $courses = [
             [

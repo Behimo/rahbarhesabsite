@@ -316,7 +316,7 @@ class PostController extends Controller
     {
         CmsPostRevision::query()->create([
             'post_id' => $post->id,
-            'admin_id' => auth('cms')->id(),
+            'admin_id' => auth()->id(),
             'snapshot' => $post->revisionSnapshot(),
             'note' => $note,
         ]);

@@ -8,50 +8,16 @@ use App\Models\CourseLesson;
 use App\Models\CourseSection;
 use App\Models\ShopProduct;
 use App\Models\User;
-use App\Support\PhoneNormalizer;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 class PlatformSeeder extends Seeder
 {
     public function run(): void
     {
-        // 🔹 ۱. Admin کاربر
-        $admin = User::query()->updateOrCreate(
-            ['email' => 'admin@rahbarhesab.ir'],
-            [
-                'name' => 'مدیر اصلی',
-                'mobile' => PhoneNormalizer::toLocal('09120000000'),
-                'phone' => PhoneNormalizer::toLocal('09120000000'),
-                'password' => 'secret123',
-                'role' => User::ROLE_ADMIN,
-                'status' => 'active',
-            ]
-        );
+        $this->call(DefaultUsersSeeder::class);
 
-        // 🔹 ۲. کاربر نمونه
-        $demoUser = User::query()->updateOrCreate(
-            ['email' => 'demo@example.com'],
-            [
-                'name' => 'کاربر نمونه',
-                'mobile' => PhoneNormalizer::toLocal('09121111111'),
-                'phone' => PhoneNormalizer::toLocal('09121111111'),
-                'password' => 'password',
-                'role' => User::ROLE_USER,
-                'status' => 'active',
-            ]
-        );
-
-        // 🔹 ۳. مدرس نمونه
-        $instructor = User::query()->updateOrCreate(
-            ['email' => 'instructor@example.com'],
-            [
-                'name' => 'مدرس نمونه',
-                'password' => 'password',
-                'role' => User::ROLE_INSTRUCTOR,
-                'status' => 'active',
-            ]
-        );
+        $demoUser = User::query()->where('email', 'demo@example.com')->firstOrFail();
+        $instructor = User::query()->where('email', 'instructor@example.com')->firstOrFail();
 
         // 🔹 ۴. دوره رایگان
         $product = ShopProduct::query()->updateOrCreate(

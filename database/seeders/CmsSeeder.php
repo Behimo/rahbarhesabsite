@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Category;
-use App\Models\CmsAdmin;
 use App\Models\CmsPage;
 use App\Models\CmsPost;
 use App\Services\HomePageDefaults;
@@ -14,16 +13,6 @@ class CmsSeeder extends Seeder
 {
     public function run(): void
     {
-        CmsAdmin::query()->updateOrCreate(
-            ['email' => mb_strtolower(trim((string) env('CMS_ADMIN_EMAIL', 'admin@rahbarhesab.ir')))],
-            [
-                'name' => 'مدیر سایت',
-                'password' => trim((string) env('CMS_ADMIN_PASSWORD', 'password')),
-                'is_super' => true,
-                'role' => 'admin',
-            ]
-        );
-
         $siteData = app(SiteDataService::class);
         $homeDefaults = app(HomePageDefaults::class);
 

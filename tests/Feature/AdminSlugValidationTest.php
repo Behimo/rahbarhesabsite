@@ -3,9 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
-use App\Models\CmsAdmin;
 use App\Models\CmsPage;
 use App\Models\ShopProduct;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -17,7 +17,7 @@ class AdminSlugValidationTest extends TestCase
     {
         $admin = $this->admin();
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->from(route('admin.categories.index'))
             ->post(route('admin.categories.store'), [
                 'name' => 'مالیات',
@@ -32,7 +32,7 @@ class AdminSlugValidationTest extends TestCase
             'name' => 'مالیات',
         ]);
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->from(route('admin.categories.index'))
             ->put(route('admin.categories.update', $category), [
                 'name' => 'مالیات',
@@ -41,7 +41,7 @@ class AdminSlugValidationTest extends TestCase
             ->assertRedirect(route('admin.categories.index'))
             ->assertSessionHasErrors('slug');
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->put(route('admin.categories.update', $category), [
                 'name' => 'مالیات',
                 'slug' => 'tax-1405',
@@ -56,7 +56,7 @@ class AdminSlugValidationTest extends TestCase
     {
         $admin = $this->admin();
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->from(route('admin.pages.create'))
             ->post(route('admin.pages.store'), [
                 'title' => 'درباره',
@@ -66,7 +66,7 @@ class AdminSlugValidationTest extends TestCase
             ->assertRedirect(route('admin.pages.create'))
             ->assertSessionHasErrors('slug');
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->from(route('admin.pages.create'))
             ->post(route('admin.pages.store'), [
                 'title' => 'ادمین',
@@ -76,7 +76,7 @@ class AdminSlugValidationTest extends TestCase
             ->assertRedirect(route('admin.pages.create'))
             ->assertSessionHasErrors('slug');
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->post(route('admin.pages.store'), [
                 'title' => 'راهنما',
                 'slug' => 'guide',
@@ -87,7 +87,7 @@ class AdminSlugValidationTest extends TestCase
         $page = CmsPage::query()->where('slug', 'guide')->first();
         $this->assertNotNull($page);
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->from(route('admin.pages.edit', $page))
             ->put(route('admin.pages.update', $page), [
                 'title' => 'راهنما',
@@ -102,7 +102,7 @@ class AdminSlugValidationTest extends TestCase
     {
         $admin = $this->admin();
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->from(route('admin.courses.create'))
             ->post(route('admin.courses.store'), [
                 'title' => 'دوره مالیات',
@@ -113,7 +113,7 @@ class AdminSlugValidationTest extends TestCase
             ->assertRedirect(route('admin.courses.create'))
             ->assertSessionHasErrors('slug');
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->post(route('admin.courses.store'), [
                 'title' => 'دوره مالیات',
                 'slug' => 'tax-course',
@@ -125,7 +125,7 @@ class AdminSlugValidationTest extends TestCase
         $product = ShopProduct::query()->where('slug', 'tax-course')->first();
         $this->assertNotNull($product);
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->from(route('admin.courses.edit', $product))
             ->put(route('admin.courses.update', $product), [
                 'title' => 'دوره مالیات',
@@ -137,13 +137,8 @@ class AdminSlugValidationTest extends TestCase
             ->assertSessionHasErrors('slug');
     }
 
-    private function admin(): CmsAdmin
+    private function admin(): User
     {
-        return CmsAdmin::query()->create([
-            'name' => 'Admin',
-            'email' => 'slug-admin@test.com',
-            'password' => 'password',
-            'is_super' => true,
-        ]);
+        return $this->makeAdmin(['email' => 'slug-admin@test.com']);
     }
 }

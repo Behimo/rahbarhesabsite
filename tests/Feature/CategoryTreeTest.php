@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
-use App\Models\CmsAdmin;
 use App\Models\CmsPost;
 use App\Models\ShopProduct;
 use Illuminate\Database\Eloquent\Model;
@@ -139,12 +138,7 @@ class CategoryTreeTest extends TestCase
 
     public function test_admin_category_screens_follow_the_tree(): void
     {
-        $admin = CmsAdmin::query()->create([
-            'name' => 'Admin',
-            'email' => 'categories@test.com',
-            'password' => bcrypt('password'),
-            'is_super' => true,
-        ]);
+        $admin = $this->makeAdmin(['email' => 'categories@test.com']);
 
         $parent = Category::query()->create([
             'type' => Category::TYPE_POST,
@@ -153,11 +147,11 @@ class CategoryTreeTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->get(route('admin.categories.index'))
             ->assertRedirect(route('admin.categories.index', ['type' => 'post']));
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->get(route('admin.categories.index', ['type' => 'post']))
             ->assertOk()
             ->assertSee('دسته‌های بلاگ')
@@ -166,13 +160,13 @@ class CategoryTreeTest extends TestCase
             ->assertSee('زیردسته')
             ->assertDontSee('Taxonomy');
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->get(route('admin.categories.create', ['type' => 'post', 'parent_id' => $parent->id]))
             ->assertOk()
             ->assertSee('دستهٔ جدید بلاگ')
             ->assertSee('آموزش');
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->post(route('admin.categories.store'), [
                 'type' => 'post',
                 'parent_id' => $parent->id,
@@ -187,18 +181,18 @@ class CategoryTreeTest extends TestCase
         $this->assertNotNull($child);
         $this->assertSame('learn/tax', $child->full_slug);
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->get(route('admin.tags.index'))
             ->assertOk()
             ->assertSee('برچسب‌ها درخت نیستند');
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->get(route('admin.posts.create'))
             ->assertOk()
             ->assertSee('دستهٔ اصلی')
             ->assertSee('آموزش');
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->get(route('admin.courses.create'))
             ->assertOk()
             ->assertSee('جایگاه در درخت محصول');

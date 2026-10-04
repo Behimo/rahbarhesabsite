@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\User;
+
 return [
 
     /*
@@ -40,10 +42,6 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
-        'cms' => [
-            'driver' => 'session',
-            'provider' => 'cms_admins',
-        ],
     ],
 
     /*
@@ -66,11 +64,7 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', App\Models\User::class),
-        ],
-        'cms_admins' => [
-            'driver' => 'eloquent',
-            'model' => App\Models\CmsAdmin::class,
+            'model' => env('AUTH_MODEL', User::class),
         ],
     ],
 

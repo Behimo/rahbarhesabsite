@@ -10,6 +10,7 @@ use App\Models\OrderItem;
 use App\Models\ShopProduct;
 use App\Models\User;
 use App\Support\PhoneNormalizer;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -42,6 +43,7 @@ class WordpressMigrationService
 
             if (! $mobile) {
                 $skipped++;
+
                 continue;
             }
 
@@ -56,20 +58,22 @@ class WordpressMigrationService
                 'phone' => $mobile,
                 'mobile' => $mobile,
                 'status' => 'active',
-                'role' => User::ROLE_USER,
             ];
 
             if ($dryRun) {
                 $existing ? $updated++ : $created++;
+
                 continue;
             }
 
             if ($existing) {
                 $existing->fill($payload)->save();
+                $existing->ensureSiteRole();
                 $this->storeWordpressPassword($existing->id, (string) $row->user_pass);
                 $updated++;
             } else {
                 $user = User::query()->create($payload + ['password' => Str::random(32)]);
+                $user->ensureSiteRole();
                 $this->storeWordpressPassword($user->id, (string) $row->user_pass);
                 $created++;
             }
@@ -97,6 +101,7 @@ class WordpressMigrationService
 
             if ($dryRun) {
                 ShopProduct::query()->where('slug', $slug)->exists() ? $updated++ : $created++;
+
                 continue;
             }
 
@@ -154,6 +159,7 @@ class WordpressMigrationService
 
             if ($dryRun) {
                 $created++;
+
                 continue;
             }
 
@@ -165,7 +171,7 @@ class WordpressMigrationService
                 'subtotal' => (int) ($meta['_order_total'] ?? 0),
                 'discount' => (int) ($meta['_cart_discount'] ?? 0),
                 'total' => (int) ($meta['_order_total'] ?? 0),
-                'paid_at' => $wpOrder->post_date ? \Carbon\Carbon::parse($wpOrder->post_date) : now(),
+                'paid_at' => $wpOrder->post_date ? Carbon::parse($wpOrder->post_date) : now(),
             ]);
 
             $items = $this->wp()->table('woocommerce_order_items')

@@ -18,13 +18,13 @@ class CmsAuditLog extends Model
 
     public function admin(): BelongsTo
     {
-        return $this->belongsTo(CmsAdmin::class, 'admin_id');
+        return $this->belongsTo(User::class, 'admin_id');
     }
 
     public static function record(string $action, ?Model $subject = null, array $payload = []): void
     {
         static::query()->create([
-            'admin_id' => auth('cms')->id(),
+            'admin_id' => auth()->id(),
             'action' => $action,
             'subject_type' => $subject ? $subject::class : null,
             'subject_id' => $subject?->getKey(),

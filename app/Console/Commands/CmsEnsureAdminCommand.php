@@ -2,37 +2,45 @@
 
 namespace App\Console\Commands;
 
-use App\Models\CmsAdmin;
+use App\Models\User;
+use App\Support\AccessCatalog;
 use Illuminate\Console\Command;
 
 class CmsEnsureAdminCommand extends Command
 {
     protected $signature = 'cms:ensure-admin';
 
-    protected $description = 'ایجاد یا به‌روزرسانی ادمین CMS از .env';
+    protected $description = 'ایجاد یا به‌روزرسانی مدیر سیستم از .env';
 
     public function handle(): int
     {
-        $email = mb_strtolower(trim((string) config('cms.admin_email', env('CMS_ADMIN_EMAIL', 'admin@bisan.ir'))));
-        $password = trim((string) config('cms.admin_password', env('CMS_ADMIN_PASSWORD', 'password')));
+        $email = mb_strtolower(trim((string) config('cms.admin_email', 'admin@rahbarhesab.ir')));
+        $password = trim((string) config('cms.admin_password'));
 
-        if ($email === '' || $password === '') {
-            $this->error('CMS_ADMIN_EMAIL و CMS_ADMIN_PASSWORD در .env تنظیم نشده‌اند.');
+        if ($password === '') {
+            $password = 'password';
+        }
+
+        if ($email === '') {
+            $this->error('CMS_ADMIN_EMAIL در .env تنظیم نشده است.');
 
             return self::FAILURE;
         }
 
-        CmsAdmin::query()->where('email', '!=', $email)->delete();
+        AccessCatalog::install();
 
-        $admin = CmsAdmin::query()->updateOrCreate(
+        $admin = User::query()->updateOrCreate(
             ['email' => $email],
             [
                 'name' => 'مدیر سایت',
                 'password' => $password,
+                'status' => 'active',
             ]
         );
 
-        $this->info("ادمین CMS: {$admin->email} (id: {$admin->id})");
+        $admin->syncRoles([AccessCatalog::ROLE_ADMIN]);
+
+        $this->info("مدیر سیستم: {$admin->email} (id: {$admin->id})");
 
         return self::SUCCESS;
     }

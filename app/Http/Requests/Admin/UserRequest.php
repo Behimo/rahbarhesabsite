@@ -3,7 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Models\User;
-use App\Support\Permission;
+use App\Support\AccessCatalog;
 use App\Support\PhoneNormalizer;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
@@ -34,9 +34,9 @@ class UserRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:20', 'regex:/^09\d{9}$/', Rule::unique('users', 'phone')->ignore($userId)],
             'email' => ['nullable', 'email', 'max:255'],
-            'role' => ['required', 'in:'.implode(',', array_keys(Permission::roles()))],
+            'role' => ['required', Rule::in(array_keys(AccessCatalog::roles()))],
             'permissions' => ['nullable', 'array'],
-            'permissions.*' => ['string'],
+            'permissions.*' => ['string', Rule::in(array_keys(AccessCatalog::labels()))],
         ];
     }
 
@@ -62,11 +62,13 @@ class UserRequest extends FormRequest
     public function userAttributes(): array
     {
         $user = $this->route('user');
-        $validated = $this->validated();
+        $validated = $this->safe()->only(['name', 'phone', 'email']);
         $validated['phone'] = PhoneNormalizer::toLocal($validated['phone']);
         $validated['mobile'] = $validated['phone'];
-        $validated['permissions'] = array_values($validated['permissions'] ?? []);
-        $validated['password'] = $user instanceof User ? $user->password : Str::random(32);
+
+        if (! $user instanceof User) {
+            $validated['password'] = Str::random(32);
+        }
 
         return $validated;
     }

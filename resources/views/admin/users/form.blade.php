@@ -26,18 +26,18 @@
                 <label class="form-label" for="user-role">نقش *</label>
                 <select id="user-role" name="role" class="form-select">
                     @foreach ($roles as $value => $label)
-                        <option value="{{ $value }}" @selected(old('role', $user->role) === $value)>{{ $label }}</option>
+                        <option value="{{ $value }}" @selected(old('role', $currentRole) === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
             </div>
             <fieldset class="col-12">
-                <legend class="form-label float-none w-auto px-0">دسترسی‌های اضافی</legend>
+                <legend class="form-label float-none w-auto px-0">دسترسی‌های مستقیم، علاوه بر نقش</legend>
                 <div class="row g-2">
                     @foreach ($permissions as $perm => $label)
                         <div class="col-md-6 col-xl-4">
                             <div class="form-check">
                                 <input type="checkbox" name="permissions[]" value="{{ $perm }}" class="form-check-input" id="perm_{{ $perm }}"
-                                    @checked(in_array($perm, old('permissions', $user->permissions ?? [])))>
+                                    @checked(in_array($perm, old('permissions', $directPermissions), true))>
                                 <label class="form-check-label" for="perm_{{ $perm }}">{{ $label }}</label>
                             </div>
                         </div>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\AccessCatalog;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,8 +12,14 @@ class EnsureCmsAdmin
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! Auth::guard('cms')->check()) {
+        $user = Auth::user();
+
+        if (! $user) {
             return redirect()->route('admin.login');
+        }
+
+        if (! AccessCatalog::allows($user, AccessCatalog::ACCESS_ADMIN)) {
+            abort(403, 'دسترسی غیرمجاز.');
         }
 
         return $next($request);

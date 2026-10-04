@@ -1,9 +1,9 @@
 @php
-use App\Support\Permission;
+use App\Support\AccessCatalog;
 
 $configData = Helper::appClasses();
 $menuRoute = Route::currentRouteName() ?? '';
-$adminUser = auth('cms')->user();
+$adminUser = auth()->user();
 $routePage = request()->route('page');
 $editingHomePage = $routePage instanceof \App\Models\CmsPage && $routePage->slug === 'home';
 
@@ -35,14 +35,14 @@ $menuSlugAllowed = function ($slug) use ($adminUser): bool {
         return true;
     }
 
-    foreach (Permission::routeMap() as $pattern => $permission) {
+    foreach (AccessCatalog::routeMap() as $pattern => $permission) {
         $prefix = str_ends_with($pattern, '.*') ? substr($pattern, 0, -2) : $pattern;
         $matches = str_ends_with($pattern, '.*')
             ? ($slug === $prefix || str_starts_with($slug, $prefix.'.'))
             : $slug === $pattern;
 
         if ($matches) {
-            return $adminUser->hasPermission($permission);
+            return AccessCatalog::allows($adminUser, $permission);
         }
     }
 

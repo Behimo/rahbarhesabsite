@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Helpers\Helpers;
 use App\Models\Category;
+use App\Models\User;
 use App\Observers\CategoryObserver;
 use App\Services\BlockRegistry;
 use App\Services\BlockRenderer;
@@ -11,9 +12,11 @@ use App\Services\CacheService;
 use App\Services\CategoryService;
 use App\Services\MenuService;
 use App\Services\PageBuilderService;
-use App\Services\PaymentGatewayRegistry;
 use App\Services\PageRenderContext;
+use App\Services\PaymentGatewayRegistry;
 use App\Services\SpotPlayerService;
+use App\Support\AccessCatalog;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -39,6 +42,14 @@ class AppServiceProvider extends ServiceProvider
     {
         Schema::defaultStringLength(191);
         Category::observe(CategoryObserver::class);
+
+        Gate::before(function ($user, string $ability) {
+            if (! $user instanceof User) {
+                return null;
+            }
+
+            return $user->hasRole(AccessCatalog::ROLE_ADMIN) ? true : null;
+        });
 
         if (! class_exists('Helper', false)) {
             class_alias(Helpers::class, 'Helper');

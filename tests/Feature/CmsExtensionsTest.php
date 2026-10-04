@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\CmsAdmin;
 use App\Models\CmsMenu;
 use App\Models\CmsPage;
 use App\Services\MenuService;
@@ -15,14 +14,9 @@ class CmsExtensionsTest extends TestCase
 
     public function test_admin_settings_page_loads(): void
     {
-        $admin = CmsAdmin::query()->create([
-            'name' => 'Admin',
-            'email' => 'admin@test.com',
-            'password' => bcrypt('password'),
-            'is_super' => true,
-        ]);
+        $admin = $this->makeAdmin(['email' => 'admin@test.com']);
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->get(route('admin.settings.index'))
             ->assertOk();
     }
@@ -36,14 +30,9 @@ class CmsExtensionsTest extends TestCase
 
     public function test_admin_can_save_home_content(): void
     {
-        $admin = CmsAdmin::query()->create([
-            'name' => 'Admin',
-            'email' => 'home@test.com',
-            'password' => bcrypt('password'),
-            'is_super' => true,
-        ]);
+        $admin = $this->makeAdmin(['email' => 'home@test.com']);
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->put(route('admin.home.update'), [
                 'heading' => 'عنوان تست صفحه اصلی',
                 'faqs' => [
@@ -156,12 +145,7 @@ class CmsExtensionsTest extends TestCase
 
     public function test_nested_menu_is_stored_and_rendered_on_the_site(): void
     {
-        $admin = CmsAdmin::query()->create([
-            'name' => 'Admin',
-            'email' => 'menu@test.com',
-            'password' => bcrypt('password'),
-            'is_super' => true,
-        ]);
+        $admin = $this->makeAdmin(['email' => 'menu@test.com']);
 
         $menu = CmsMenu::query()->create([
             'name' => 'اصلی',
@@ -169,7 +153,7 @@ class CmsExtensionsTest extends TestCase
             'location' => 'primary',
         ]);
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->postJson(route('admin.menus.tree', $menu), [
                 'tree' => [
                     [
@@ -197,7 +181,7 @@ class CmsExtensionsTest extends TestCase
             ->assertOk()
             ->assertJsonPath('tree.0.children.0.children.0.label', 'سطح سوم منوی آزمایشی');
 
-        $this->actingAs($admin, 'cms')
+        $this->actingAs($admin)
             ->get(route('admin.menus.edit', $menu))
             ->assertOk()
             ->assertSee('id="menu-builder"', false)

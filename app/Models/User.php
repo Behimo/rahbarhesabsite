@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Support\Permission;
+use App\Support\AccessCatalog;
 use App\Support\PhoneNormalizer;
 use App\Support\WordpressPassword;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,20 +11,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
-
-    public const ROLE_USER = 'user';
-
-    public const ROLE_INSTRUCTOR = 'instructor';
-
-    public const ROLE_EDITOR = 'editor';
-
-    public const ROLE_SHOP_MANAGER = 'shop_manager';
-
-    public const ROLE_ADMIN = 'admin';
+    use HasFactory, HasRoles, Notifiable;
 
     protected $fillable = [
         'wp_id',
@@ -38,8 +30,6 @@ class User extends Authenticatable
         'password',
         'is_wp_password',
         'status',
-        'role',
-        'permissions',
         'last_login_at',
     ];
 
@@ -55,7 +45,6 @@ class User extends Authenticatable
             'mobile_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_wp_password' => 'boolean',
-            'permissions' => 'array',
             'last_login_at' => 'datetime',
         ];
     }
@@ -82,33 +71,33 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->role === self::ROLE_ADMIN;
+        return $this->hasRole(AccessCatalog::ROLE_ADMIN);
     }
 
     public function isInstructor(): bool
     {
-        return in_array($this->role, [self::ROLE_INSTRUCTOR, self::ROLE_ADMIN], true);
+        return $this->hasAnyRole([AccessCatalog::ROLE_INSTRUCTOR, AccessCatalog::ROLE_ADMIN]);
     }
 
-    public function hasPermission(string $permission): bool
+    public function assignRoleIfExists(string $role): void
     {
-        if ($this->isAdmin()) {
-            return true;
+        $exists = Role::query()
+            ->where('name', $role)
+            ->where('guard_name', AccessCatalog::guard())
+            ->exists();
+
+        if ($exists) {
+            $this->syncRoles([$role]);
+        }
+    }
+
+    public function ensureSiteRole(): void
+    {
+        if ($this->roles()->exists()) {
+            return;
         }
 
-        $perms = $this->resolvedPermissions();
-
-        return in_array($permission, $perms, true);
-    }
-
-    public function resolvedPermissions(): array
-    {
-        $custom = $this->permissions ?? [];
-
-        return array_values(array_unique(array_merge(
-            Permission::roleDefaults($this->role),
-            $custom
-        )));
+        $this->assignRoleIfExists(AccessCatalog::ROLE_USER);
     }
 
     public function isEnrolledIn(Course $course): bool
@@ -194,17 +183,22 @@ class User extends Authenticatable
                 $user->forceFill(['mobile' => $local])->save();
             }
 
+            $user->ensureSiteRole();
+
             return $user;
         }
 
-        return static::query()->create([
+        $user = static::query()->create([
             'name' => $name ?: 'کاربر '.substr($local, -4),
             'phone' => $local,
             'mobile' => $local,
             'email' => null,
             'password' => Str::random(32),
-            'role' => self::ROLE_USER,
             'status' => 'active',
         ]);
+
+        $user->ensureSiteRole();
+
+        return $user;
     }
 }

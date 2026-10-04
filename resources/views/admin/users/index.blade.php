@@ -28,7 +28,7 @@
                     <tr>
                         <td>{{ $user->name }}</td>
                         <td dir="ltr">{{ $user->phone }}</td>
-                        <td><span class="badge bg-label-info">{{ $user->role }}</span></td>
+                        <td><span class="badge bg-label-info">{{ $roleLabels[$user->roles->first()?->name] ?? '—' }}</span></td>
                         <td>
                             <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm btn-label-primary">ویرایش</a>
                             <form method="POST" action="{{ route('admin.users.destroy', $user) }}" class="d-inline" onsubmit="return confirm('حذف شود؟')">

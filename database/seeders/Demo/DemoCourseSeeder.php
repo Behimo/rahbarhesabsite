@@ -3,14 +3,18 @@
 namespace Database\Seeders\Demo;
 
 use App\Models\User;
+use App\Support\AccessCatalog;
 use Database\Seeders\Demo\Builders\DemoCourseBuilder;
 use Database\Seeders\Demo\Catalogs\AccountingCourseCatalog;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Database\Seeder;
 
 final class DemoCourseSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call(RolesAndPermissionsSeeder::class);
+
         $instructor = User::query()->updateOrCreate(
             ['phone' => '09120000001'],
             [
@@ -18,10 +22,10 @@ final class DemoCourseSeeder extends Seeder
                 'email' => 'instructor@rahbarhesab.com',
                 'mobile' => '09120000001',
                 'password' => 'password',
-                'role' => User::ROLE_INSTRUCTOR,
                 'status' => 'active',
             ]
         );
+        $instructor->syncRoles([AccessCatalog::ROLE_INSTRUCTOR]);
 
         $catalog = app(AccountingCourseCatalog::class);
         $builder = app(DemoCourseBuilder::class);
