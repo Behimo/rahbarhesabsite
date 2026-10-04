@@ -13,7 +13,7 @@ class ContactController extends SiteController
     {
         $seo = $this->seo->forPage('contact');
 
-        return $this->render('pages.contact', [
+        return $this->renderSystemPage('contact', 'pages.contact', [
                     'seo' => $seo,
                     'contact' => $this->siteData->contact(),
                     'faq' => $this->siteData->contactFaq(),

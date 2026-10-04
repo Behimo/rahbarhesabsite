@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\CmsAdmin;
 use App\Models\CmsPage;
-use App\Services\BlockRenderer;
 use App\Services\MenuService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -27,84 +26,96 @@ class CmsExtensionsTest extends TestCase
             ->assertOk();
     }
 
-    public function test_block_renderer_renders_hero(): void
+    public function test_home_page_renders_site_layout(): void
     {
-        $html = app(BlockRenderer::class)->render([
-            'blocks' => [
-                ['type' => 'hero', 'settings' => ['title' => 'Test Hero']],
-            ],
-        ]);
-
-        $this->assertStringContainsString('Test Hero', $html);
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('rahbar-about', false);
     }
 
-    public function test_theme_block_renders_hero_with_rahbarhesab_partial(): void
-    {
-        $html = app(BlockRenderer::class)->render([
-            'blocks' => [
-                ['type' => 'hero', 'settings' => ['eyebrow' => 'Custom About Title']],
-            ],
-        ]);
-
-        $this->assertStringContainsString('Custom About Title', $html);
-        $this->assertStringContainsString('rahbar-about', $html);
-    }
-
-    public function test_page_builder_save_via_form(): void
+    public function test_admin_can_save_home_content(): void
     {
         $admin = CmsAdmin::query()->create([
             'name' => 'Admin',
-            'email' => 'builder@test.com',
+            'email' => 'home@test.com',
             'password' => bcrypt('password'),
             'is_super' => true,
         ]);
 
-        $page = CmsPage::query()->create([
-            'slug' => 'form-save-test',
-            'title' => 'Form Save Test',
-            'template' => 'content',
-            'is_published' => true,
-            'status' => 'published',
-            'is_system' => false,
-        ]);
-
-        $payload = json_encode([
-            'blocks' => [
-                ['type' => 'text', 'settings' => ['content' => '<p>Saved via form</p>']],
-            ],
-        ]);
-
         $this->actingAs($admin, 'cms')
-            ->post(route('admin.pages.builder.save', $page), [
-                'builder_content' => $payload,
+            ->put(route('admin.home.update'), [
+                'heading' => 'عنوان تست صفحه اصلی',
+                'faqs' => [
+                    ['q' => 'سوال تست', 'a' => 'پاسخ تست', 'href' => ''],
+                ],
             ])
-            ->assertRedirect(route('admin.pages.builder', $page));
+            ->assertRedirect();
 
-        $page->refresh();
-        $this->assertTrue($page->builder_enabled);
-        $this->assertStringContainsString('Saved via form', strip_tags(app(\App\Services\BlockRenderer::class)->render($page->builder_content)));
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('عنوان تست صفحه اصلی');
     }
 
-    public function test_page_builder_content_renders_on_dynamic_page(): void
+    public function test_page_builder_renders_saved_blocks_on_custom_page(): void
     {
         CmsPage::query()->create([
-            'slug' => 'builder-test',
-            'title' => 'Builder Test',
+            'slug' => 'builder-page',
+            'title' => 'صفحه بلوکی',
             'template' => 'content',
             'is_system' => false,
             'builder_enabled' => true,
             'builder_content' => [
                 'blocks' => [
-                    ['type' => 'text', 'settings' => ['content' => '<p>Builder OK</p>']],
+                    ['type' => 'text', 'settings' => ['content' => '<p>متن بلوک صفحه</p>']],
                 ],
             ],
             'is_published' => true,
             'status' => 'published',
         ]);
 
-        $this->get(route('pages.show', 'builder-test'))
+        $this->get(route('pages.show', 'builder-page'))
             ->assertOk()
-            ->assertSee('Builder OK');
+            ->assertSee('متن بلوک صفحه');
+    }
+
+    public function test_home_uses_saved_page_builder_sections(): void
+    {
+        CmsPage::query()->create([
+            'slug' => 'home',
+            'title' => 'صفحه اصلی',
+            'template' => 'system',
+            'is_system' => true,
+            'builder_enabled' => true,
+            'builder_content' => [
+                'blocks' => [
+                    ['type' => 'hero', 'settings' => ['title' => 'عنوان سکشن تست']],
+                ],
+            ],
+            'is_published' => true,
+            'status' => 'published',
+        ]);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('عنوان سکشن تست')
+            ->assertSee('rahbar-about', false);
+    }
+
+    public function test_custom_page_renders_body_html(): void
+    {
+        CmsPage::query()->create([
+            'slug' => 'custom-page',
+            'title' => 'صفحه سفارشی',
+            'template' => 'content',
+            'is_system' => false,
+            'content' => ['body_html' => '<p>متن صفحه سفارشی</p>'],
+            'is_published' => true,
+            'status' => 'published',
+        ]);
+
+        $this->get(route('pages.show', 'custom-page'))
+            ->assertOk()
+            ->assertSee('متن صفحه سفارشی');
     }
 
     public function test_search_route_works(): void

@@ -10,7 +10,7 @@
 
 این پروژه اسمش توی composer «Bisan corporate website and CMS» هست، ولی عملاً برای **راهبر حساب** (`rahbarhesab.com`) ساخته شده: سایت آموزشی + فروش دوره + بلاگ + صفحات CMS.
 
-اگه از وردپرس کار کرده باشی، ذهنیتش آشناست: قالب، افزونه، صفحه‌ساز، هوک. فقط به‌جای PHP خام وردپرس، Laravel 12 داریم.
+اگه از وردپرس کار کرده باشی، ذهنیتش آشناست: قالب و صفحه‌ساز. فقط به‌جای PHP خام وردپرس، Laravel 12 داریم.
 
 **استک اصلی:**
 - PHP 8.2+، Laravel 12
@@ -48,10 +48,9 @@ app/
     Api/V1/         ← REST فقط خواندنی
   Models/           ← Eloquent
   Services/         ← منطق اصلی اینجاست، نه توی Controller
-  Support/          ← Hook، Permission
+  Support/          ← Permission، Money، helpers
 config/cms.php      ← تنظیمات CMS
 themes/rahbarhesab/ ← قالب فعال
-plugins/            ← افزونه‌ها
 resources/views/
   admin/            ← Blade ادمین
   blocks/           ← view رندر بلوک‌ها
@@ -98,7 +97,6 @@ routes/web.php      ← همه routeهای وب
 | ریدایرکت | `/admin/redirects` | `RedirectController` |
 | منوها | `/admin/menus` | `MenuController` |
 | قالب‌ها | `/admin/themes` | `ThemeController` |
-| افزونه‌ها | `/admin/plugins` | `PluginController` |
 | تنظیمات | `/admin/settings` | `SettingController` |
 | رسانه | `/admin/media` | `MediaController` |
 
@@ -144,7 +142,7 @@ routes/web.php      ← همه routeهای وب
 - `CmsPost` / `CmsCategory` — بلاگ
 - `CmsSetting` — key/value (لوگو، عنوان سایت، ...)
 - `CmsMenu` / `CmsMenuItem` — منوی سایت
-- `CmsTheme` / `CmsPlugin` — قالب و افزونه فعال
+- `CmsTheme` — قالب فعال
 - `CmsRedirect` — ریدایرکت 301/302
 
 ### فروش و LMS
@@ -241,19 +239,13 @@ class PricingBlock extends AbstractBlock
 
 ۲. view بساز: `resources/views/blocks/pricing.blade.php`
 
-۳. ثبت کن — یکی از این دو:
+۳. ثبت کن:
 
 ```php
 // config/cms.php
 'blocks' => [
     \App\Blocks\PricingBlock::class,
 ],
-```
-
-یا توی افزونه:
-
-```php
-Hook::addFilter('cms.blocks.classes', fn ($classes) => [...$classes, PricingBlock::class]);
 ```
 
 **typeهای schema** که UI صفحه‌ساز می‌شناسه: `text`, `textarea`, `richtext`, `number`, `select`, `image`, `code`, `repeater`. برای `columns` UI جدا داریم (`layout`).
@@ -320,35 +312,6 @@ themes/rahbarhesab/
 **کشف:** `php artisan cms:discover`
 
 قالب ZIP از `/admin/themes` آپلود می‌شه.
-
----
-
-## افزونه‌ها و Hook
-
-ساختار: `plugins/MyPlugin/plugin.json` + ServiceProvider
-
-PSR-4: `Plugins\` — توی `composer.json` autoload شده.
-
-نمونه: `plugins/Example/`
-
-**Hook API** (`App\Support\Hook`) — شبیه وردپرس:
-
-```php
-Hook::addAction('order.fulfilled', function ($order) { ... });
-Hook::addFilter('cms.nav.links', fn ($links) => $links);
-Hook::addFilter('cms.blocks.classes', fn ($c) => [...$c, MyBlock::class]);
-Hook::addAction('cms.blocks.boot', fn ($registry) => $registry->register(...));
-```
-
-**Actionهای مهم:**
-- `order.created`, `order.item.fulfilled`, `order.fulfilled`
-- `course.enrolled`
-
-**Filterهای مهم:**
-- `cms.nav.links` — لینک‌های nav
-- `cms.blocks.classes` — لیست کلاس بلوک
-
-`AppServiceProvider::boot()` → `PluginService::bootActive()` افزونه‌های فعال رو boot می‌کنه.
 
 ---
 
@@ -425,7 +388,7 @@ Middleware: `api.token` (`EnsureApiToken`)
 
 | دستور | کار |
 |-------|-----|
-| `cms:discover` | کشف قالب، افزونه، taxonomy پیش‌فرض |
+| `cms:discover` | ساخت برچسب‌های پیش‌فرض |
 | `cms:ensure-admin` | ساخت/آپدیت ادمین از `.env` |
 | `cms:publish-scheduled` | انتشار زمان‌بندی‌شده — **هر دقیقه scheduler** |
 | `cms:refresh-brand` | مهاجرت برندینگ قدیمی Bisan → Rahbar |
@@ -561,7 +524,6 @@ role توی `cms_admins` — `Permission::roleDefaults()`.
 | Config CMS | `config/cms.php` |
 | ثبت بلوک | `app/Services/BlockRegistry.php` |
 | صفحه‌ساز UI | `resources/views/admin/pages/builder.blade.php` |
-| Hook | `app/Support/Hook.php` |
 | سفارش | `app/Services/OrderService.php` |
 | کوپن | `app/Services/CouponService.php` |
 | تومان/ریال | `app/Support/Money.php` |
@@ -574,7 +536,7 @@ role توی `cms_admins` — `Permission::roleDefaults()`.
 ## جمع‌بندی برای کسی که تازه اومده
 
 ۱. Laravel معمولیه — MVC + Service layer.  
-۲. CMS شبیه WP: theme, plugin, block, hook.  
+۲. CMS شبیه WP: theme و block.  
 ۳. دو auth جدا: cms admin vs user OTP (+ رمز اختیاری برای مهاجرت وردپرس).  
 ۴. LMS روی ShopProduct + Course سوار شده. قیمت تومان است؛ درگاه ریال.  
 ۵. صفحه‌ساز JSON توی `builder_content` — ColumnsBlock nested داره.  

@@ -1,54 +1,101 @@
 @extends('layouts.site')
 
 @section('page')
-    <article class="landing-section pt-28 pb-16">
-        <div class="landing-container max-w-4xl">
-            <nav class="text-sm text-slate-500 mb-6">
-                <a href="{{ route('home') }}" class="hover:text-white">خانه</a>
-                <span class="mx-2">/</span>
-                <a href="{{ route('blog.index') }}" class="hover:text-white">بلاگ</a>
-                <span class="mx-2">/</span>
-                <span class="text-slate-400">{{ $post->title }}</span>
+<div class="blog-page blog-page--article">
+    @if (!empty($isPreview))
+        <div class="blog-shell" style="padding-top:16px;">
+            <div class="alert alert-warning mb-0" role="status">
+                حالت پیش‌نمایش — این مطلب ممکن است هنوز منتشر نشده باشد.
+            </div>
+        </div>
+    @endif
+
+    <article class="blog-article">
+        <div class="blog-article__shell">
+            <nav class="blog-breadcrumb" aria-label="مسیر صفحه">
+                <a href="{{ route('home') }}">خانه</a>
+                <span class="blog-breadcrumb__sep" aria-hidden="true">/</span>
+                <a href="{{ route('blog.index') }}">اخبار و مقالات</a>
+                @if ($post->category)
+                    @foreach ($post->category->ancestors as $ancestor)
+                        <span class="blog-breadcrumb__sep" aria-hidden="true">/</span>
+                        <a href="{{ route('blog.index', ['category' => $ancestor->full_slug]) }}">{{ $ancestor->name }}</a>
+                    @endforeach
+                    <span class="blog-breadcrumb__sep" aria-hidden="true">/</span>
+                    <a href="{{ route('blog.index', ['category' => $post->category->full_slug]) }}">{{ $post->category->name }}</a>
+                @endif
             </nav>
 
-            @if ($post->category)
-                <span class="text-sm text-bisan-orange">{{ $post->category->name }}</span>
-            @endif
-
-            <h1 class="section-heading text-white mt-2 mb-4">{{ $post->title }}</h1>
-
-            <div class="flex flex-wrap items-center gap-4 text-sm text-slate-500 mb-8 pb-8 border-b border-white/10">
-                @if ($post->author)
-                    <span>{{ $post->author }}</span>
+            <header class="blog-article__header">
+                @if ($post->category)
+                    <a href="{{ route('blog.index', ['category' => $post->category->full_slug]) }}" class="blog-tag">{{ $post->category->name }}</a>
                 @endif
-                @if ($post->published_at)
-                    <time>{{ $post->published_at->format('Y/m/d') }}</time>
-                @endif
-                <span>{{ number_format($post->views) }} بازدید</span>
-            </div>
+                <h1 class="blog-article__title">{{ $post->title }}</h1>
+                <div class="blog-article__byline">
+                    @if ($post->author)
+                        <span class="blog-article__author">{{ $post->author }}</span>
+                    @endif
+                    @if ($post->published_at)
+                        <time datetime="{{ $post->published_at->toDateString() }}">{{ $post->published_at->format('Y/m/d') }}</time>
+                    @endif
+                    @if ($post->reading_time_minutes)
+                        <span>{{ fa_digits($post->reading_time_minutes) }} دقیقه مطالعه</span>
+                    @endif
+                    <span>{{ number_format($post->views) }} بازدید</span>
+                </div>
+            </header>
 
             @if ($post->featured_image)
-                <div class="mb-10 rounded-2xl overflow-hidden">
-                    <img src="{{ $post->featured_image }}" alt="{{ $post->title }}" class="w-full">
-                </div>
+                <figure class="blog-article__figure">
+                    <img src="{{ $post->featured_image }}" alt="{{ $post->featured_image_alt ?: $post->title }}" loading="eager" decoding="async">
+                </figure>
             @endif
 
-            <div class="prose-blog text-slate-300 leading-8 space-y-4">
+            <div class="blog-article__content prose prose-slate">
                 {!! $post->body !!}
             </div>
 
-            @if ($related->isNotEmpty())
-                <section class="mt-16 pt-10 border-t border-white/10">
-                    <h2 class="text-xl font-bold text-white mb-6">مقالات مرتبط</h2>
-                    <div class="grid gap-4 sm:grid-cols-3">
-                        @foreach ($related as $item)
-                            <a href="{{ route('blog.show', $item->slug) }}" class="glass-card-3d p-4 hover:border-bisan-orange/30 transition block">
-                                <h3 class="font-medium text-white text-sm">{{ $item->title }}</h3>
-                            </a>
-                        @endforeach
-                    </div>
-                </section>
+            @if ($post->relationLoaded('tags') ? $post->tags->isNotEmpty() : $post->tags()->exists())
+                <div class="blog-article__tags" style="margin-top:28px;display:flex;flex-wrap:wrap;gap:8px;">
+                    @foreach ($post->tags as $tag)
+                        <span class="blog-tag blog-tag--quiet">{{ $tag->name }}</span>
+                    @endforeach
+                </div>
             @endif
         </div>
     </article>
+
+    @if ($related->isNotEmpty())
+        <section class="blog-related" aria-labelledby="blog-related-heading">
+            <div class="blog-shell">
+                <div class="blog-related__head">
+                    <h2 id="blog-related-heading">مطالب مرتبط</h2>
+                    <a href="{{ route('blog.index') }}" class="blog-related__all">همه مقالات</a>
+                </div>
+                <div class="blog-related__grid">
+                    @foreach ($related as $item)
+                        <a href="{{ route('blog.show', $item->slug) }}" class="blog-related__card">
+                            <div class="blog-related__media">
+                                @if ($item->featured_image)
+                                    <img src="{{ $item->featured_image }}" alt="" loading="lazy" decoding="async">
+                                @else
+                                    <div class="blog-card__fallback blog-card__fallback--sm" aria-hidden="true">
+                                        <svg viewBox="0 0 40 40" fill="none">
+                                            <path d="M10 8h16l6 6v18H10V8z" stroke="currentColor" stroke-width="1.6"/>
+                                            <path d="M26 8v6h6M14 20h12M14 25h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                                        </svg>
+                                    </div>
+                                @endif
+                            </div>
+                            <h3>{{ $item->title }}</h3>
+                            @if ($item->published_at)
+                                <time datetime="{{ $item->published_at->toDateString() }}">{{ $item->published_at->format('Y/m/d') }}</time>
+                            @endif
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+        </section>
+    @endif
+</div>
 @endsection

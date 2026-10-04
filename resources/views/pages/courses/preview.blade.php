@@ -1,8 +1,8 @@
 @extends('layouts.site')
 @section('page')
-<div class="mx-auto max-w-4xl px-4 py-10">
-    <p class="mb-2 text-sm text-teal-600">پیش‌نمایش رایگان</p>
-    <h1 class="mb-4 text-2xl font-bold">{{ $lesson->title }}</h1>
+<div class="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+    <p class="mb-2 text-sm text-teal-700">پیش‌نمایش رایگان</p>
+    <h1 class="mb-4 text-2xl font-bold text-slate-800">{{ $lesson->title }}</h1>
     @if($lesson->video_url)
         <div class="aspect-video overflow-hidden rounded-xl bg-black">
             @if ($lesson->video_provider === 'aparat')

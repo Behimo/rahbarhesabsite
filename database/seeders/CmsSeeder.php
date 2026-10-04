@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\Category;
 use App\Models\CmsAdmin;
-use App\Models\CmsCategory;
 use App\Models\CmsPage;
 use App\Models\CmsPost;
 use App\Services\HomePageDefaults;
@@ -48,15 +48,19 @@ class CmsSeeder extends Seeder
 
             if ($slug === 'home') {
                 $payload['builder_enabled'] = true;
-                $payload['builder_content'] = $homeDefaults->builderContent();
+                $existing = CmsPage::query()->where('slug', $slug)->first();
+
+                if ($existing === null || empty($existing->builder_content['blocks'] ?? null)) {
+                    $payload['builder_content'] = $homeDefaults->builderContent();
+                }
             }
 
             CmsPage::query()->updateOrCreate(['slug' => $slug], $payload);
         }
 
-        $category = CmsCategory::query()->updateOrCreate(
-            ['slug' => 'accounting-guides'],
-            ['name' => 'راهنمای حسابداری', 'description' => 'مقالات آموزشی حسابداری و مالیات', 'sort_order' => 1]
+        $category = Category::query()->updateOrCreate(
+            ['type' => Category::TYPE_POST, 'slug' => 'accounting-guides', 'parent_id' => null],
+            ['name' => 'راهنمای حسابداری', 'description' => 'مقالات آموزشی حسابداری و مالیات', 'sort_order' => 1, 'is_active' => true]
         );
 
         $samplePosts = [
@@ -75,10 +79,9 @@ class CmsSeeder extends Seeder
         ];
 
         foreach ($samplePosts as $i => $post) {
-            CmsPost::query()->updateOrCreate(
+            $saved = CmsPost::query()->updateOrCreate(
                 ['slug' => $post['slug']],
                 [
-                    'category_id' => $category->id,
                     'title' => $post['title'],
                     'excerpt' => $post['excerpt'],
                     'body' => $post['body'],
@@ -89,6 +92,7 @@ class CmsSeeder extends Seeder
                     'meta_title' => $post['title'],
                 ]
             );
+            $saved->syncCategories([$category->id], $category->id);
         }
     }
 }

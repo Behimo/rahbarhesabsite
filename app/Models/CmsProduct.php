@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasCategories;
 use Illuminate\Database\Eloquent\Model;
 
 class CmsProduct extends Model
 {
+    use HasCategories;
+
     protected $fillable = [
         'slug', 'title', 'subtitle', 'description', 'accent', 'visual', 'dashboard_image',
         'audience', 'features', 'cta', 'body', 'meta_title', 'meta_description',

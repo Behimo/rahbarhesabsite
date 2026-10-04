@@ -2,17 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasCategories;
+use App\Models\Concerns\HasTags;
+use Database\Factories\CmsPostFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CmsPost extends Model
 {
-    /** @use HasFactory<\Database\Factories\CmsPostFactory> */
-    use HasFactory, SoftDeletes;
+    /** @use HasFactory<CmsPostFactory> */
+    use HasCategories, HasFactory, HasTags, SoftDeletes;
 
     public const STATUS_DRAFT = 'draft';
 
@@ -21,7 +22,7 @@ class CmsPost extends Model
     public const STATUS_SCHEDULED = 'scheduled';
 
     protected $fillable = [
-        'category_id', 'slug', 'title', 'excerpt', 'body', 'featured_image',
+        'slug', 'title', 'excerpt', 'body', 'featured_image',
         'featured_image_alt', 'author', 'meta_title', 'meta_description', 'meta_keywords', 'og_image',
         'is_published', 'status', 'published_at', 'views', 'reading_time_minutes',
     ];
@@ -32,16 +33,6 @@ class CmsPost extends Model
             'is_published' => 'boolean',
             'published_at' => 'datetime',
         ];
-    }
-
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(CmsCategory::class, 'category_id');
-    }
-
-    public function taxonomyTerms(): MorphToMany
-    {
-        return $this->morphToMany(CmsTaxonomyTerm::class, 'termable', 'cms_termables', 'termable_id', 'term_id');
     }
 
     public function revisions(): HasMany
@@ -86,7 +77,7 @@ class CmsPost extends Model
     public function revisionSnapshot(): array
     {
         return $this->only([
-            'category_id', 'slug', 'title', 'excerpt', 'body', 'featured_image',
+            'slug', 'title', 'excerpt', 'body', 'featured_image',
             'featured_image_alt', 'author', 'meta_title', 'meta_description', 'meta_keywords',
             'og_image', 'is_published', 'status', 'published_at', 'reading_time_minutes',
         ]);

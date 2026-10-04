@@ -77,8 +77,7 @@ class PageController extends Controller
         $validated = $request->validate([
             'slug' => $slugRule,
             'title' => ['required', 'string', 'max:200'],
-            'template' => ['required', 'in:system,content,builder'],
-            'builder_enabled' => ['nullable', 'boolean'],
+            'template' => ['nullable', 'in:system,content'],
             'status' => ['nullable', 'in:draft,published,scheduled'],
             'published_at' => ['nullable', 'date'],
             'meta_title' => ['nullable', 'string', 'max:200'],
@@ -102,7 +101,6 @@ class PageController extends Controller
 
         $validated['content'] = $content;
         $validated['is_published'] = $request->boolean('is_published');
-        $validated['builder_enabled'] = $request->boolean('builder_enabled');
         $validated['show_in_nav'] = $request->boolean('show_in_nav');
         $validated['is_system'] = $page?->is_system ?? false;
         $validated['status'] = $validated['status'] ?? ($validated['is_published'] ? 'published' : 'draft');

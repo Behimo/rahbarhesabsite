@@ -14,14 +14,12 @@ use App\Http\Controllers\Admin\MessageController as AdminMessageController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\PageBuilderController;
 use App\Http\Controllers\Admin\PageController as AdminPageController;
-use App\Http\Controllers\Admin\PluginController as AdminPluginController;
 use App\Http\Controllers\Admin\PostController as AdminPostController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\RedirectController as AdminRedirectController;
 use App\Http\Controllers\Admin\SearchController as AdminSearchController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
-use App\Http\Controllers\Admin\TaxonomyController as AdminTaxonomyController;
-use App\Http\Controllers\Admin\ThemeController as AdminThemeController;
+use App\Http\Controllers\Admin\TagController as AdminTagController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Panel\DashboardController as PanelDashboardController;
@@ -40,6 +38,13 @@ use Illuminate\Support\Facades\Route;
 | SEO, Sitemaps & Feeds
 |--------------------------------------------------------------------------
 */
+Route::get('/themes/rahbarhesab/{path}', function (string $path) {
+    abort_if(str_contains($path, '..'), 404);
+    abort_unless(is_file(public_path('site/'.$path)), 404);
+
+    return redirect('/site/'.$path, 301);
+})->where('path', '.*');
+
 Route::controller(SitemapController::class)->group(function () {
     Route::get('/sitemap_index.xml', 'index')->name('sitemap.index');
     Route::get('/sitemap.xml', 'legacy')->name('sitemap');
@@ -174,7 +179,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('home', [AdminHomeController::class, 'edit'])->name('home.edit');
         Route::put('home', [AdminHomeController::class, 'update'])->name('home.update');
 
-        // Pages & Visual Page Builder
         Route::controller(AdminPageController::class)->prefix('pages')->name('pages.')->group(function () {
             Route::get('/', 'index')->name('index');
             Route::get('/create', 'create')->name('create');
@@ -207,14 +211,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::put('/{post}', 'update')->name('update');
             Route::delete('/{post}', 'destroy')->name('destroy');
         });
-        Route::resource('categories', AdminCategoryController::class)->except(['create', 'edit', 'show']);
-
-        Route::controller(AdminTaxonomyController::class)->group(function () {
-            Route::get('taxonomies', 'index')->name('taxonomies.index');
-            Route::post('taxonomies', 'storeTaxonomy')->name('taxonomies.store');
-            Route::post('taxonomies/{taxonomy}/terms', 'storeTerm')->name('taxonomies.terms.store');
-            Route::delete('taxonomy-terms/{term}', 'destroyTerm')->name('taxonomies.terms.destroy');
-        });
+        Route::resource('categories', AdminCategoryController::class)->except(['show']);
+        Route::resource('tags', AdminTagController::class)->except(['create', 'edit', 'show']);
 
         // Courses & Curriculum (Sections & Lessons)
         Route::resource('products', AdminProductController::class)->except(['show']);
@@ -247,20 +245,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::put('/{menu}', 'update')->name('update');
             Route::post('/{menu}/tree', 'saveTree')->name('tree');
             Route::delete('/{menu}', 'destroy')->name('destroy');
-        });
-
-        // Themes & Plugins
-        Route::controller(AdminThemeController::class)->prefix('themes')->name('themes.')->group(function () {
-            Route::get('/', 'index')->name('index');
-            Route::post('/', 'store')->name('store');
-            Route::post('/{slug}/activate', 'activate')->name('activate');
-            Route::get('/{slug}/preview', 'preview')->name('preview');
-        });
-
-        Route::controller(AdminPluginController::class)->prefix('plugins')->name('plugins.')->group(function () {
-            Route::get('/', 'index')->name('index');
-            Route::post('/', 'store')->name('store');
-            Route::post('/{plugin}/toggle', 'toggle')->name('toggle');
         });
 
         // Media Library
@@ -302,6 +286,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::controller(AdminSettingController::class)->group(function () {
             Route::get('settings', 'index')->name('settings.index');
             Route::put('settings', 'update')->name('settings.update');
+            Route::put('settings/gateways', 'updateGateways')->name('settings.gateways');
         });
 
         Route::controller(AdminMessageController::class)->prefix('messages')->name('messages.')->group(function () {

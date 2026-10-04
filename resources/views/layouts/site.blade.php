@@ -1,24 +1,62 @@
-@extends('layouts.app')
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
-@section('content')
-<div class="landing" x-data="landingExperience">
-    <div class="scroll-progress" aria-hidden="true">
-        <div class="scroll-progress__bar" :style="`transform: scaleX(${ $store.landing.scrollProgress })`"></div>
-    </div>
+    @php $seoMeta = $seo ?? []; @endphp
 
-    <div class="ambient-layer" aria-hidden="true">
-        <div class="ambient-orb ambient-orb--orange" data-parallax="0.12"></div>
-        <div class="ambient-orb ambient-orb--purple" data-parallax="-0.08"></div>
-        <div class="ambient-orb ambient-orb--blue" data-parallax="0.06"></div>
-        <div class="ambient-grid"></div>
-    </div>
+    <title>{{ $seoMeta['title'] ?? config('cms.site_name_fa') }}</title>
+    <meta name="description" content="{{ $seoMeta['description'] ?? '' }}">
+    @if (!empty($seoMeta['keywords']))
+        <meta name="keywords" content="{{ $seoMeta['keywords'] }}">
+    @endif
+    <meta name="robots" content="{{ $seoMeta['robots'] ?? 'index, follow' }}">
+    <link rel="canonical" href="{{ $seoMeta['canonical'] ?? url()->current() }}">
 
-    <x-navbar :nav-links="$navLinks" />
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="fa_IR">
+    <meta property="og:site_name" content="{{ config('cms.site_name_fa') }}">
+    <meta property="og:title" content="{{ $seoMeta['og_title'] ?? $seoMeta['title'] ?? '' }}">
+    <meta property="og:description" content="{{ $seoMeta['description'] ?? '' }}">
+    <meta property="og:url" content="{{ $seoMeta['canonical'] ?? url()->current() }}">
+    @if (!empty($seoMeta['og_image']))
+        <meta property="og:image" content="{{ $seoMeta['og_image'] }}">
+    @endif
 
-    <main class="relative z-10">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ $seoMeta['og_title'] ?? $seoMeta['title'] ?? '' }}">
+    <meta name="twitter:description" content="{{ $seoMeta['description'] ?? '' }}">
+
+    <link rel="icon" href="{{ asset('site/images/logorahbarhesab.webp') }}">
+    <link rel="alternate" hreflang="fa-IR" href="{{ url()->current() }}">
+    @php
+        $sitePublic = public_path('site');
+        $siteVer = fn (string $file) => file_exists($sitePublic . '/' . $file) ? filemtime($sitePublic . '/' . $file) : time();
+    @endphp
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="stylesheet" href="{{ asset('site/fonts.css') }}?v={{ $siteVer('fonts.css') }}">
+    <link rel="stylesheet" href="{{ asset('site/style.css') }}?v={{ $siteVer('style.css') }}">
+    <link rel="stylesheet" href="{{ asset('site/theme.css') }}?v={{ $siteVer('theme.css') }}">
+
+    @if (!empty($structuredData))
+        @foreach ($structuredData as $schema)
+            <script type="application/ld+json">{!! json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
+        @endforeach
+    @endif
+    @stack('head')
+</head>
+<body class="rh-theme">
+    @include('components.navbar', ['navLinks' => $navLinks ?? []])
+
+    <main @class(['rh-inner-page' => ! request()->routeIs(['home', 'courses.index', 'courses.show', 'blog.*', 'panel.*', 'login', 'login.verify', 'cart.index', 'checkout.index', 'checkout.success', 'checkout.failed'])])>
         @yield('page')
     </main>
 
-    <x-footer :contact="$contact" />
-</div>
-@endsection
+    @include('components.footer', ['contact' => $contact ?? []])
+
+    <script src="{{ asset('site/script.js') }}?v={{ $siteVer('script.js') }}"></script>
+    @stack('scripts')
+</body>
+</html>

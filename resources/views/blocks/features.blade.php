@@ -1,10 +1,36 @@
-<section class="cms-block cms-features mx-auto max-w-6xl px-4 py-8">
-    <div class="grid gap-6 md:grid-cols-3">
-        @foreach ($items ?? [] as $item)
-            <div class="rounded-xl border p-5">
-                <h3 class="mb-2 font-semibold">{{ $item['title'] ?? '' }}</h3>
-                <p class="text-sm opacity-70">{{ $item['text'] ?? '' }}</p>
+@php
+    $cards = collect($items ?? [])
+        ->filter(fn ($item) => filled($item['title'] ?? null) || filled($item['text'] ?? null))
+        ->values();
+    $columnCount = $cards->count();
+    $gridClass = $columnCount > 0 && $columnCount < 5
+        ? 'benefits-grid benefits-grid--n'.$columnCount
+        : 'benefits-grid';
+@endphp
+
+@if ($cards->isNotEmpty())
+    <section class="rahbar-benefits" id="rahbarBenefits">
+        <div class="benefits-container">
+            <div class="{{ $gridClass }}">
+                @foreach ($cards as $index => $card)
+                    @php
+                        $variant = ($card['variant'] ?? 'down') === 'up' ? 'up' : 'down';
+                        $panel = ($card['panel'] ?? 'gray') === 'white' ? 'white' : 'gray';
+                    @endphp
+                    <article class="benefit-card benefit-card--{{ $variant }}">
+                        @include('partials.home.benefit-cap', ['uid' => $index + 1])
+
+                        <div class="benefit-panel benefit-panel--{{ $panel }}">
+                            @if (filled($card['title'] ?? null))
+                                <h3>{{ $card['title'] }}</h3>
+                            @endif
+                            @if (filled($card['text'] ?? null))
+                                <p>{!! nl2br(e($card['text'])) !!}</p>
+                            @endif
+                        </div>
+                    </article>
+                @endforeach
             </div>
-        @endforeach
-    </div>
-</section>
+        </div>
+    </section>
+@endif

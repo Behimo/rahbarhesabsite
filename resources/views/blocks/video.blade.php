@@ -1,11 +1,9 @@
-<section class="cms-block cms-video mx-auto max-w-4xl px-4 py-8">
-    <div class="aspect-video overflow-hidden rounded-xl bg-black">
-        @if($provider === 'aparat' && $url)
-            <iframe src="https://www.aparat.com/video/video/embed/videohash/{{ basename($url) }}/vt/frame" class="h-full w-full" allowfullscreen></iframe>
-        @elseif($provider === 'youtube' && $url)
-            <iframe src="https://www.youtube.com/embed/{{ basename($url) }}" class="h-full w-full" allowfullscreen></iframe>
-        @elseif($url)
-            <video src="{{ $url }}" controls class="h-full w-full"></video>
+<section class="rh-block-video mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+    <div class="rh-card overflow-hidden p-2">
+        @if(!empty($url))
+            <div class="aspect-video w-full overflow-hidden rounded-xl bg-slate-100">
+                <iframe src="{{ $url }}" class="h-full w-full" allowfullscreen loading="lazy"></iframe>
+            </div>
         @endif
     </div>
 </section>

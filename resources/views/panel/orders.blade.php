@@ -1,4 +1,4 @@
-@extends('theme::layouts.panel')
+@extends('layouts.panel')
 
 @section('title', 'سفارش‌ها')
 
@@ -31,9 +31,16 @@
                         </td>
                         <td>{{ fa_date($order->created_at) }}</td>
                         <td>
-                            @if ($order->canRetryPayment())
+                            @if ($order->canRetryPayment() && count($gateways ?? []) > 0)
                                 <form method="POST" action="{{ route('checkout.retry', $order) }}">
                                     @csrf
+                                    @if (count($gateways) > 1)
+                                        <select name="gateway" class="form-select form-select-sm mb-1" required>
+                                            @foreach ($gateways as $choice)
+                                                <option value="{{ $choice['name'] }}">{{ $choice['label'] }}</option>
+                                            @endforeach
+                                        </select>
+                                    @endif
                                     <button type="submit" class="panel-inline-link">پرداخت مجدد</button>
                                 </form>
                             @endif

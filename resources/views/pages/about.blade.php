@@ -1,85 +1,42 @@
 @extends('layouts.site')
 
 @section('page')
-    <x-page-hero badge="کی هستیم؟" title="۱۰ سال" subtitle="نرم‌افزار می‌سازیم — هم برای خودمان، هم برای شما." />
+<section class="bg-teal-800 py-12 text-white">
+    <div class="mx-auto max-w-5xl px-4 text-center sm:px-6">
+        <h1 class="text-3xl font-extrabold">درباره راهبر حساب</h1>
+        <p class="mt-2 text-teal-100">موسسه آموزش حسابداری و خدمات مالی و مالیاتی</p>
+    </div>
+</section>
 
-    <section class="landing-section pb-20">
-        <div class="landing-container">
-            <x-breadcrumb :items="[
-                ['name' => 'خانه', 'url' => route('home')],
-                ['name' => 'درباره ما', 'url' => route('about')],
-            ]" />
-
-            @if (!empty($aboutMission))
-                <div class="grid gap-6 lg:grid-cols-2 mb-14">
-                    <div class="glass-card-3d p-8">
-                        <h2 class="text-sm font-medium text-bisan-orange mb-2">ماموریت ما</h2>
-                        <p class="text-lg leading-relaxed text-slate-300">{{ $aboutMission['mission'] }}</p>
-                    </div>
-                    <div class="glass-card-3d p-8">
-                        <h2 class="text-sm font-medium text-purple-400 mb-2">چشم‌انداز ما</h2>
-                        <p class="text-lg leading-relaxed text-slate-300">{{ $aboutMission['vision'] }}</p>
-                    </div>
-                </div>
-            @endif
-
-            <div class="grid items-center gap-14 lg:grid-cols-2">
-                <div>
-                    <p class="text-lg leading-relaxed text-slate-300">
-                        بیسان تیم برنامه‌نویسی است که ۴ محصول خودش را دارد و برای مشتریان هم پروژه اختصاصی می‌سازد.
-                        از سال ۲۰۱۴ در بازار ایران فعالیم و بیش از ۱۲۰۰ کسب‌وکار به ما اعتماد کرده‌اند.
-                    </p>
-                    <div class="mt-8 grid gap-4 sm:grid-cols-2">
-                        @foreach ($aboutPillars as $point)
-                            <div class="pillar-card">
-                                <div class="pillar-card__icon">
-                                    <svg class="h-5 w-5 text-bisan-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="{{ $point['icon'] }}"/>
-                                    </svg>
-                                </div>
-                                <p class="text-sm leading-7 text-slate-300">{{ $point['text'] }}</p>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-
-                <div class="about-timeline">
-                    @foreach ($aboutTimeline as $step)
-                        <div class="about-timeline__item">
-                            <div class="about-timeline__node">
-                                <span class="about-timeline__year">{{ $step['year'] }}</span>
-                            </div>
-                            <div class="about-timeline__content glass-card-3d">
-                                <h3 class="font-semibold text-white">{{ $step['title'] }}</h3>
-                                <p class="mt-1 text-sm text-slate-400">{{ $step['desc'] }}</p>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
+<div class="mx-auto max-w-5xl space-y-8 px-4 py-12 sm:px-6 lg:px-8">
+    @if (!empty($aboutMission))
+        <div class="grid gap-6 lg:grid-cols-2">
+            <div class="rh-card p-6 sm:p-8">
+                <h2 class="mb-3 text-xl font-bold text-slate-800">{{ $aboutMission['title'] ?? 'ماموریت ما' }}</h2>
+                <p class="text-slate-600 leading-8">{{ $aboutMission['text'] ?? '' }}</p>
             </div>
-
-            <div class="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                @foreach ($stats as $stat)
-                    <div class="glass-card-3d p-6 text-center">
-                        <p class="text-3xl font-extrabold text-white">{{ $stat['value'] }}</p>
-                        <p class="text-sm text-slate-300">{{ $stat['label'] }}</p>
-                        @if (!empty($stat['hint']))
-                            <p class="mt-1 text-xs text-slate-500">{{ $stat['hint'] }}</p>
-                        @endif
-                    </div>
-                @endforeach
-            </div>
-
-            @if (!empty($partners))
-                <div class="mt-16 text-center">
-                    <h3 class="text-lg font-semibold text-white mb-6">همکاران و مشتریان ما</h3>
-                    <div class="flex flex-wrap items-center justify-center gap-6 lg:gap-10">
-                        @foreach ($partners as $partner)
-                            <span class="text-lg font-semibold text-white/30">{{ $partner }}</span>
+            @if (!empty($aboutPillars))
+                <div class="rh-card p-6 sm:p-8">
+                    <h2 class="mb-4 text-xl font-bold text-slate-800">ارکان اصلی</h2>
+                    <ul class="space-y-3">
+                        @foreach ($aboutPillars as $pillar)
+                            <li class="text-slate-600"><strong class="text-slate-800">{{ $pillar['title'] ?? '' }}:</strong> {{ $pillar['text'] ?? '' }}</li>
                         @endforeach
-                    </div>
+                    </ul>
                 </div>
             @endif
         </div>
-    </section>
+    @endif
+
+    @if (!empty($stats))
+        <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+            @foreach ($stats as $stat)
+                <div class="rh-card p-4 text-center">
+                    <div class="text-2xl font-bold text-teal-700">{{ $stat['value'] ?? '' }}</div>
+                    <div class="mt-1 text-sm text-slate-600">{{ $stat['label'] ?? '' }}</div>
+                </div>
+            @endforeach
+        </div>
+    @endif
+</div>
 @endsection

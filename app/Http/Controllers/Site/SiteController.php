@@ -8,7 +8,6 @@ use App\Services\BlockRenderer;
 use App\Services\PageBuilderService;
 use App\Services\SeoService;
 use App\Services\SiteDataService;
-use App\Services\ThemeService;
 use Illuminate\View\View as ViewResponse;
 
 abstract class SiteController extends Controller
@@ -21,30 +20,33 @@ abstract class SiteController extends Controller
 
     protected function render(string $view, array $data = []): ViewResponse
     {
-        return app(ThemeService::class)->view($view, array_merge(
+        return view($view, array_merge(
             $this->siteData->sharedViewData(),
             $data
         ));
     }
 
-    protected function renderSystemPage(string $slug, string $fallbackView, array $data = []): ViewResponse
+    protected function renderSystemPage(string $slug, string $view, array $data = []): ViewResponse
     {
-        $page = CmsPage::query()->where('slug', $slug)->first();
+        $page = $data['page'] ?? CmsPage::query()->where('slug', $slug)->first();
         $seo = $this->seo->forPage($slug, $data['seo'] ?? []);
+        $content = is_array($page?->content) ? $page->content : [];
         $pageBuilder = app(PageBuilderService::class);
-        $builderContent = $pageBuilder->resolveContent($page, $slug);
 
-        if ($pageBuilder->shouldRenderBuilder($page, $slug)) {
-            $bodyHtml = app(BlockRenderer::class)->render($builderContent, $data);
-            $view = $pageBuilder->usesFullWidthLayout($page, $slug) ? 'pages.sections' : 'pages.cms-content';
+        if ($pageBuilder->shouldRenderBuilder($page)) {
+            $bodyHtml = app(BlockRenderer::class)->render($pageBuilder->resolveContent($page), $data);
 
-            return $this->render($view, array_merge($data, [
+            return $this->render('pages.sections', array_merge($data, [
                 'page' => $page,
                 'bodyHtml' => $bodyHtml,
                 'seo' => $seo,
             ]));
         }
 
-        return $this->render($fallbackView, array_merge($data, ['seo' => $seo, 'page' => $page]));
+        return $this->render($view, array_merge($data, [
+            'seo' => $seo,
+            'page' => $page,
+            'bodyHtml' => $data['bodyHtml'] ?? ($content['body_html'] ?? ''),
+        ]));
     }
 }

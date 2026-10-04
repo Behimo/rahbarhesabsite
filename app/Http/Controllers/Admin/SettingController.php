@@ -4,15 +4,20 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\CmsSetting;
+use App\Services\PaymentGatewayRegistry;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use RuntimeException;
 
 class SettingController extends Controller
 {
+    public function __construct(private PaymentGatewayRegistry $gateways) {}
+
     public function index(): View
     {
         return view('admin.settings.index', [
+            'gateways' => $this->gateways->definitions(),
             'settings' => [
                 'contact_email' => CmsSetting::get('contact_email', config('cms.contact_email')),
                 'contact_phone' => CmsSetting::get('contact_phone', config('cms.contact_phone')),
@@ -44,5 +49,29 @@ class SettingController extends Controller
         }
 
         return back()->with('success', 'تنظیمات ذخیره شد.');
+    }
+
+    public function updateGateways(Request $request): RedirectResponse
+    {
+        $names = array_column($this->gateways->definitions(), 'name');
+
+        $validated = $request->validate([
+            'gateways' => ['required', 'array'],
+            'gateways.*' => ['boolean'],
+        ]);
+
+        $input = [];
+
+        foreach ($names as $name) {
+            $input[$name] = filter_var($validated['gateways'][$name] ?? false, FILTER_VALIDATE_BOOLEAN);
+        }
+
+        try {
+            $this->gateways->syncEnabled($input);
+        } catch (RuntimeException $e) {
+            return back()->with('error', $e->getMessage())->withInput();
+        }
+
+        return back()->with('success', 'درگاه‌های پرداخت ذخیره شد.');
     }
 }

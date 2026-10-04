@@ -135,22 +135,10 @@ return new class extends Migration
             $table->unsignedSmallInteger('quantity')->default(1);
             $table->timestamps();
         });
-
-        Schema::create('cms_plugins', function (Blueprint $table) {
-            $table->id();
-            $table->string('slug')->unique();
-            $table->string('name');
-            $table->string('version')->default('1.0.0');
-            $table->string('provider_class')->nullable();
-            $table->boolean('is_active')->default(false);
-            $table->json('config')->nullable();
-            $table->timestamps();
-        });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('cms_plugins');
         Schema::dropIfExists('cart_items');
         Schema::dropIfExists('lesson_progress');
         Schema::dropIfExists('course_enrollments');

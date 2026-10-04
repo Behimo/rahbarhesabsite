@@ -8,9 +8,12 @@
         <h4 class="mb-1">دوره‌های LMS</h4>
         <p class="text-muted mb-0">مدیریت دوره‌های آموزشی و فروش</p>
     </div>
-    <a href="{{ route('admin.courses.create') }}" class="btn btn-primary">
+    <div class="d-flex gap-2">
+        <a href="{{ route('admin.categories.index', ['type' => 'product']) }}" class="btn btn-label-secondary">دسته‌بندی‌ها</a>
+        <a href="{{ route('admin.courses.create') }}" class="btn btn-primary">
         <i class="ti ti-plus me-1"></i>دوره جدید
-    </a>
+        </a>
+    </div>
 </div>
 
 <div class="card">

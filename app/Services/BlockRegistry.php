@@ -18,7 +18,6 @@ use App\Blocks\StatsBlock;
 use App\Blocks\TestimonialsBlock;
 use App\Blocks\TextBlock;
 use App\Blocks\VideoBlock;
-use App\Support\Hook;
 use InvalidArgumentException;
 
 class BlockRegistry
@@ -114,7 +113,7 @@ class BlockRegistry
 
     private function registerDefaults(): void
     {
-        $classes = Hook::applyFilters('cms.blocks.classes', [
+        $classes = [
             HeroBlock::class,
             TextBlock::class,
             HtmlBlock::class,
@@ -131,7 +130,7 @@ class BlockRegistry
             ProductsBlock::class,
             CoursesBlock::class,
             ...config('cms.blocks', []),
-        ]);
+        ];
 
         foreach (array_unique($classes) as $class) {
             if (! is_string($class) || ! class_exists($class)) {
@@ -141,7 +140,5 @@ class BlockRegistry
             $block = app($class);
             $this->register($block->type(), $class);
         }
-
-        Hook::doAction('cms.blocks.boot', $this);
     }
 }

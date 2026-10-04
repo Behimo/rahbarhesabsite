@@ -36,6 +36,16 @@ class FeatureSplitBlock extends AbstractBlock
             'image' => ['type' => 'image', 'label' => 'تصویر', 'default' => ''],
             'cta_text' => ['type' => 'text', 'label' => 'متن دکمه', 'default' => ''],
             'cta_url' => ['type' => 'text', 'label' => 'لینک دکمه', 'default' => '#'],
+            'items' => [
+                'type' => 'repeater',
+                'label' => 'آیتم‌ها',
+                'fields' => [
+                    'title' => ['type' => 'text', 'label' => 'عنوان'],
+                    'text' => ['type' => 'textarea', 'label' => 'متن'],
+                    'image' => ['type' => 'image', 'label' => 'تصویر'],
+                    'url' => ['type' => 'text', 'label' => 'لینک'],
+                ],
+            ],
         ];
     }
 
@@ -45,7 +55,9 @@ class FeatureSplitBlock extends AbstractBlock
 
         return $this->blockView('feature-split', [
             'layout' => $layout,
-            'appDownloadUrl' => $settings['cta_url'] ?? '#',
+            'ctaText' => $settings['cta_text'] ?? '',
+            'ctaUrl' => $settings['cta_url'] ?? '',
+            'appDownloadUrl' => $settings['cta_url'] ?? '',
         ] + $settings);
     }
 }

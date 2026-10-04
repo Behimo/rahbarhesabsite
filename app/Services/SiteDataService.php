@@ -18,7 +18,7 @@ class SiteDataService
         $menuLinks = $menuService->linksForLocation($location);
 
         if (!empty($menuLinks)) {
-            return \App\Support\Hook::applyFilters('cms.nav.links', $this->normalizeNavLinks($menuLinks));
+            return $this->normalizeNavLinks($menuLinks);
         }
 
         $links = [
@@ -74,7 +74,7 @@ class SiteDataService
             ];
         }
 
-        return \App\Support\Hook::applyFilters('cms.nav.links', $links);
+        return $links;
     }
 
     public function pageContent(string $slug, array $defaults = []): array
@@ -632,20 +632,11 @@ class SiteDataService
     private function normalizeNavLinks(array $items): array
     {
         return collect($items)->map(function (array $item) {
-            $href = $item['href'] ?? $item['url'] ?? null;
-            $children = [];
-
-            foreach ($item['children'] ?? [] as $child) {
-                $children[] = [
-                    'label' => $child['label'] ?? '',
-                    'href' => $child['href'] ?? $child['url'] ?? '#',
-                    'target' => $child['target'] ?? '_self',
-                ];
-            }
+            $children = $this->normalizeNavLinks($item['children'] ?? []);
 
             $link = [
                 'label' => $item['label'] ?? '',
-                'href' => $href,
+                'href' => $item['href'] ?? $item['url'] ?? null,
                 'target' => $item['target'] ?? '_self',
             ];
 

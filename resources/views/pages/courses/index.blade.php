@@ -1,31 +1,150 @@
 @extends('layouts.site')
 
-@section('page')
-<x-page-hero title="دوره‌های آموزشی" subtitle="یادگیری آنلاین با بهترین مدرسین" />
+@php
+    $activeCategory = request('category');
+    $activeType = request('type');
+    $searchQuery = request('q');
+    $hasFilters = filled($activeCategory) || filled($activeType) || filled($searchQuery);
 
-<div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-    @if ($courses->isEmpty())
-        <p class="text-center text-gray-400">هنوز دوره‌ای منتشر نشده است.</p>
-    @else
-        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            @foreach ($courses as $course)
-                <a href="{{ route('courses.show', $course->slug) }}" class="group rounded-2xl border border-white/10 bg-white/5 p-6 transition hover:border-orange-500/30">
-                    @if ($course->featured_image)
-                        <img src="{{ $course->featured_image }}" alt="" class="mb-4 h-40 w-full rounded-xl object-cover">
+    $filterUrl = function (array $overrides = []) {
+        $query = array_filter([
+            'q' => array_key_exists('q', $overrides) ? $overrides['q'] : request('q'),
+            'category' => array_key_exists('category', $overrides) ? $overrides['category'] : request('category'),
+            'type' => array_key_exists('type', $overrides) ? $overrides['type'] : request('type'),
+        ], fn ($value) => filled($value));
+
+        return route('courses.index', $query);
+    };
+
+    $activeCategoryName = $categories->first(fn ($category) => $category->full_slug === $activeCategory || $category->slug === $activeCategory)?->name;
+    $typeLabels = [
+        'paid' => 'دوره‌های تخصصی',
+        'free' => 'رایگان',
+    ];
+@endphp
+
+@section('page')
+<section class="courses-archive">
+    <div class="courses-archive-hero">
+        <div class="courses-archive-hero-glow" aria-hidden="true"></div>
+        <div class="courses-archive-hero-dots" aria-hidden="true"></div>
+
+        <div class="courses-archive-hero-inner">
+            <p class="courses-archive-kicker">آموزش حسابداری ویژه بازار کار</p>
+            <h1>دوره‌های آموزشی حسابداری</h1>
+            <p class="courses-archive-lead">آموزش عملی حسابداری و مالیات با مدرسین بازار کار</p>
+
+            <form class="courses-archive-search" action="{{ route('courses.index') }}" method="get" role="search">
+                @if ($activeCategory)
+                    <input type="hidden" name="category" value="{{ $activeCategory }}">
+                @endif
+                @if ($activeType)
+                    <input type="hidden" name="type" value="{{ $activeType }}">
+                @endif
+
+                <label class="courses-archive-search-field">
+                    <svg class="courses-archive-search-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="11" cy="11" r="7" />
+                        <path d="M16.5 16.5L21 21" />
+                    </svg>
+                    <input
+                        type="search"
+                        name="q"
+                        value="{{ $searchQuery }}"
+                        placeholder="جستجو در دوره‌ها..."
+                        aria-label="جستجوی دوره"
+                        autocomplete="off"
+                    >
+                    @if ($searchQuery)
+                        <a href="{{ $filterUrl(['q' => null]) }}" class="courses-archive-search-clear" aria-label="پاک کردن جستجو">&times;</a>
                     @endif
-                    <h3 class="mb-2 text-lg font-semibold text-white group-hover:text-orange-300">{{ $course->title }}</h3>
-                    <p class="mb-4 line-clamp-2 text-sm text-gray-400">{{ $course->subtitle ?? Str::limit($course->description, 100) }}</p>
-                    <div class="flex items-center justify-between">
-                        @if ($course->isFree())
-                            <span class="text-green-400">رایگان</span>
-                        @else
-                            <span class="text-orange-400">{{ number_format($course->effectivePrice()) }} تومان</span>
-                        @endif
-                        <span class="text-sm text-gray-500">{{ $course->course?->level ?? 'beginner' }}</span>
+                </label>
+
+                <button type="submit">جستجو</button>
+            </form>
+
+            @if ($categories->isNotEmpty())
+                <div class="courses-archive-chips-wrap">
+                    <span class="courses-archive-chips-label">دسته‌بندی:</span>
+                    <div class="courses-archive-chips" role="navigation" aria-label="دسته‌بندی دوره‌ها">
+                        <a href="{{ $filterUrl(['category' => null]) }}" class="{{ blank($activeCategory) ? 'is-active' : '' }}">همه</a>
+                        @foreach ($categories as $category)
+                            <a href="{{ $filterUrl(['category' => $category->full_slug]) }}" class="{{ $activeCategory === $category->full_slug || $activeCategory === $category->slug ? 'is-active' : '' }}">{{ $category->name }}</a>
+                        @endforeach
                     </div>
-                </a>
-            @endforeach
+                </div>
+            @endif
         </div>
-    @endif
-</div>
+    </div>
+
+    <div class="courses-archive-body">
+        <div class="courses-archive-toolbar">
+            <div class="courses-archive-toolbar-start">
+                <p class="courses-archive-count">
+                    <span class="courses-archive-count-number">{{ fa_digits($courses->count()) }}</span>
+                    {{ $hasFilters ? 'نتیجه' : 'دوره آموزشی' }}
+                </p>
+
+                @if ($hasFilters)
+                    <div class="courses-archive-active-filters" aria-label="فیلترهای فعال">
+                        @if ($searchQuery)
+                            <a href="{{ $filterUrl(['q' => null]) }}" class="courses-archive-filter-tag">
+                                «{{ Str::limit($searchQuery, 24) }}»
+                                <span aria-hidden="true">&times;</span>
+                            </a>
+                        @endif
+                        @if ($activeCategoryName)
+                            <a href="{{ $filterUrl(['category' => null]) }}" class="courses-archive-filter-tag">
+                                {{ $activeCategoryName }}
+                                <span aria-hidden="true">&times;</span>
+                            </a>
+                        @endif
+                        @if ($activeType && isset($typeLabels[$activeType]))
+                            <a href="{{ $filterUrl(['type' => null]) }}" class="courses-archive-filter-tag">
+                                {{ $typeLabels[$activeType] }}
+                                <span aria-hidden="true">&times;</span>
+                            </a>
+                        @endif
+                        <a href="{{ route('courses.index') }}" class="courses-archive-clear-all">حذف همه</a>
+                    </div>
+                @endif
+            </div>
+
+            <div class="courses-archive-types-wrap">
+                <span class="courses-archive-types-label">نوع:</span>
+                <div class="courses-archive-types" role="group" aria-label="نوع دوره">
+                    <a href="{{ $filterUrl(['type' => null]) }}" class="{{ blank($activeType) ? 'is-active' : '' }}">همه</a>
+                    <a href="{{ $filterUrl(['type' => 'paid']) }}" class="{{ $activeType === 'paid' ? 'is-active' : '' }}">تخصصی</a>
+                    <a href="{{ $filterUrl(['type' => 'free']) }}" class="{{ $activeType === 'free' ? 'is-active' : '' }}">رایگان</a>
+                </div>
+            </div>
+        </div>
+
+        @if ($courses->isEmpty())
+            <div class="courses-archive-empty">
+                <div class="courses-archive-empty-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="11" cy="11" r="7" />
+                        <path d="M16.5 16.5L21 21" />
+                    </svg>
+                </div>
+                <strong>دوره‌ای با این مشخصات پیدا نشد</strong>
+                <p>عبارت جستجو یا فیلتر را تغییر دهید.</p>
+                @if ($hasFilters)
+                    <a href="{{ route('courses.index') }}" class="courses-archive-empty-btn">مشاهده همه دوره‌ها</a>
+                @endif
+            </div>
+        @else
+            <div class="courses-archive-grid">
+                @foreach ($courses as $course)
+                    @include('partials.course-card', [
+                        'course' => $course,
+                        'isFree' => $course->isFree(),
+                        'linked' => true,
+                    ])
+                @endforeach
+            </div>
+        @endif
+    </div>
+</section>
 @endsection

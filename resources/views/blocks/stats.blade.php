@@ -1,8 +1,10 @@
-<section class="cms-block cms-stats mx-auto grid max-w-5xl grid-cols-2 gap-6 px-4 py-8 md:grid-cols-4">
-    @foreach($items as $item)
-        <div class="text-center">
-            <div class="text-3xl font-bold text-teal-700">{{ $item['value'] ?? '' }}</div>
-            <div class="text-sm opacity-70">{{ $item['label'] ?? '' }}</div>
-        </div>
-    @endforeach
+<section class="rh-block-stats mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+        @foreach($items as $item)
+            <div class="rh-card p-5 text-center">
+                <div class="text-2xl font-bold text-teal-700">{{ $item['value'] ?? '' }}</div>
+                <div class="mt-1 text-sm text-slate-600">{{ $item['label'] ?? '' }}</div>
+            </div>
+        @endforeach
+    </div>
 </section>
