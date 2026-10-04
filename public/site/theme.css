@@ -4288,6 +4288,28 @@ a.rh-cart__item-title:focus-visible {
     line-height: 1.65;
 }
 
+.rh-cart__gateway-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.rh-cart__gateway-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.rh-cart__gateway-option .rh-cart__gateway-card {
+    flex: 1;
+}
+
+.rh-cart__gateway-option input:checked + .rh-cart__gateway-card,
+.rh-cart__gateway-option:has(input:checked) .rh-cart__gateway-card {
+    border-color: var(--cart-purple-deep);
+}
+
 .rh-cart__pay-form {
     margin: 0;
 }

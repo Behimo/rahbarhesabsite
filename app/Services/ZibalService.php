@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\PaymentGatewayInterface;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Services\Concerns\GuardsVerifiedPaymentAmount;
 use App\Support\Money;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -12,11 +13,30 @@ use Illuminate\Support\Facades\Log;
 
 class ZibalService implements PaymentGatewayInterface
 {
+    use GuardsVerifiedPaymentAmount;
+
     public function __construct(private OrderService $orders) {}
 
     public function name(): string
     {
         return 'zibal';
+    }
+
+    public function label(): string
+    {
+        return 'زیبال';
+    }
+
+    public function reportedAmountRials(array $verifyPayload): ?int
+    {
+        $amount = $verifyPayload['amount'] ?? null;
+
+        return is_numeric($amount) ? (int) $amount : null;
+    }
+
+    public function requiresReportedAmount(): bool
+    {
+        return true;
     }
 
     public function requestPayment(Order $order): string
@@ -118,6 +138,12 @@ class ZibalService implements PaymentGatewayInterface
 
             // 100 = first verify, 201 = already verified
             if (in_array($result, [100, 201], true)) {
+                if (! $this->amountAccepted($payment, $payload)) {
+                    $this->rejectUntrustedAmount($payment, $payload);
+
+                    return null;
+                }
+
                 $payment->update([
                     'status' => Payment::STATUS_SUCCESS,
                     'ref_id' => (string) ($payload['refNumber'] ?? $payment->ref_id),

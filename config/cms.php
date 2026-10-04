@@ -17,6 +17,15 @@ return [
 
     'payment_gateway' => env('CMS_PAYMENT_GATEWAY', 'zibal'),
 
+    /*
+    | Extra gateway classes. Each must implement PaymentGatewayInterface.
+    | Built-in drivers (zibal, zarinpal) are registered already.
+    | Enable or disable any driver from Admin → Settings.
+    */
+    'payment_gateway_drivers' => [
+        // App\Services\ExampleGateway::class,
+    ],
+
     'zibal' => [
         'merchant' => env('ZIBAL_MERCHANT', 'zibal'),
         'base_url' => env('ZIBAL_BASE_URL', 'https://gateway.zibal.ir'),

@@ -4,8 +4,8 @@
 @php
     $message = $message ?? session('error') ?? 'پرداخت ناموفق یا لغو شد. سبد خرید شما حفظ شده است.';
     $canRetry = $order && auth()->check() && $order->user_id === auth()->id() && $order->canRetryPayment();
-    $gateway = config('cms.payment_gateway', 'zibal');
-    $gatewayLabel = $gateway === 'zarinpal' ? 'زرین‌پال' : 'زیبال';
+    $gateways = $gateways ?? [];
+    $gatewayLabel = count($gateways) === 1 ? $gateways[0]['label'] : null;
 @endphp
 
 <section class="rh-cart rh-cart--result rh-cart--failed" aria-labelledby="rh-failed-title">
@@ -71,12 +71,24 @@
             @endif
 
             <div class="rh-result__actions">
-                @if ($canRetry)
+                @if ($canRetry && count($gateways) > 0)
                     <form method="POST" action="{{ route('checkout.retry', $order) }}" class="rh-result__retry-form">
                         @csrf
-                        <input type="hidden" name="gateway" value="{{ $gateway }}">
+                        @if (count($gateways) > 1)
+                            <fieldset class="rh-cart__gateway">
+                                <legend class="rh-cart__gateway-label">درگاه پرداخت</legend>
+                                <div class="rh-cart__gateway-options">
+                                    @foreach ($gateways as $choice)
+                                        <label class="rh-cart__gateway-option">
+                                            <input type="radio" name="gateway" value="{{ $choice['name'] }}" @checked($loop->first) required>
+                                            <span class="rh-cart__gateway-badge">{{ $choice['label'] }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </fieldset>
+                        @endif
                         <button type="submit" class="rh-cart__cta rh-cart__cta--primary rh-cart__cta--block">
-                            تلاش مجدد با {{ $gatewayLabel }}
+                            تلاش مجدد@if ($gatewayLabel) با {{ $gatewayLabel }}@endif
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"/></svg>
                         </button>
                     </form>

@@ -5,8 +5,8 @@
     $itemCount = $items->sum('quantity');
     $payable = (int) ($total ?? $subtotal);
     $isFreeCheckout = $payable <= 0;
-    $gateway = config('cms.payment_gateway', 'zibal');
-    $gatewayLabel = $gateway === 'zarinpal' ? 'زرین‌پال' : 'زیبال';
+    $gateways = $gateways ?? [];
+    $gatewayLabel = count($gateways) === 1 ? $gateways[0]['label'] : null;
     $user = auth()->user();
     $typeLabels = [
         \App\Models\ShopProduct::TYPE_COURSE => 'دوره آموزشی',
@@ -215,24 +215,43 @@
                     </form>
                 @endif
 
-                @unless ($isFreeCheckout)
-                    <div class="rh-cart__gateway">
-                        <p class="rh-cart__gateway-label">درگاه پرداخت</p>
-                        <div class="rh-cart__gateway-card" aria-hidden="false">
-                            <span class="rh-cart__gateway-badge">{{ $gatewayLabel }}</span>
-                            <p class="rh-cart__gateway-hint">به درگاه بانکی امن منتقل می‌شوید.</p>
-                        </div>
-                    </div>
-                @endunless
-
                 <form method="POST" action="{{ route('checkout.process') }}" class="rh-cart__pay-form" data-rh-checkout-pay>
                     @csrf
-                    <input type="hidden" name="gateway" value="{{ $gateway }}">
-                    <button type="submit" class="rh-cart__cta rh-cart__cta--primary rh-cart__cta--block">
+                    @unless ($isFreeCheckout)
+                        @if (count($gateways) === 0)
+                            <p class="rh-cart__gateway-hint">درگاه پرداختی فعال نیست. با پشتیبانی تماس بگیرید.</p>
+                        @elseif (count($gateways) === 1)
+                            <div class="rh-cart__gateway">
+                                <p class="rh-cart__gateway-label">درگاه پرداخت</p>
+                                <div class="rh-cart__gateway-card">
+                                    <span class="rh-cart__gateway-badge">{{ $gateways[0]['label'] }}</span>
+                                    <p class="rh-cart__gateway-hint">به درگاه بانکی امن منتقل می‌شوید.</p>
+                                </div>
+                            </div>
+                        @else
+                            <fieldset class="rh-cart__gateway">
+                                <legend class="rh-cart__gateway-label">درگاه پرداخت</legend>
+                                <div class="rh-cart__gateway-options">
+                                    @foreach ($gateways as $choice)
+                                        <label class="rh-cart__gateway-option">
+                                            <input type="radio" name="gateway" value="{{ $choice['name'] }}" @checked($loop->first) required>
+                                            <span class="rh-cart__gateway-card">
+                                                <span class="rh-cart__gateway-badge">{{ $choice['label'] }}</span>
+                                                <span class="rh-cart__gateway-hint">به درگاه بانکی امن منتقل می‌شوید.</span>
+                                            </span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </fieldset>
+                        @endif
+                    @endunless
+                    <button type="submit" class="rh-cart__cta rh-cart__cta--primary rh-cart__cta--block" @disabled(! $isFreeCheckout && count($gateways) === 0)>
                         @if ($isFreeCheckout)
                             تکمیل ثبت‌نام رایگان
-                        @else
+                        @elseif ($gatewayLabel)
                             پرداخت امن با {{ $gatewayLabel }}
+                        @else
+                            پرداخت امن
                         @endif
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
                     </button>

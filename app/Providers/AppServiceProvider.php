@@ -11,6 +11,7 @@ use App\Services\CacheService;
 use App\Services\CategoryService;
 use App\Services\MenuService;
 use App\Services\PageBuilderService;
+use App\Services\PaymentGatewayRegistry;
 use App\Services\PageRenderContext;
 use App\Services\SpotPlayerService;
 use Illuminate\Support\Facades\Schema;
@@ -24,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
         require_once app_path('Support/helpers.php');
 
         $this->app->singleton(BlockRegistry::class);
+        $this->app->singleton(PaymentGatewayRegistry::class);
         $this->app->singleton(BlockRenderer::class);
         $this->app->singleton(PageRenderContext::class);
         $this->app->singleton(PageBuilderService::class);

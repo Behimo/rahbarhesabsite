@@ -286,6 +286,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::controller(AdminSettingController::class)->group(function () {
             Route::get('settings', 'index')->name('settings.index');
             Route::put('settings', 'update')->name('settings.update');
+            Route::put('settings/gateways', 'updateGateways')->name('settings.gateways');
         });
 
         Route::controller(AdminMessageController::class)->prefix('messages')->name('messages.')->group(function () {
