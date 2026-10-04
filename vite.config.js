@@ -3,6 +3,14 @@ import laravel from 'laravel-vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
+  server: {
+    host: '127.0.0.1',
+    port: 5173,
+    strictPort: true,
+    watch: {
+      ignored: ['**/storage/**', '**/vendor/**', '**/bootstrap/cache/**', '**/public/build/**'],
+    },
+  },
   plugins: [
     laravel({
       input: [
@@ -10,6 +18,9 @@ export default defineConfig({
               'resources/css/app.css',
               'resources/css/frontend.css',
               'resources/js/app.js',
+
+        'resources/css/admin-auth.scss',
+        'resources/js/admin-auth.js',
 
         // Vuexy admin — core theme
         'resources/css/admin-font.css',
@@ -31,8 +42,6 @@ export default defineConfig({
         'resources/assets/vendor/libs/node-waves/node-waves.scss',
         'resources/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.scss',
         'resources/assets/vendor/libs/typeahead-js/typeahead.scss',
-        'resources/assets/vendor/libs/@form-validation/form-validation.scss',
-        'resources/assets/vendor/scss/pages/page-auth.scss',
 
         // Vuexy admin — JS
         'resources/assets/vendor/libs/jquery/jquery.js',
@@ -47,10 +56,6 @@ export default defineConfig({
         'resources/assets/vendor/js/template-customizer.js',
         'resources/assets/js/config.js',
         'resources/assets/js/main.js',
-        'resources/assets/js/pages-auth.js',
-        'resources/assets/vendor/libs/@form-validation/popular.js',
-        'resources/assets/vendor/libs/@form-validation/bootstrap5.js',
-        'resources/assets/vendor/libs/@form-validation/auto-focus.js',
       ],
       refresh: true,
     }),

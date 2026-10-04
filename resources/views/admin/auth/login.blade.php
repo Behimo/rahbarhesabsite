@@ -1,29 +1,8 @@
-@php
-$customizerHidden = 'customizer-hide';
-$configData = Helper::appClasses();
-$configData['hasCustomizer'] = false;
-@endphp
-@extends('layouts.vuexy.commonMaster')
+@extends('layouts.admin-auth')
 
 @section('title', 'ورود')
 
-@section('vendor-style')
-@vite(['resources/assets/vendor/libs/@form-validation/form-validation.scss'])
-@endsection
-
-@section('page-style')
-@vite(['resources/assets/vendor/scss/pages/page-auth.scss'])
-@endsection
-
-@section('vendor-script')
-@vite([
-  'resources/assets/vendor/libs/@form-validation/popular.js',
-  'resources/assets/vendor/libs/@form-validation/bootstrap5.js',
-  'resources/assets/vendor/libs/@form-validation/auto-focus.js'
-])
-@endsection
-
-@section('layoutContent')
+@section('content')
 <div class="container-xxl">
   <div class="authentication-wrapper authentication-basic container-p-y">
     <div class="authentication-inner py-4">
@@ -48,11 +27,14 @@ $configData['hasCustomizer'] = false;
               <label class="form-label" for="email">ایمیل</label>
               <input autofocus class="form-control" id="email" name="email" value="{{ old('email') }}" type="email" dir="ltr" autocomplete="email" required>
             </div>
-            <div class="mb-3 form-password-toggle">
+            <div class="mb-3">
               <label class="form-label" for="password">رمز عبور</label>
               <div class="input-group input-group-merge">
                 <input type="password" id="password" class="form-control" name="password" autocomplete="current-password" required>
-                <span class="input-group-text cursor-pointer"><i class="ti ti-eye-off"></i></span>
+                <span class="input-group-text cursor-pointer" data-password-toggle role="button" tabindex="0" aria-label="نمایش رمز عبور">
+                  <svg data-eye-off xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.58 10.58a2 2 0 0 0 2.83 2.83"/><path d="M9.88 5.09A10.94 10.94 0 0 1 12 5c5 0 9.27 3.11 11 7.5a11.8 11.8 0 0 1-2.16 3.19"/><path d="M6.61 6.61A11.8 11.8 0 0 0 1 12.5C2.73 16.89 7 20 12 20a10.9 10.9 0 0 0 5.39-1.61"/></svg>
+                  <svg data-eye class="d-none" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                </span>
               </div>
             </div>
             <div class="mb-3">
@@ -68,8 +50,4 @@ $configData['hasCustomizer'] = false;
     </div>
   </div>
 </div>
-@endsection
-
-@section('page-script')
-@vite(['resources/assets/js/pages-auth.js'])
 @endsection
