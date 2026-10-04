@@ -11,6 +11,13 @@ interface PaymentGatewayInterface
 
     public function label(): string;
 
+    /**
+     * Values the admin panel can store for this driver. Empty falls back to config.
+     *
+     * @return list<array{key: string, label: string, type: 'text'|'boolean'}>
+     */
+    public function fields(): array;
+
     public function requestPayment(Order $order): string;
 
     public function verifyCallback(array $query): ?Payment;

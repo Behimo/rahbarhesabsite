@@ -141,6 +141,82 @@ class PaymentGatewayRegistry
         CmsSetting::set('payment_gateways', json_encode($map, JSON_THROW_ON_ERROR));
     }
 
+    /**
+     * Registered drivers with the values shown on the admin gateway page.
+     *
+     * @return list<array{name: string, label: string, enabled: bool, fields: list<array{key: string, label: string, type: string, value: mixed}>}>
+     */
+    public function panelRows(): array
+    {
+        $rows = [];
+
+        foreach ($this->definitions() as $gateway) {
+            $fields = [];
+
+            foreach ($this->make($gateway['name'])->fields() as $field) {
+                $fields[] = $field + [
+                    'value' => $this->configValue($gateway['name'], $field['key']),
+                ];
+            }
+
+            $rows[] = $gateway + ['fields' => $fields];
+        }
+
+        return $rows;
+    }
+
+    public function configValue(string $name, string $key, mixed $default = null): mixed
+    {
+        $saved = $this->credentialMap();
+
+        if (isset($saved[$name]) && is_array($saved[$name]) && array_key_exists($key, $saved[$name])) {
+            $value = $saved[$name][$key];
+
+            if ($value !== null && $value !== '') {
+                return $value;
+            }
+        }
+
+        return config('cms.'.$name.'.'.$key, $default);
+    }
+
+    /** @param  array<string, mixed>  $input */
+    public function syncCredentials(array $input): void
+    {
+        $stored = [];
+
+        foreach (array_keys($this->drivers) as $name) {
+            $incoming = is_array($input[$name] ?? null) ? $input[$name] : [];
+
+            foreach ($this->make($name)->fields() as $field) {
+                $key = $field['key'];
+                $raw = $incoming[$key] ?? null;
+
+                if (($field['type'] ?? 'text') === 'boolean') {
+                    $stored[$name][$key] = filter_var($raw, FILTER_VALIDATE_BOOLEAN);
+
+                    continue;
+                }
+
+                $value = is_scalar($raw) ? trim((string) $raw) : '';
+
+                if ($value !== '') {
+                    $stored[$name][$key] = mb_substr($value, 0, 255);
+                }
+            }
+        }
+
+        CmsSetting::set('payment_gateway_credentials', json_encode($stored, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
+    }
+
+    /** @return array<string, mixed> */
+    private function credentialMap(): array
+    {
+        $saved = json_decode((string) CmsSetting::get('payment_gateway_credentials', ''), true);
+
+        return is_array($saved) ? $saved : [];
+    }
+
     /** @return array<string, bool> */
     private function enabledMap(): array
     {

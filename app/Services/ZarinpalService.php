@@ -26,6 +26,14 @@ class ZarinpalService implements \App\Contracts\PaymentGatewayInterface
         return 'زرین‌پال';
     }
 
+    public function fields(): array
+    {
+        return [
+            ['key' => 'merchant_id', 'label' => 'مرچنت', 'type' => 'text'],
+            ['key' => 'sandbox', 'label' => 'حالت آزمایشی', 'type' => 'boolean'],
+        ];
+    }
+
     public function reportedAmountRials(array $verifyPayload): ?int
     {
         $amount = $verifyPayload['data']['amount'] ?? $verifyPayload['amount'] ?? null;
@@ -46,8 +54,8 @@ class ZarinpalService implements \App\Contracts\PaymentGatewayInterface
             return route('checkout.success', $order);
         }
 
-        $merchantId = config('cms.zarinpal.merchant_id');
-        $sandbox = config('cms.zarinpal.sandbox', true);
+        $merchantId = $this->merchantId();
+        $sandbox = $this->sandbox();
         $baseUrl = $sandbox
             ? 'https://sandbox.zarinpal.com/pg/v4/payment'
             : 'https://api.zarinpal.com/pg/v4/payment';
@@ -132,13 +140,13 @@ class ZarinpalService implements \App\Contracts\PaymentGatewayInterface
                 return $payment;
             }
 
-            $sandbox = config('cms.zarinpal.sandbox', true);
+            $sandbox = $this->sandbox();
             $baseUrl = $sandbox
                 ? 'https://sandbox.zarinpal.com/pg/v4/payment'
                 : 'https://api.zarinpal.com/pg/v4/payment';
 
             $response = Http::post($baseUrl.'/verify.json', [
-                'merchant_id' => config('cms.zarinpal.merchant_id'),
+                'merchant_id' => $this->merchantId(),
                 'amount' => Money::tomanToRials((int) $payment->amount),
                 'authority' => $authority,
             ]);
@@ -184,5 +192,18 @@ class ZarinpalService implements \App\Contracts\PaymentGatewayInterface
         } finally {
             $lock->release();
         }
+    }
+
+    private function merchantId(): mixed
+    {
+        return app(PaymentGatewayRegistry::class)->configValue($this->name(), 'merchant_id');
+    }
+
+    private function sandbox(): bool
+    {
+        return filter_var(
+            app(PaymentGatewayRegistry::class)->configValue($this->name(), 'sandbox', true),
+            FILTER_VALIDATE_BOOLEAN
+        );
     }
 }

@@ -27,6 +27,14 @@ class ZibalService implements PaymentGatewayInterface
         return 'زیبال';
     }
 
+    public function fields(): array
+    {
+        return [
+            ['key' => 'merchant', 'label' => 'مرچنت', 'type' => 'text'],
+            ['key' => 'base_url', 'label' => 'آدرس درگاه', 'type' => 'text'],
+        ];
+    }
+
     public function reportedAmountRials(array $verifyPayload): ?int
     {
         $amount = $verifyPayload['amount'] ?? null;
@@ -47,8 +55,8 @@ class ZibalService implements PaymentGatewayInterface
             return route('checkout.success', $order);
         }
 
-        $merchant = config('cms.zibal.merchant');
-        $baseUrl = rtrim(config('cms.zibal.base_url', 'https://gateway.zibal.ir'), '/');
+        $merchant = $this->setting('merchant');
+        $baseUrl = $this->baseUrl();
         $amountRials = Money::tomanToRials((int) $order->total);
 
         $response = Http::post($baseUrl.'/v1/request', [
@@ -127,9 +135,9 @@ class ZibalService implements PaymentGatewayInterface
                 return $payment;
             }
 
-            $baseUrl = rtrim(config('cms.zibal.base_url', 'https://gateway.zibal.ir'), '/');
+            $baseUrl = $this->baseUrl();
             $response = Http::post($baseUrl.'/v1/verify', [
-                'merchant' => config('cms.zibal.merchant'),
+                'merchant' => $this->setting('merchant'),
                 'trackId' => $trackId,
             ]);
 
@@ -172,5 +180,15 @@ class ZibalService implements PaymentGatewayInterface
         } finally {
             $lock->release();
         }
+    }
+
+    private function setting(string $key, mixed $default = null): mixed
+    {
+        return app(PaymentGatewayRegistry::class)->configValue($this->name(), $key, $default);
+    }
+
+    private function baseUrl(): string
+    {
+        return rtrim((string) $this->setting('base_url', 'https://gateway.zibal.ir'), '/');
     }
 }

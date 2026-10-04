@@ -352,6 +352,49 @@ class ShopCheckoutTest extends TestCase
             ->assertSee('درگاه‌های پرداخت')
             ->assertSee('زیبال')
             ->assertSee('زرین‌پال');
+
+        $this->actingAs($admin, 'cms')
+            ->get(route('admin.gateways.index'))
+            ->assertOk()
+            ->assertSee('مرچنت')
+            ->assertSee('درگاه فعال است')
+            ->assertSee('name="gateways[zibal]"', false)
+            ->assertSee('name="gateways[zarinpal]"', false)
+            ->assertSee('border-inline-start', false);
+    }
+
+    public function test_admin_gateway_page_credentials_are_sent_to_the_driver(): void
+    {
+        $admin = CmsAdmin::query()->create([
+            'name' => 'Admin',
+            'email' => 'gateways-cred@test.com',
+            'password' => bcrypt('password'),
+            'is_super' => true,
+        ]);
+
+        $this->actingAs($admin, 'cms')
+            ->put(route('admin.gateways.update'), [
+                'gateways' => ['zibal' => '1', 'zarinpal' => '0'],
+                'credentials' => [
+                    'zibal' => ['merchant' => 'panel-merchant', 'base_url' => 'https://gateway.zibal.ir'],
+                    'zarinpal' => ['merchant_id' => 'panel-zarinpal', 'sandbox' => '1'],
+                ],
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $user = User::factory()->create();
+        $this->actingAs($user)->post(route('cart.add', $this->paidCourse()));
+
+        Http::fake([
+            'https://gateway.zibal.ir/v1/request' => Http::response(['result' => 100, 'trackId' => 555], 200),
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('checkout.process'))
+            ->assertRedirect('https://gateway.zibal.ir/start/555');
+
+        Http::assertSent(fn ($request) => $request['merchant'] === 'panel-merchant');
     }
 
     private function paidCourse(): ShopProduct

@@ -56,30 +56,19 @@
     </div>
 </form>
 
-<form method="POST" action="{{ route('admin.settings.gateways') }}" class="card mt-4" style="max-width: 42rem;">
-    @csrf
-    @method('PUT')
-    <div class="card-body">
-        <h5 class="mb-1">درگاه‌های پرداخت</h5>
-        <p class="text-muted mb-3">فقط درگاه‌های روشن در تسویه‌حساب دیده می‌شوند. حداقل یکی باید فعال بماند. مرچنت و کلید هر درگاه از تنظیم سرور خوانده می‌شود.</p>
-        @foreach ($gateways as $gateway)
-            <div class="form-check form-switch mb-2">
-                <input type="hidden" name="gateways[{{ $gateway['name'] }}]" value="0">
-                <input
-                    type="checkbox"
-                    name="gateways[{{ $gateway['name'] }}]"
-                    value="1"
-                    class="form-check-input"
-                    id="gateway-{{ $gateway['name'] }}"
-                    role="switch"
-                    @checked(filter_var(old('gateways.'.$gateway['name'], $gateway['enabled']), FILTER_VALIDATE_BOOLEAN))
-                >
-                <label class="form-check-label" for="gateway-{{ $gateway['name'] }}">{{ $gateway['label'] }}</label>
-            </div>
-        @endforeach
-        <button type="submit" class="btn btn-primary mt-3">ذخیره درگاه‌ها</button>
+<div class="card mt-4" style="max-width: 42rem;">
+    <div class="card-body d-flex justify-content-between align-items-center gap-3">
+        <div>
+            <h5 class="mb-1">درگاه‌های پرداخت</h5>
+            <p class="text-muted mb-0">
+                @foreach ($gateways as $gateway)
+                    {{ $gateway['label'] }}@if (! $loop->last)، @endif
+                @endforeach
+            </p>
+        </div>
+        <a href="{{ route('admin.gateways.index') }}" class="btn btn-outline-primary">مدیریت درگاه‌ها</a>
     </div>
-</form>
+</div>
 
 <div class="card mt-4" style="max-width: 42rem;">
     <div class="card-body">

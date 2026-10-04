@@ -69,6 +69,7 @@ class Permission
             'admin.posts.*' => self::MANAGE_POSTS,
             'admin.pages.*' => self::MANAGE_PAGES,
             'admin.settings.*' => self::MANAGE_SETTINGS,
+            'admin.gateways.*' => self::MANAGE_SETTINGS,
             'admin.menus.*' => self::MANAGE_MENUS,
             'admin.tags.*' => self::MANAGE_TAXONOMIES,
             'admin.media.*' => self::MANAGE_MEDIA,

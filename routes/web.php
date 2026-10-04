@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\GatewayController as AdminGatewayController;
 use App\Http\Controllers\Admin\HomeController as AdminHomeController;
 use App\Http\Controllers\Admin\ImportExportController;
 use App\Http\Controllers\Admin\LicenseController as AdminLicenseController;
@@ -271,6 +272,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         });
 
         Route::resource('coupons', AdminCouponController::class)->except(['show']);
+
+        Route::controller(AdminGatewayController::class)->prefix('gateways')->name('gateways.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::put('/', 'update')->name('update');
+        });
 
         Route::controller(AdminRedirectController::class)->prefix('redirects')->name('redirects.')->group(function () {
             Route::get('/', 'index')->name('index');
