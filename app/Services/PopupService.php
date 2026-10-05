@@ -6,6 +6,7 @@ use App\Models\CmsPage;
 use App\Models\CmsPopup;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use function e;
 
 class PopupService
 {
@@ -77,28 +78,29 @@ class PopupService
      * @return array<string, mixed>|null
      */
     public function current(?Request $request = null): ?array
-    {
-        if (! Schema::hasTable('cms_popups')) {
-            return null;
+        {
+            if (! Schema::hasTable('cms_popups')) {
+                return null;
+            }
+
+            $request ??= request();
+
+            $popup = CmsPopup::query()
+                ->where('is_active', true)
+                ->where(function ($query) {
+                    $query->whereNull('starts_at')->orWhere('starts_at', '<=', now());
+                })
+                ->where(function ($query) {
+                    $query->whereNull('ends_at')->orWhere('ends_at', '>=', now());
+                })
+                ->orderByDesc('priority')
+                ->orderBy('sort_order')
+                ->orderByDesc('id')
+                ->get()
+                ->first(fn (CmsPopup $popup) => $this->matches($popup, $request));
+
+            return $popup ? $this->present($popup) : null;
         }
-
-        $request ??= request();
-
-        $popup = CmsPopup::query()
-            ->where('is_active', true)
-            ->where(function ($query) {
-                $query->whereNull('starts_at')->orWhere('starts_at', '<=', now());
-            })
-            ->where(function ($query) {
-                $query->whereNull('ends_at')->orWhere('ends_at', '>=', now());
-            })
-            ->orderBy('sort_order')
-            ->orderByDesc('id')
-            ->get()
-            ->first(fn (CmsPopup $popup) => $this->matches($popup, $request));
-
-        return $popup ? $this->present($popup) : null;
-    }
 
     public function matches(CmsPopup $popup, Request $request): bool
     {
@@ -133,24 +135,24 @@ class PopupService
     }
 
     /**
-     * @return array<string, mixed>
-     */
-    private function present(CmsPopup $popup): array
-    {
-        $buttonUrl = filled($popup->button_label) ? self::safeUrl($popup->button_url) : null;
+         * @return array<string, mixed>
+         */
+        private function present(CmsPopup $popup): array
+        {
+            $buttonUrl = filled($popup->button_label) ? self::safeUrl($popup->button_url) : null;
 
-        return [
-            'id' => $popup->id,
-            'version' => $popup->updated_at?->getTimestamp() ?? $popup->id,
-            'title' => $popup->title,
-            'body' => $popup->body,
-            'image' => self::safeUrl($popup->image_url),
-            'button_label' => $buttonUrl ? $popup->button_label : null,
-            'button_url' => $buttonUrl,
-            'delay' => max(0, min(300, (int) $popup->delay_seconds)),
-            'frequency' => array_key_exists($popup->frequency, CmsPopup::FREQUENCIES) ? $popup->frequency : 'session',
-        ];
-    }
+            return [
+                'id' => $popup->id,
+                'version' => $popup->updated_at?->getTimestamp() ?? $popup->id,
+                'title' => e($popup->title),
+                'body' => nl2br(e($popup->body)),
+                'image' => self::safeUrl($popup->image_url),
+                'button_label' => $buttonUrl ? e($popup->button_label) : null,
+                'button_url' => $buttonUrl,
+                'delay' => max(0, min(300, (int) $popup->delay_seconds)),
+                'frequency' => array_key_exists($popup->frequency, CmsPopup::FREQUENCIES) ? $popup->frequency : 'session',
+            ];
+        }
 
     private function audienceMatches(CmsPopup $popup, Request $request): bool
     {

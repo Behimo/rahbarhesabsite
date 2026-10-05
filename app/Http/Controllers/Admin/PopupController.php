@@ -21,20 +21,21 @@ class PopupController extends Controller
     }
 
     public function create(): View
-    {
-        return view('admin.popups.form', [
-            'popup' => new CmsPopup([
-                'is_active' => true,
-                'target_mode' => CmsPopup::MODE_PAGES,
-                'frequency' => 'session',
-                'audience' => 'all',
-                'delay_seconds' => 1,
-                'sort_order' => 0,
-                'rules' => ['match' => 'all'],
-            ]),
-            'pageGroups' => $this->popups->pageGroups(),
-        ]);
-    }
+        {
+            return view('admin.popups.form', [
+                'popup' => new CmsPopup([
+                    'is_active' => true,
+                    'target_mode' => CmsPopup::MODE_PAGES,
+                    'frequency' => 'session',
+                    'audience' => 'all',
+                    'delay_seconds' => 1,
+                    'sort_order' => 0,
+                    'priority' => 0,
+                    'rules' => ['match' => 'all'],
+                ]),
+                'pageGroups' => $this->popups->pageGroups(),
+            ]);
+        }
 
     public function store(PopupRequest $request): RedirectResponse
     {

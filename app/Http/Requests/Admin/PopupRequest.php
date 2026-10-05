@@ -34,8 +34,9 @@ class PopupRequest extends FormRequest
             'rule_path' => ['nullable', 'string', 'max:255'],
             'audience' => ['required', Rule::in(array_keys(CmsPopup::AUDIENCES))],
             'frequency' => ['required', Rule::in(array_keys(CmsPopup::FREQUENCIES))],
-            'delay_seconds' => ['nullable', 'integer', 'min:0', 'max:300'],
-            'sort_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
+                        'delay_seconds' => ['nullable', 'integer', 'min:0', 'max:300'],
+                        'sort_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
+                        'priority' => ['nullable', 'integer', 'min:0', 'max:9999'],
         ];
     }
 
@@ -57,7 +58,8 @@ class PopupRequest extends FormRequest
             'audience' => 'مخاطب',
             'frequency' => 'تکرار نمایش',
             'delay_seconds' => 'تأخیر',
-            'sort_order' => 'اولویت',
+                        'sort_order' => 'اولویت',
+                        'priority' => ' اولویت پیشرفته',
         ];
     }
 
@@ -98,8 +100,9 @@ class PopupRequest extends FormRequest
             ] : null,
             'audience' => $data['audience'],
             'frequency' => $data['frequency'],
-            'delay_seconds' => (int) ($data['delay_seconds'] ?? 0),
-            'sort_order' => (int) ($data['sort_order'] ?? 0),
+                        'delay_seconds' => (int) ($data['delay_seconds'] ?? 0),
+                        'sort_order' => (int) ($data['sort_order'] ?? 0),
+                        'priority' => (int) ($data['priority'] ?? 0),
         ];
     }
 

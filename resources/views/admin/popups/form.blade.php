@@ -148,10 +148,15 @@
                     @error('ends_at') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label" for="popup-order">اولویت</label>
-                    <input type="number" name="sort_order" id="popup-order" min="0" max="9999" value="{{ old('sort_order', $popup->sort_order ?? 0) }}" class="form-control">
-                    <div class="form-text">اگر چند پاپ‌آپ همزمان منطبق باشند، عدد کوچک‌تر نمایش داده می‌شود.</div>
-                </div>
+                                    <label class="form-label" for="popup-order">اولویت</label>
+                                    <input type="number" name="sort_order" id="popup-order" min="0" max="9999" value="{{ old('sort_order', $popup->sort_order ?? 0) }}" class="form-control">
+                                    <div class="form-text">اگر چند پاپ‌آپ همزمان منطبق باشند، عدد کوچک‌تر نمایش داده می‌شود.</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="popup-priority">اولویت پیشرفته</label>
+                                    <input type="number" name="priority" id="popup-priority" min="0" max="9999" value="{{ old('priority', $popup->priority ?? 0) }}" class="form-control">
+                                    <div class="form-text">عدد بزرگ‌تر = اولویت بالاتر (بازگزیده می‌شود).</div>
+                                </div>
                 <div class="col-12">
                     <div class="form-check">
                         <input type="hidden" name="is_active" value="0">

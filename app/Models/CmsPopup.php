@@ -31,23 +31,24 @@ class CmsPopup extends Model
     ];
 
     protected $fillable = [
-        'name', 'title', 'body', 'image_url', 'button_label', 'button_url',
-        'is_active', 'starts_at', 'ends_at', 'target_mode', 'pages', 'rules',
-        'delay_seconds', 'frequency', 'audience', 'sort_order',
-    ];
-
-    protected function casts(): array
-    {
-        return [
-            'is_active' => 'boolean',
-            'starts_at' => 'datetime',
-            'ends_at' => 'datetime',
-            'pages' => 'array',
-            'rules' => 'array',
-            'delay_seconds' => 'integer',
-            'sort_order' => 'integer',
+            'name', 'title', 'body', 'image_url', 'button_label', 'button_url',
+            'is_active', 'starts_at', 'ends_at', 'target_mode', 'pages', 'rules',
+            'delay_seconds', 'frequency', 'audience', 'sort_order', 'priority',
         ];
-    }
+
+        protected function casts(): array
+        {
+            return [
+                'is_active' => 'boolean',
+                'starts_at' => 'datetime',
+                'ends_at' => 'datetime',
+                'pages' => 'array',
+                'rules' => 'array',
+                'delay_seconds' => 'integer',
+                'sort_order' => 'integer',
+                'priority' => 'integer',
+            ];
+        }
 
     public function placementSummary(): string
     {
