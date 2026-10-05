@@ -55,6 +55,7 @@
     </main>
 
     @include('components.footer', ['contact' => $contact ?? []])
+    @include('components.site-popup')
 
     <script src="{{ asset('site/script.js') }}?v={{ $siteVer('script.js') }}"></script>
     @stack('scripts')

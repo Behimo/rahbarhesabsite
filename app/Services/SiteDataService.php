@@ -637,6 +637,7 @@ class SiteDataService
             'navLinks' => $this->navLinks(),
             'contact' => $this->contact(),
             'cartCount' => $cartCount,
+            'sitePopup' => app(PopupService::class)->current(),
         ];
     }
 

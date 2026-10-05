@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\MessageController as AdminMessageController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\PageBuilderController;
 use App\Http\Controllers\Admin\PageController as AdminPageController;
+use App\Http\Controllers\Admin\PopupController as AdminPopupController;
 use App\Http\Controllers\Admin\PostController as AdminPostController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\RedirectController as AdminRedirectController;
@@ -180,6 +181,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Home Page Customizer
         Route::get('home', [AdminHomeController::class, 'edit'])->name('home.edit');
         Route::put('home', [AdminHomeController::class, 'update'])->name('home.update');
+
+        Route::resource('popups', AdminPopupController::class)->except(['show']);
 
         Route::controller(AdminPageController::class)->prefix('pages')->name('pages.')->group(function () {
             Route::get('/', 'index')->name('index');

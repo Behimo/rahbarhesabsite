@@ -74,6 +74,7 @@ class AccessCatalog
             'orders' => ['label' => 'سفارش، لایسنس و تخفیف', 'actions' => $crud],
             'posts' => ['label' => 'بلاگ و محصولات', 'actions' => $crud],
             'pages' => ['label' => 'صفحات', 'actions' => $crud],
+            'popups' => ['label' => 'پاپ‌آپ‌ها', 'actions' => $crud],
             'menus' => ['label' => 'منوها', 'actions' => $crud],
             'taxonomies' => ['label' => 'دسته‌بندی و برچسب', 'actions' => $crud],
             'media' => ['label' => 'رسانه', 'actions' => [self::VIEW, self::CREATE, self::DELETE]],
@@ -168,7 +169,7 @@ class AccessCatalog
         $groups = match ($role) {
             self::ROLE_ADMIN => array_keys(self::groups()),
             self::ROLE_SHOP_MANAGER => ['orders', 'courses'],
-            self::ROLE_EDITOR => ['posts', 'pages', 'media', 'menus', 'taxonomies', 'messages'],
+            self::ROLE_EDITOR => ['posts', 'pages', 'popups', 'media', 'menus', 'taxonomies', 'messages'],
             self::ROLE_INSTRUCTOR => ['courses', 'media'],
             default => [],
         };
@@ -200,6 +201,7 @@ class AccessCatalog
             'admin.posts' => 'posts',
             'admin.products' => 'posts',
             'admin.pages' => 'pages',
+            'admin.popups' => 'popups',
             'admin.home' => 'pages',
             'admin.settings' => 'settings',
             'admin.gateways' => 'settings',

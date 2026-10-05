@@ -1119,3 +1119,63 @@ document.addEventListener("DOMContentLoaded", () => {
 
   dialog.addEventListener("close", stopVideo);
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+  const popup = document.getElementById("rh-popup");
+  if (!popup) return;
+
+  const frequency = popup.dataset.frequency || "session";
+  const key = `rh-popup:${popup.dataset.id}:${popup.dataset.version}`;
+  const delay = Math.max(0, Number(popup.dataset.delay || 0)) * 1000;
+
+  const seen = () => {
+    try {
+      if (frequency === "always") return false;
+      if (frequency === "session") return sessionStorage.getItem(key) === "1";
+      if (frequency === "day") {
+        const at = Number(localStorage.getItem(key) || 0);
+        return at > 0 && Date.now() - at < 86400000;
+      }
+      return localStorage.getItem(key) === "1";
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const mark = () => {
+    try {
+      if (frequency === "session") sessionStorage.setItem(key, "1");
+      else if (frequency === "day") localStorage.setItem(key, String(Date.now()));
+      else if (frequency === "once") localStorage.setItem(key, "1");
+    } catch (error) {
+      // Storage can be blocked; the popup still closes for this view.
+    }
+  };
+
+  if (seen()) {
+    popup.remove();
+    return;
+  }
+
+  const close = () => {
+    popup.hidden = true;
+    document.body.classList.remove("rh-popup-open");
+  };
+
+  const open = () => {
+    mark();
+    popup.hidden = false;
+    document.body.classList.add("rh-popup-open");
+    popup.querySelector(".rh-popup__close")?.focus();
+  };
+
+  popup.querySelectorAll("[data-popup-close]").forEach((element) => {
+    element.addEventListener("click", close);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !popup.hidden) close();
+  });
+
+  window.setTimeout(open, delay);
+});

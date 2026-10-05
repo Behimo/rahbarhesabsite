@@ -35,6 +35,8 @@ class AdminNavigation
         $toIndex = [
             'admin.pages.create' => 'admin.pages.index',
             'admin.pages.edit' => 'admin.pages.index',
+            'admin.popups.create' => 'admin.popups.index',
+            'admin.popups.edit' => 'admin.popups.index',
             'admin.pages.builder' => 'admin.pages.index',
             'admin.posts.create' => 'admin.posts.index',
             'admin.posts.edit' => 'admin.posts.index',
