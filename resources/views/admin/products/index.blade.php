@@ -5,9 +5,11 @@
 @section('lede', 'مدیریت محصولات سایت')
 
 @section('actions')
-    <a href="{{ route('admin.products.create') }}" class="btn btn-primary">
-        <i class="ti ti-plus me-1"></i>محصول جدید
-    </a>
+    @if (admin_can('posts', 'create'))
+        <a href="{{ route('admin.products.create') }}" class="btn btn-primary">
+            <i class="ti ti-plus me-1"></i>محصول جدید
+        </a>
+    @endif
 @endsection
 
 @section('content')
@@ -37,11 +39,15 @@
                         </td>
                         <td>
                             <a href="{{ route('products.show', $product->slug) }}" target="_blank" class="btn btn-sm btn-label-secondary">مشاهده</a>
-                            <a href="{{ route('admin.products.edit', $product) }}" class="btn btn-sm btn-label-primary">ویرایش</a>
-                            <form method="POST" action="{{ route('admin.products.destroy', $product) }}" class="d-inline" onsubmit="return confirm('حذف شود؟')">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-label-danger">حذف</button>
-                            </form>
+                            @if (admin_can('posts', 'update'))
+                                <a href="{{ route('admin.products.edit', $product) }}" class="btn btn-sm btn-label-primary">ویرایش</a>
+                            @endif
+                            @if (admin_can('posts', 'delete'))
+                                <form method="POST" action="{{ route('admin.products.destroy', $product) }}" class="d-inline" onsubmit="return confirm('حذف شود؟')">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-label-danger">حذف</button>
+                                </form>
+                            @endif
                         </td>
                     </tr>
                 @empty

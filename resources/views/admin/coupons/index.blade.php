@@ -3,9 +3,11 @@
 @section('title', 'کدهای تخفیف')
 
 @section('actions')
-    <a href="{{ route('admin.coupons.create') }}" class="btn btn-primary">
-        <i class="ti ti-plus me-1"></i>کد جدید
-    </a>
+    @if (admin_can('orders', 'create'))
+        <a href="{{ route('admin.coupons.create') }}" class="btn btn-primary">
+            <i class="ti ti-plus me-1"></i>کد جدید
+        </a>
+    @endif
 @endsection
 
 @section('content')
@@ -42,11 +44,15 @@
                             </span>
                         </td>
                         <td>
-                            <a href="{{ route('admin.coupons.edit', $coupon) }}" class="btn btn-sm btn-label-primary">ویرایش</a>
-                            <form method="POST" action="{{ route('admin.coupons.destroy', $coupon) }}" class="d-inline" onsubmit="return confirm('حذف شود؟')">
-                                @csrf @method('DELETE')
-                                <button class="btn btn-sm btn-label-danger">حذف</button>
-                            </form>
+                            @if (admin_can('orders', 'update'))
+                                <a href="{{ route('admin.coupons.edit', $coupon) }}" class="btn btn-sm btn-label-primary">ویرایش</a>
+                            @endif
+                            @if (admin_can('orders', 'delete'))
+                                <form method="POST" action="{{ route('admin.coupons.destroy', $coupon) }}" class="d-inline" onsubmit="return confirm('حذف شود؟')">
+                                    @csrf @method('DELETE')
+                                    <button class="btn btn-sm btn-label-danger">حذف</button>
+                                </form>
+                            @endif
                         </td>
                     </tr>
                 @empty

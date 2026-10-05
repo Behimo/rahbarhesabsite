@@ -6,6 +6,7 @@
 
 @section('content')
 
+@if (admin_can('settings', 'update'))
 <div class="card mb-4">
     <div class="card-header"><h5 class="mb-0">افزودن ریدایرکت</h5></div>
     <div class="card-body">
@@ -33,7 +34,9 @@
         </form>
     </div>
 </div>
+@endif
 
+@if (admin_can('settings', 'update'))
 <div class="card mb-4">
     <div class="card-header"><h5 class="mb-0">ورود دسته‌ای</h5></div>
     <div class="card-body">
@@ -45,6 +48,7 @@
         </form>
     </div>
 </div>
+@endif
 
 <div class="card">
     <div class="table-responsive">
@@ -81,12 +85,16 @@
                                     <input type="checkbox" name="is_active" value="1" @checked($redirect->is_active)>
                                 </div>
                                 <div class="col-md-2">
-                                    <button class="btn btn-sm btn-label-primary">ذخیره</button>
-                            </form>
-                            <form method="POST" action="{{ route('admin.redirects.destroy', $redirect) }}" class="d-inline" onsubmit="return confirm('حذف شود؟')">
-                                @csrf @method('DELETE')
-                                <button class="btn btn-sm btn-label-danger">حذف</button>
-                            </form>
+                                    @if (admin_can('settings', 'update'))
+                                        <button class="btn btn-sm btn-label-primary">ذخیره</button>
+                                    </form>
+                                    <form method="POST" action="{{ route('admin.redirects.destroy', $redirect) }}" class="d-inline" onsubmit="return confirm('حذف شود؟')">
+                                        @csrf @method('DELETE')
+                                        <button class="btn btn-sm btn-label-danger">حذف</button>
+                                    </form>
+                                    @else
+                                    </form>
+                                    @endif
                                 </div>
                         </td>
                     </tr>

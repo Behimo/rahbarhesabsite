@@ -33,6 +33,7 @@
 
     { "menuHeader": "کاربران" },
     { "url": "admin/users", "name": "کاربران", "icon": "menu-icon tf-icons ti ti-users", "slug": "admin.users" },
+    { "url": "admin/roles", "name": "نقش‌ها", "icon": "menu-icon tf-icons ti ti-shield", "slug": "admin.roles" },
     { "url": "admin/messages", "name": "پیام‌ها", "icon": "menu-icon tf-icons ti ti-mail", "slug": "admin.messages" },
 
     { "menuHeader": "سیستم" },

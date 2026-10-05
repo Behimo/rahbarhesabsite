@@ -1,9 +1,11 @@
 @extends('layouts.admin')
 @section('title', 'منوها')
 @section('actions')
-    <a href="{{ route('admin.menus.create') }}" class="btn btn-primary">
-        <i class="ti ti-plus me-1"></i>منوی جدید
-    </a>
+    @if (admin_can('menus', 'create'))
+        <a href="{{ route('admin.menus.create') }}" class="btn btn-primary">
+            <i class="ti ti-plus me-1"></i>منوی جدید
+        </a>
+    @endif
 @endsection
 @section('content')
 <div class="card">
@@ -17,7 +19,11 @@
                 <td dir="ltr">{{ $menu->slug }}</td>
                 <td>{{ $menu->location }}</td>
                 <td>{{ $menu->all_items_count }}</td>
-                <td><a href="{{ route('admin.menus.edit', $menu) }}" class="btn btn-sm btn-label-primary">ویرایش</a></td>
+                <td>
+                    @if (admin_can('menus', 'update'))
+                        <a href="{{ route('admin.menus.edit', $menu) }}" class="btn btn-sm btn-label-primary">ویرایش</a>
+                    @endif
+                </td>
             </tr>
         @endforeach
     </tbody>

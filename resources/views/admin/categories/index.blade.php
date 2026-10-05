@@ -7,9 +7,11 @@
     : 'هر دوره می‌تواند در چند دسته باشد. یکی را به‌عنوان دستهٔ اصلی برای مسیر صفحه انتخاب کنید.')
 
 @section('actions')
-    <a href="{{ route('admin.categories.create', ['type' => $type]) }}" class="btn btn-primary">
-        <i class="ti ti-plus me-1"></i>دسته جدید
-    </a>
+    @if (admin_can('taxonomies', 'create'))
+        <a href="{{ route('admin.categories.create', ['type' => $type]) }}" class="btn btn-primary">
+            <i class="ti ti-plus me-1"></i>دسته جدید
+        </a>
+    @endif
 @endsection
 
 @section('content')
@@ -19,7 +21,9 @@
     @if ($categories->isEmpty())
         <div class="card-body text-center py-5">
             <p class="mb-3">هنوز دسته‌ای در این بخش نیست.</p>
-            <a href="{{ route('admin.categories.create', ['type' => $type]) }}" class="btn btn-primary">اولین دسته را بسازید</a>
+            @if (admin_can('taxonomies', 'create'))
+                <a href="{{ route('admin.categories.create', ['type' => $type]) }}" class="btn btn-primary">اولین دسته را بسازید</a>
+            @endif
         </div>
     @else
         <div class="cat-tree">
@@ -39,13 +43,19 @@
                                     <span class="badge bg-label-secondary">غیرفعال</span>
                                 @endunless
                                 <span class="badge bg-label-primary">{{ $category->categoryables_count }} {{ $type === 'post' ? 'مطلب' : 'محصول' }}</span>
-                                <a href="{{ route('admin.categories.edit', ['category' => $category, 'type' => $type]) }}" class="btn btn-sm btn-label-primary">ویرایش</a>
-                                <a href="{{ route('admin.categories.create', ['type' => $type, 'parent_id' => $category->id]) }}" class="btn btn-sm btn-label-secondary">زیردسته</a>
-                                <form method="POST" action="{{ route('admin.categories.destroy', $category) }}" onsubmit="return confirm('این دسته حذف شود؟ زیردسته‌ها یک سطح بالا می‌آیند.')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-label-danger">حذف</button>
-                                </form>
+                                @if (admin_can('taxonomies', 'update'))
+                                    <a href="{{ route('admin.categories.edit', ['category' => $category, 'type' => $type]) }}" class="btn btn-sm btn-label-primary">ویرایش</a>
+                                @endif
+                                @if (admin_can('taxonomies', 'create'))
+                                    <a href="{{ route('admin.categories.create', ['type' => $type, 'parent_id' => $category->id]) }}" class="btn btn-sm btn-label-secondary">زیردسته</a>
+                                @endif
+                                @if (admin_can('taxonomies', 'delete'))
+                                    <form method="POST" action="{{ route('admin.categories.destroy', $category) }}" onsubmit="return confirm('این دسته حذف شود؟ زیردسته‌ها یک سطح بالا می‌آیند.')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-label-danger">حذف</button>
+                                    </form>
+                                @endif
                             </div>
                         </div>
                     </div>

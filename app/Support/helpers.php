@@ -23,6 +23,16 @@ if (! function_exists('block_media')) {
     }
 }
 
+if (! function_exists('admin_can')) {
+    function admin_can(string $group, string $action): bool
+    {
+        return \App\Support\AccessCatalog::allows(
+            auth()->user(),
+            \App\Support\AccessCatalog::permission($group, $action)
+        );
+    }
+}
+
 if (! function_exists('fa_digits')) {
     function fa_digits(int|string|null $value): string
     {

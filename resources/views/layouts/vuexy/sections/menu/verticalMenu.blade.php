@@ -35,18 +35,7 @@ $menuSlugAllowed = function ($slug) use ($adminUser): bool {
         return true;
     }
 
-    foreach (AccessCatalog::routeMap() as $pattern => $permission) {
-        $prefix = str_ends_with($pattern, '.*') ? substr($pattern, 0, -2) : $pattern;
-        $matches = str_ends_with($pattern, '.*')
-            ? ($slug === $prefix || str_starts_with($slug, $prefix.'.'))
-            : $slug === $pattern;
-
-        if ($matches) {
-            return AccessCatalog::allows($adminUser, $permission);
-        }
-    }
-
-    return true;
+    return AccessCatalog::allowsMenu($adminUser, $slug);
 };
 
 $menuEntries = [];

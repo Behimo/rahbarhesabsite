@@ -5,14 +5,16 @@
 @section('heading', 'لایسنس #'.$license->id)
 
 @section('actions')
-    <form method="POST" action="{{ route('admin.licenses.reissue', $license) }}" onsubmit="return confirm('صدور مجدد لایسنس انجام شود؟')">
-        @csrf
-        <button type="submit" class="btn btn-label-warning">صدور مجدد</button>
-    </form>
+    @if (admin_can('orders', 'update'))
+        <form method="POST" action="{{ route('admin.licenses.reissue', $license) }}" onsubmit="return confirm('صدور مجدد لایسنس انجام شود؟')">
+            @csrf
+            <button type="submit" class="btn btn-label-warning">صدور مجدد</button>
+        </form>
+    @endif
     @if ($license->order_id)
         <a href="{{ route('admin.orders.show', $license->order_id) }}" class="btn btn-label-primary">مشاهده سفارش</a>
     @endif
-    @if ($license->course?->product)
+    @if ($license->course?->product && admin_can('courses', 'update'))
         <a href="{{ route('admin.courses.edit', $license->course->product) }}" class="btn btn-label-secondary">ویرایش دوره</a>
     @endif
 @endsection

@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\PageController as AdminPageController;
 use App\Http\Controllers\Admin\PostController as AdminPostController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\RedirectController as AdminRedirectController;
+use App\Http\Controllers\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Admin\SearchController as AdminSearchController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Admin\TagController as AdminTagController;
@@ -287,6 +288,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         });
 
         Route::resource('users', AdminUserController::class)->except(['show']);
+        Route::resource('roles', AdminRoleController::class)->except(['show']);
 
         // Settings, Messages, Import/Export
         Route::controller(AdminSettingController::class)->group(function () {

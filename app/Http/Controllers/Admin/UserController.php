@@ -17,7 +17,6 @@ class UserController extends Controller
 
         return view('admin.users.index', [
             'users' => $users,
-            'roleLabels' => AccessCatalog::roles(),
         ]);
     }
 
@@ -25,10 +24,8 @@ class UserController extends Controller
     {
         return view('admin.users.form', [
             'user' => new User,
-            'roles' => AccessCatalog::roles(),
-            'permissions' => AccessCatalog::labels(),
+            'roles' => AccessCatalog::assignableRoles(),
             'currentRole' => AccessCatalog::ROLE_USER,
-            'directPermissions' => [],
         ]);
     }
 
@@ -42,20 +39,24 @@ class UserController extends Controller
 
     public function edit(User $user): View
     {
-        $user->load(['roles', 'permissions']);
+        $user->load('roles');
 
         return view('admin.users.form', [
             'user' => $user,
-            'roles' => AccessCatalog::roles(),
-            'permissions' => AccessCatalog::labels(),
+            'roles' => AccessCatalog::assignableRoles(),
             'currentRole' => $user->roles->first()?->name ?? AccessCatalog::ROLE_USER,
-            'directPermissions' => $user->getDirectPermissions()->pluck('name')->all(),
+            'ordersCount' => $user->orders()->count(),
+            'enrollmentsCount' => $user->enrollments()->count(),
         ]);
     }
 
     public function update(UserRequest $request, User $user): RedirectResponse
     {
         $role = (string) $request->validated('role');
+
+        if ($request->user()?->is($user) && $request->validated('status') !== 'active') {
+            return back()->withErrors(['status' => 'نمی‌توانید حساب خودتان را مسدود کنید.'])->withInput();
+        }
 
         if ($request->user()?->is($user) && $role !== AccessCatalog::ROLE_ADMIN) {
             return back()->withErrors(['role' => 'نمی‌توانید نقش خودتان را تغییر دهید.'])->withInput();
@@ -92,6 +93,6 @@ class UserController extends Controller
     private function syncAccess(UserRequest $request, User $user): void
     {
         $user->syncRoles([(string) $request->validated('role')]);
-        $user->syncPermissions($request->validated('permissions') ?? []);
+        $user->syncPermissions([]);
     }
 }

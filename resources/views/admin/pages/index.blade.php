@@ -5,9 +5,11 @@
 @section('lede', 'صفحات سیستمی و داینامیک سایت')
 
 @section('actions')
-    <a href="{{ route('admin.pages.create') }}" class="btn btn-primary">
-        <i class="ti ti-plus me-1"></i>صفحه جدید
-    </a>
+    @if (admin_can('pages', 'create'))
+        <a href="{{ route('admin.pages.create') }}" class="btn btn-primary">
+            <i class="ti ti-plus me-1"></i>صفحه جدید
+        </a>
+    @endif
 @endsection
 
 @section('content')
@@ -45,8 +47,10 @@
                             @endif
                         </td>
                         <td>
-                            <a href="{{ route('admin.pages.builder', $page) }}" class="btn btn-sm btn-label-primary">صفحه‌ساز</a>
-                            <a href="{{ route('admin.pages.edit', $page) }}" class="btn btn-sm btn-label-secondary">تنظیمات</a>
+                            @if (admin_can('pages', 'update'))
+                                <a href="{{ route('admin.pages.builder', $page) }}" class="btn btn-sm btn-label-primary">صفحه‌ساز</a>
+                                <a href="{{ route('admin.pages.edit', $page) }}" class="btn btn-sm btn-label-secondary">تنظیمات</a>
+                            @endif
                         </td>
                     </tr>
                 @endforeach

@@ -3,10 +3,12 @@
 <div class="mb-3">
     <div class="d-flex justify-content-between align-items-baseline gap-2 mb-2">
         <label class="form-label mb-0">دسته‌بندی</label>
-        <a href="{{ route('admin.categories.index', ['type' => 'product']) }}" class="small">مدیریت درخت</a>
+        @if (admin_can('taxonomies', 'view'))
+            <a href="{{ route('admin.categories.index', ['type' => 'product']) }}" class="small">مدیریت درخت</a>
+        @endif
     </div>
     @if ($categories->isEmpty())
-        <p class="text-muted small mb-0">دسته‌ای برای محصول نیست. <a href="{{ route('admin.categories.create', ['type' => 'product']) }}">اولین دسته را بسازید</a></p>
+        <p class="text-muted small mb-0">دسته‌ای برای محصول نیست.@if (admin_can('taxonomies', 'create')) <a href="{{ route('admin.categories.create', ['type' => 'product']) }}">اولین دسته را بسازید</a>@endif</p>
     @else
         @php
             $selectedIds = array_map('intval', (array) old('category_ids', $selectedCategoryIds ?? []));

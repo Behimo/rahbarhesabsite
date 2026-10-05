@@ -5,9 +5,16 @@
 @section('lede', 'مدیریت کاربران و دسترسی‌ها')
 
 @section('actions')
-    <a href="{{ route('admin.users.create') }}" class="btn btn-primary">
-        <i class="ti ti-plus me-1"></i>کاربر جدید
-    </a>
+    @if (admin_can('users', 'view'))
+        <a href="{{ route('admin.roles.index') }}" class="btn btn-label-secondary">
+            <i class="ti ti-shield me-1"></i>نقش‌ها
+        </a>
+    @endif
+    @if (admin_can('users', 'create'))
+        <a href="{{ route('admin.users.create') }}" class="btn btn-primary">
+            <i class="ti ti-plus me-1"></i>کاربر جدید
+        </a>
+    @endif
 @endsection
 
 @section('content')
@@ -20,25 +27,40 @@
                     <th>نام</th>
                     <th>موبایل</th>
                     <th>نقش</th>
+                    <th>وضعیت</th>
                     <th>عملیات</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse ($users as $user)
                     <tr>
-                        <td>{{ $user->name }}</td>
-                        <td dir="ltr">{{ $user->phone }}</td>
-                        <td><span class="badge bg-label-info">{{ $roleLabels[$user->roles->first()?->name] ?? '—' }}</span></td>
+                        <td>{{ $user->displayName() }}</td>
+                        <td dir="ltr">{{ $user->mobile ?: $user->phone }}</td>
+                        <td><span class="badge bg-label-info">{{ $user->roles->first()?->displayName() ?? '—' }}</span></td>
                         <td>
-                            <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm btn-label-primary">ویرایش</a>
-                            <form method="POST" action="{{ route('admin.users.destroy', $user) }}" class="d-inline" onsubmit="return confirm('حذف شود؟')">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-label-danger">حذف</button>
-                            </form>
+                            @php
+                                $statusClass = match ($user->status) {
+                                    'banned' => 'bg-label-danger',
+                                    'suspended' => 'bg-label-warning',
+                                    default => 'bg-label-success',
+                                };
+                            @endphp
+                            <span class="badge {{ $statusClass }}">{{ \App\Models\User::statusLabels()[$user->status] ?? 'فعال' }}</span>
+                        </td>
+                        <td>
+                            @if (admin_can('users', 'update'))
+                                <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm btn-label-primary">ویرایش</a>
+                            @endif
+                            @if (admin_can('users', 'delete'))
+                                <form method="POST" action="{{ route('admin.users.destroy', $user) }}" class="d-inline" onsubmit="return confirm('حذف شود؟')">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-label-danger">حذف</button>
+                                </form>
+                            @endif
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="4" class="text-center text-muted py-5">کاربری ثبت نشده</td></tr>
+                    <tr><td colspan="5" class="text-center text-muted py-5">کاربری ثبت نشده</td></tr>
                 @endforelse
             </tbody>
         </table>

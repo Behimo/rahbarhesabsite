@@ -5,10 +5,12 @@
 @section('heading', 'پیام از '.$message->name)
 
 @section('actions')
-    <form method="POST" action="{{ route('admin.messages.destroy', $message) }}" onsubmit="return confirm('حذف شود؟')">
-        @csrf @method('DELETE')
-        <button type="submit" class="btn btn-label-danger">حذف پیام</button>
-    </form>
+    @if (admin_can('messages', 'delete'))
+        <form method="POST" action="{{ route('admin.messages.destroy', $message) }}" onsubmit="return confirm('حذف شود؟')">
+            @csrf @method('DELETE')
+            <button type="submit" class="btn btn-label-danger">حذف پیام</button>
+        </form>
+    @endif
 @endsection
 
 @section('content')

@@ -17,7 +17,7 @@
     : 'این دسته در فیلتر دوره‌ها و محصولات دیده می‌شود. یک محصول می‌تواند در چند دسته باشد.')
 
 @section('actions')
-    @if ($category->exists)
+    @if ($category->exists && admin_can('taxonomies', 'create'))
         <a href="{{ route('admin.categories.create', ['type' => $type, 'parent_id' => $category->id]) }}" class="btn btn-label-secondary">
             <i class="ti ti-plus me-1"></i>زیردسته
         </a>

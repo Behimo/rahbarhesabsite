@@ -24,10 +24,12 @@
                         <td>{{ $revision->admin->name ?? '-' }}</td>
                         <td>{{ $revision->note ?: '—' }}</td>
                         <td>
-                            <form method="POST" action="{{ route('admin.pages.revisions.restore', [$page, $revision]) }}" onsubmit="return confirm('این نسخه بازگردانی شود؟')">
-                                @csrf
-                                <button class="btn btn-sm btn-label-primary">بازگردانی</button>
-                            </form>
+                            @if (admin_can('pages', 'update'))
+                                <form method="POST" action="{{ route('admin.pages.revisions.restore', [$page, $revision]) }}" onsubmit="return confirm('این نسخه بازگردانی شود؟')">
+                                    @csrf
+                                    <button class="btn btn-sm btn-label-primary">بازگردانی</button>
+                                </form>
+                            @endif
                         </td>
                     </tr>
                 @empty

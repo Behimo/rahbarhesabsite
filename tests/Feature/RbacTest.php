@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Role;
 use App\Models\User;
 use App\Support\AccessCatalog;
 use Database\Seeders\DefaultUsersSeeder;
@@ -45,6 +46,32 @@ class RbacTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_view_only_role_can_list_posts_but_not_change_them(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $role = Role::query()->create([
+            'name' => 'reader',
+            'label' => 'خواننده',
+            'guard_name' => AccessCatalog::guard(),
+            'is_system' => false,
+        ]);
+        $role->syncPermissions([
+            AccessCatalog::ACCESS_ADMIN,
+            AccessCatalog::permission('posts', AccessCatalog::VIEW),
+        ]);
+        $user = User::factory()->create();
+        $user->assignRole($role);
+
+        $this->actingAs($user)
+            ->get(route('admin.posts.index'))
+            ->assertOk()
+            ->assertDontSee('مقاله جدید');
+
+        $this->actingAs($user)
+            ->get(route('admin.posts.create'))
+            ->assertForbidden();
+    }
+
     public function test_admin_can_open_settings(): void
     {
         $admin = $this->makeAdmin();
@@ -65,10 +92,10 @@ class RbacTest extends TestCase
         $customer = User::query()->where('email', 'demo@example.com')->first();
 
         $this->assertTrue($admin?->hasRole(AccessCatalog::ROLE_ADMIN));
-        $this->assertTrue($editor?->can(AccessCatalog::MANAGE_POSTS));
-        $this->assertFalse($editor?->can(AccessCatalog::MANAGE_SETTINGS));
-        $this->assertTrue($shop?->can(AccessCatalog::MANAGE_ORDERS));
-        $this->assertTrue($instructor?->can(AccessCatalog::MANAGE_COURSES));
+        $this->assertTrue($editor?->can(AccessCatalog::permission('posts', AccessCatalog::DELETE)));
+        $this->assertFalse($editor?->can(AccessCatalog::permission('settings', AccessCatalog::VIEW)));
+        $this->assertTrue($shop?->can(AccessCatalog::permission('orders', AccessCatalog::UPDATE)));
+        $this->assertTrue($instructor?->can(AccessCatalog::permission('courses', AccessCatalog::CREATE)));
         $this->assertFalse($customer?->can(AccessCatalog::ACCESS_ADMIN));
     }
 

@@ -5,7 +5,7 @@
 @section('heading', $page->exists ? 'ویرایش: '.$page->title : 'صفحه جدید')
 
 @section('actions')
-    @if ($page->exists && ! $page->is_system)
+    @if ($page->exists && ! $page->is_system && admin_can('pages', 'delete'))
         <form method="POST" action="{{ route('admin.pages.destroy', $page) }}" onsubmit="return confirm('حذف شود؟')">
             @csrf @method('DELETE')
             <button type="submit" class="btn btn-label-danger">حذف صفحه</button>

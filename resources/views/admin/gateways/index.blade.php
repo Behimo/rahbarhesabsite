@@ -111,7 +111,9 @@
                     <p class="text-danger mb-1" data-gw-alert hidden>حداقل یک درگاه باید فعال باشد.</p>
                     <p class="text-muted mb-0" data-gw-dirty hidden>تغییرات هنوز در فروشگاه اعمال نشده.</p>
                 </div>
-                <button type="submit" class="btn btn-primary" data-gw-submit>ذخیره درگاه‌ها</button>
+                @if (admin_can('settings', 'update'))
+                    <button type="submit" class="btn btn-primary" data-gw-submit>ذخیره درگاه‌ها</button>
+                @endif
             </div>
         </form>
     @endif

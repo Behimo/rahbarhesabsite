@@ -126,10 +126,12 @@
                         <td class="small">{{ $license->created_at?->format('Y/m/d H:i') }}</td>
                         <td class="text-nowrap">
                             <a href="{{ route('admin.licenses.show', $license) }}" class="btn btn-sm btn-label-primary">جزئیات</a>
-                            <form method="POST" action="{{ route('admin.licenses.reissue', $license) }}" class="d-inline" onsubmit="return confirm('صدور مجدد لایسنس انجام شود؟')">
-                                @csrf
-                                <button type="submit" class="btn btn-sm btn-label-warning">صدور مجدد</button>
-                            </form>
+                            @if (admin_can('orders', 'update'))
+                                <form method="POST" action="{{ route('admin.licenses.reissue', $license) }}" class="d-inline" onsubmit="return confirm('صدور مجدد لایسنس انجام شود؟')">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-label-warning">صدور مجدد</button>
+                                </form>
+                            @endif
                         </td>
                     </tr>
                 @empty

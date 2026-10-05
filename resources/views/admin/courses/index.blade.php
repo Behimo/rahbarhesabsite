@@ -5,10 +5,14 @@
 @section('lede', 'مدیریت دوره‌های آموزشی و فروش')
 
 @section('actions')
-    <a href="{{ route('admin.categories.index', ['type' => 'product']) }}" class="btn btn-label-secondary">دسته‌بندی‌ها</a>
-    <a href="{{ route('admin.courses.create') }}" class="btn btn-primary">
-        <i class="ti ti-plus me-1"></i>دوره جدید
-    </a>
+    @if (admin_can('taxonomies', 'view'))
+        <a href="{{ route('admin.categories.index', ['type' => 'product']) }}" class="btn btn-label-secondary">دسته‌بندی‌ها</a>
+    @endif
+    @if (admin_can('courses', 'create'))
+        <a href="{{ route('admin.courses.create') }}" class="btn btn-primary">
+            <i class="ti ti-plus me-1"></i>دوره جدید
+        </a>
+    @endif
 @endsection
 
 @section('content')
@@ -38,11 +42,15 @@
                         </td>
                         <td>
                             <a href="{{ route('courses.show', $course->slug) }}" target="_blank" class="btn btn-sm btn-label-secondary">مشاهده</a>
-                            <a href="{{ route('admin.courses.edit', $course) }}" class="btn btn-sm btn-label-primary">ویرایش</a>
-                            <form method="POST" action="{{ route('admin.courses.destroy', $course) }}" class="d-inline" onsubmit="return confirm('حذف شود؟')">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-label-danger">حذف</button>
-                            </form>
+                            @if (admin_can('courses', 'update'))
+                                <a href="{{ route('admin.courses.edit', $course) }}" class="btn btn-sm btn-label-primary">ویرایش</a>
+                            @endif
+                            @if (admin_can('courses', 'delete'))
+                                <form method="POST" action="{{ route('admin.courses.destroy', $course) }}" class="d-inline" onsubmit="return confirm('حذف شود؟')">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-label-danger">حذف</button>
+                                </form>
+                            @endif
                         </td>
                     </tr>
                 @empty

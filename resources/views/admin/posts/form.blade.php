@@ -11,10 +11,12 @@
             <a href="{{ route('blog.show', $post->slug) }}" class="btn btn-label-primary" target="_blank" rel="noopener">مشاهده در سایت</a>
         @endif
         <a href="{{ route('admin.posts.revisions', $post) }}" class="btn btn-label-secondary">تاریخچه</a>
-        <form method="POST" action="{{ route('admin.posts.duplicate', $post) }}">
-            @csrf
-            <button class="btn btn-label-info">کپی مقاله</button>
-        </form>
+        @if (admin_can('posts', 'create'))
+            <form method="POST" action="{{ route('admin.posts.duplicate', $post) }}">
+                @csrf
+                <button class="btn btn-label-info">کپی مقاله</button>
+            </form>
+        @endif
     @endif
 @endsection
 
@@ -131,7 +133,9 @@
                         @include('admin.partials.category-ui')
                         <div class="d-flex justify-content-between align-items-baseline gap-2 mb-2">
                             <label class="form-label mb-0">دستهٔ اصلی</label>
-                            <a href="{{ route('admin.categories.index', ['type' => 'post']) }}" class="small">مدیریت درخت</a>
+                            @if (admin_can('taxonomies', 'view'))
+                                <a href="{{ route('admin.categories.index', ['type' => 'post']) }}" class="small">مدیریت درخت</a>
+                            @endif
                         </div>
                         @php $selectedCategory = (string) old('category_id', $post->category?->id); @endphp
                         <div class="cat-pick">
@@ -160,7 +164,7 @@
                                     <label class="form-check-label" for="tag-{{ $tag->id }}">{{ $tag->name }}</label>
                                 </div>
                             @empty
-                                <span class="text-muted small">برچسبی نیست. از <a href="{{ route('admin.tags.index') }}">برچسب‌ها</a> بسازید.</span>
+                                <span class="text-muted small">برچسبی نیست.@if (admin_can('taxonomies', 'view')) از <a href="{{ route('admin.tags.index') }}">برچسب‌ها</a> بسازید.@endif</span>
                             @endforelse
                         </div>
                     </div>

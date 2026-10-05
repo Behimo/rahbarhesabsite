@@ -11,7 +11,6 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
@@ -26,6 +25,7 @@ class User extends Authenticatable
         'first_name',
         'last_name',
         'email',
+        'email_verified_at',
         'phone',
         'password',
         'is_wp_password',
@@ -116,6 +116,18 @@ class User extends Authenticatable
     public function isBlocked(): bool
     {
         return in_array($this->status, ['banned', 'suspended'], true);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function statusLabels(): array
+    {
+        return [
+            'active' => 'فعال',
+            'suspended' => 'معلق',
+            'banned' => 'مسدود',
+        ];
     }
 
     public function displayName(): string

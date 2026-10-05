@@ -46,6 +46,8 @@ class AdminNavigation
             'admin.coupons.edit' => 'admin.coupons.index',
             'admin.users.create' => 'admin.users.index',
             'admin.users.edit' => 'admin.users.index',
+            'admin.roles.create' => 'admin.roles.index',
+            'admin.roles.edit' => 'admin.roles.index',
             'admin.menus.create' => 'admin.menus.index',
             'admin.menus.edit' => 'admin.menus.index',
             'admin.orders.show' => 'admin.orders.index',

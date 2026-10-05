@@ -16,25 +16,27 @@
     </div>
 @endif
 
+@if (admin_can('taxonomies', 'create'))
 <div class="card mb-4">
-    <div class="card-header"><h5 class="mb-0">برچسب جدید</h5></div>
-    <div class="card-body">
-        <form method="POST" action="{{ route('admin.tags.store') }}" class="row g-3">
-            @csrf
-            <div class="col-sm-6">
-                <label class="form-label">نام</label>
-                <input type="text" name="name" class="form-control" required>
-            </div>
-            <div class="col-sm-6">
-                <label class="form-label">Slug</label>
-                <input type="text" name="slug" class="form-control" dir="ltr" required>
-            </div>
-            <div class="col-12">
-                <button type="submit" class="btn btn-primary">افزودن</button>
-            </div>
-        </form>
+        <div class="card-header"><h5 class="mb-0">برچسب جدید</h5></div>
+        <div class="card-body">
+            <form method="POST" action="{{ route('admin.tags.store') }}" class="row g-3">
+                @csrf
+                <div class="col-sm-6">
+                    <label class="form-label">نام</label>
+                    <input type="text" name="name" class="form-control" required>
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label">Slug</label>
+                    <input type="text" name="slug" class="form-control" dir="ltr" required>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">افزودن</button>
+                </div>
+            </form>
     </div>
 </div>
+@endif
 
 <div class="card">
     <div class="table-responsive">
@@ -53,20 +55,24 @@
                         <td>
                             <form id="tag-update-{{ $tag->id }}" method="POST" action="{{ route('admin.tags.update', $tag) }}">
                                 @csrf @method('PUT')
-                                <input type="text" name="name" value="{{ $tag->name }}" class="form-control form-control-sm" required>
+                                <input type="text" name="name" value="{{ $tag->name }}" class="form-control form-control-sm" @disabled(! admin_can('taxonomies', 'update')) required>
                             </form>
                         </td>
                         <td>
-                            <input form="tag-update-{{ $tag->id }}" type="text" name="slug" value="{{ $tag->slug }}" class="form-control form-control-sm" dir="ltr" required>
+                            <input form="tag-update-{{ $tag->id }}" type="text" name="slug" value="{{ $tag->slug }}" class="form-control form-control-sm" dir="ltr" @disabled(! admin_can('taxonomies', 'update')) required>
                         </td>
                         <td class="text-muted small">{{ $tag->posts_count }}</td>
                         <td>
                             <div class="d-flex gap-1">
-                                <button form="tag-update-{{ $tag->id }}" type="submit" class="btn btn-sm btn-label-primary">ذخیره</button>
-                                <form method="POST" action="{{ route('admin.tags.destroy', $tag) }}" onsubmit="return confirm('حذف شود؟')">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-label-danger">حذف</button>
-                                </form>
+                                @if (admin_can('taxonomies', 'update'))
+                                    <button form="tag-update-{{ $tag->id }}" type="submit" class="btn btn-sm btn-label-primary">ذخیره</button>
+                                @endif
+                                @if (admin_can('taxonomies', 'delete'))
+                                    <form method="POST" action="{{ route('admin.tags.destroy', $tag) }}" onsubmit="return confirm('حذف شود؟')">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-label-danger">حذف</button>
+                                    </form>
+                                @endif
                             </div>
                         </td>
                     </tr>

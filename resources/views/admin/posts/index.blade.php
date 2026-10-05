@@ -5,14 +5,18 @@
 @section('lede', 'مدیریت مقالات، پیش‌نویس‌ها و سطل زباله')
 
 @section('actions')
-    <a href="{{ route('admin.categories.index', ['type' => 'post']) }}" class="btn btn-label-secondary">دسته‌بندی‌ها</a>
-    <a href="{{ route('admin.tags.index') }}" class="btn btn-label-secondary">برچسب‌ها</a>
+    @if (admin_can('taxonomies', 'view'))
+        <a href="{{ route('admin.categories.index', ['type' => 'post']) }}" class="btn btn-label-secondary">دسته‌بندی‌ها</a>
+        <a href="{{ route('admin.tags.index') }}" class="btn btn-label-secondary">برچسب‌ها</a>
+    @endif
     <a href="{{ route('admin.posts.index', ['trashed' => 1]) }}" class="btn btn-label-warning">
         سطل زباله @if ($trashCount > 0)<span class="badge bg-danger ms-1">{{ $trashCount }}</span>@endif
     </a>
-    <a href="{{ route('admin.posts.create') }}" class="btn btn-primary">
-        <i class="ti ti-plus me-1"></i>مقاله جدید
-    </a>
+    @if (admin_can('posts', 'create'))
+        <a href="{{ route('admin.posts.create') }}" class="btn btn-primary">
+            <i class="ti ti-plus me-1"></i>مقاله جدید
+        </a>
+    @endif
 @endsection
 
 @section('content')
@@ -103,25 +107,35 @@
                         <td>{{ number_format($post->views) }}</td>
                         <td class="text-nowrap">
                             @if ($post->trashed())
-                                <form method="POST" action="{{ route('admin.posts.restore', $post->id) }}" class="d-inline">
-                                    @csrf
-                                    <button class="btn btn-sm btn-label-success">بازیابی</button>
-                                </form>
-                                <form method="POST" action="{{ route('admin.posts.force-destroy', $post->id) }}" class="d-inline" onsubmit="return confirm('حذف دائمی؟')">
-                                    @csrf @method('DELETE')
-                                    <button class="btn btn-sm btn-label-danger">حذف دائم</button>
-                                </form>
+                                @if (admin_can('posts', 'update'))
+                                    <form method="POST" action="{{ route('admin.posts.restore', $post->id) }}" class="d-inline">
+                                        @csrf
+                                        <button class="btn btn-sm btn-label-success">بازیابی</button>
+                                    </form>
+                                @endif
+                                @if (admin_can('posts', 'delete'))
+                                    <form method="POST" action="{{ route('admin.posts.force-destroy', $post->id) }}" class="d-inline" onsubmit="return confirm('حذف دائمی؟')">
+                                        @csrf @method('DELETE')
+                                        <button class="btn btn-sm btn-label-danger">حذف دائم</button>
+                                    </form>
+                                @endif
                             @else
-                                <a href="{{ route('admin.posts.edit', $post) }}" class="btn btn-sm btn-label-primary">ویرایش</a>
+                                @if (admin_can('posts', 'update'))
+                                    <a href="{{ route('admin.posts.edit', $post) }}" class="btn btn-sm btn-label-primary">ویرایش</a>
+                                @endif
                                 <a href="{{ route('admin.posts.preview', $post) }}" class="btn btn-sm btn-label-secondary" target="_blank">پیش‌نمایش</a>
-                                <form method="POST" action="{{ route('admin.posts.duplicate', $post) }}" class="d-inline">
-                                    @csrf
-                                    <button class="btn btn-sm btn-label-info">کپی</button>
-                                </form>
-                                <form method="POST" action="{{ route('admin.posts.destroy', $post) }}" class="d-inline" onsubmit="return confirm('به سطل زباله منتقل شود؟')">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-label-danger">حذف</button>
-                                </form>
+                                @if (admin_can('posts', 'create'))
+                                    <form method="POST" action="{{ route('admin.posts.duplicate', $post) }}" class="d-inline">
+                                        @csrf
+                                        <button class="btn btn-sm btn-label-info">کپی</button>
+                                    </form>
+                                @endif
+                                @if (admin_can('posts', 'delete'))
+                                    <form method="POST" action="{{ route('admin.posts.destroy', $post) }}" class="d-inline" onsubmit="return confirm('به سطل زباله منتقل شود؟')">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-label-danger">حذف</button>
+                                    </form>
+                                @endif
                             @endif
                         </td>
                     </tr>

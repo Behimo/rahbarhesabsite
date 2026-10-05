@@ -5,16 +5,18 @@
 @section('heading', 'سفارش '.$order->order_number)
 
 @section('actions')
-    @unless ($order->isPaid())
+    @if (! $order->isPaid() && admin_can('orders', 'update'))
         <form method="POST" action="{{ route('admin.orders.mark-paid', $order) }}" onsubmit="return confirm('سفارش پرداخت‌شده شود و دسترسی صادر گردد؟')">
             @csrf
             <button class="btn btn-label-success">علامت پرداخت دستی</button>
         </form>
-    @endunless
-    <form method="POST" action="{{ route('admin.orders.retry-licenses', $order) }}">
-        @csrf
-        <button class="btn btn-label-primary">صدور مجدد لایسنس</button>
-    </form>
+    @endif
+    @if (admin_can('orders', 'update'))
+        <form method="POST" action="{{ route('admin.orders.retry-licenses', $order) }}">
+            @csrf
+            <button class="btn btn-label-primary">صدور مجدد لایسنس</button>
+        </form>
+    @endif
 @endsection
 
 @section('content')
@@ -39,10 +41,11 @@
             </div>
         </div>
 
-        <div class="card mb-4">
-            <div class="card-header"><h5 class="mb-0">ثبت‌نام دستی / هدیه</h5></div>
-            <div class="card-body">
-                <form method="POST" action="{{ route('admin.orders.enroll') }}" class="row g-3 align-items-end">
+        @if (admin_can('orders', 'create'))
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">ثبت‌نام دستی / هدیه</h5></div>
+                <div class="card-body">
+                    <form method="POST" action="{{ route('admin.orders.enroll') }}" class="row g-3 align-items-end">
                     @csrf
                     <input type="hidden" name="user_id" value="{{ $order->user_id }}">
                     <div class="col-md-6">
@@ -67,6 +70,7 @@
                 </form>
             </div>
         </div>
+        @endif
 
         <div class="card">
             <div class="card-header"><h5 class="mb-0">دسترسی‌های کاربر</h5></div>
@@ -80,7 +84,7 @@
                                 <td>{{ $enrollment->source }}</td>
                                 <td>{{ $enrollment->status }}</td>
                                 <td>
-                                    @if ($enrollment->status !== 'revoked')
+                                    @if ($enrollment->status !== 'revoked' && admin_can('orders', 'delete'))
                                         <form method="POST" action="{{ route('admin.orders.enrollments.revoke', $enrollment) }}" onsubmit="return confirm('لغو شود؟')">
                                             @csrf
                                             <button class="btn btn-sm btn-label-danger">لغو</button>

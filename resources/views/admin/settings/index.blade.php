@@ -55,7 +55,9 @@
             </div>
         </div>
         <div class="admin-form-actions">
-            <button type="submit" class="btn btn-primary">ذخیره تنظیمات</button>
+            @if (admin_can('settings', 'update'))
+                <button type="submit" class="btn btn-primary">ذخیره تنظیمات</button>
+            @endif
         </div>
     </div>
 </form>
@@ -77,12 +79,16 @@
 <div class="card mt-4">
     <div class="card-body">
         <h5 class="mb-3">درون‌ریزی / برون‌بری</h5>
-        <a href="{{ route('admin.export') }}" class="btn btn-outline-secondary mb-3">دانلود JSON</a>
-        <form method="POST" action="{{ route('admin.import') }}" enctype="multipart/form-data" class="row g-2">
-            @csrf
-            <div class="col-md-8"><input type="file" name="export_file" class="form-control" accept=".json"></div>
-            <div class="col-md-4"><button class="btn btn-outline-primary w-100">درون‌ریزی</button></div>
-        </form>
+        @if (admin_can('transfer', 'view'))
+            <a href="{{ route('admin.export') }}" class="btn btn-outline-secondary mb-3">دانلود JSON</a>
+        @endif
+        @if (admin_can('transfer', 'create'))
+            <form method="POST" action="{{ route('admin.import') }}" enctype="multipart/form-data" class="row g-2">
+                @csrf
+                <div class="col-md-8"><input type="file" name="export_file" class="form-control" accept=".json"></div>
+                <div class="col-md-4"><button class="btn btn-outline-primary w-100">درون‌ریزی</button></div>
+            </form>
+        @endif
     </div>
 </div>
 @endsection
