@@ -14,15 +14,6 @@
         'تولید محتوای تخصصی در حوزه حسابداری و مالیات',
     ];
 
-    $theme = config('cms.active_theme', 'rahbarhesab');
-    $aboutImage = function (string $file, string $fallback) use ($theme): string {
-        $path = 'images/about/'.$file;
-
-        return file_exists(public_path('themes/'.$theme.'/'.$path))
-            ? theme_asset($path)
-            : theme_asset($fallback);
-    };
-
     $team = [
         ['name' => 'مرتضی رهبر', 'role' => 'مدیر عامل'],
         ['name' => 'واحد محتوا', 'role' => 'تولید محتوا'],
@@ -74,7 +65,7 @@
                 </div>
 
                 <div class="achievement-image">
-                    <img src="{{ $aboutImage('team.jpg', 'images/group-all-mentorma.webp') }}" alt="تیم راهبر حساب">
+                    <img src="{{ asset('site/images/group-all-mentorma.webp') }}" alt="تیم راهبر حساب">
                 </div>
             </div>
         </div>
@@ -103,7 +94,7 @@
                 </div>
 
                 <div class="award-image">
-                    <img src="{{ $aboutImage('award.jpg', 'images/indexsnew.webp') }}" alt="مدرس برتر سال ۱۴۰۴">
+                    <img src="{{ asset('site/images/indexsnew.webp') }}" alt="مدرس برتر سال ۱۴۰۴">
                     <button class="play-btn" type="button" aria-label="پخش ویدئو" data-video="">
                         <span></span>
                     </button>
