@@ -100,7 +100,7 @@ Route::redirect('/why-bisan', '/about', 301)->name('why-bisan');
 Route::redirect('/services', '/about', 301)->name('services');
 Route::get('/about', [PageController::class, 'about'])->name('about');
 Route::get('/contact', [ContactController::class, 'index'])->name('contact');
-Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:contact')->name('contact.store');
 Route::get('/p/{slug}', [PageController::class, 'show'])->name('pages.show');
 
 /*
@@ -135,10 +135,10 @@ Route::controller(ShopController::class)->group(function () {
 */
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login/otp', [AuthController::class, 'sendOtp'])->name('login.otp');
-    Route::post('/login/password', [AuthController::class, 'loginPassword'])->name('login.password');
+    Route::post('/login/otp', [AuthController::class, 'sendOtp'])->middleware('throttle:otp-send')->name('login.otp');
+    Route::post('/login/password', [AuthController::class, 'loginPassword'])->middleware('throttle:login')->name('login.password');
     Route::get('/login/verify', [AuthController::class, 'showVerify'])->name('login.verify');
-    Route::post('/login/verify', [AuthController::class, 'verifyOtp'])->name('login.verify.submit');
+    Route::post('/login/verify', [AuthController::class, 'verifyOtp'])->middleware('throttle:otp-verify')->name('login.verify.submit');
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
@@ -167,7 +167,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     // Admin Auth
     Route::controller(AdminAuthController::class)->group(function () {
         Route::get('login', 'showLogin')->name('login');
-        Route::post('login', 'login');
+        Route::post('login', 'login')->middleware('throttle:login');
         Route::post('logout', 'logout')->name('logout');
     });
 

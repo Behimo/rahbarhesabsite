@@ -8,8 +8,7 @@ use App\Models\Course;
 use App\Models\CourseLesson;
 use App\Models\CourseSection;
 use App\Models\ShopProduct;
-use App\Models\User;
-use App\Support\AccessCatalog;
+use Database\Seeders\Support\SampleInstructor;
 use Illuminate\Database\Seeder;
 
 class RahbarHesabSeeder extends Seeder
@@ -28,17 +27,7 @@ class RahbarHesabSeeder extends Seeder
 
         $this->call(RolesAndPermissionsSeeder::class);
 
-        $instructor = User::query()->updateOrCreate(
-            ['phone' => '09120000001'],
-            [
-                'name' => 'مرتضی رهبر',
-                'email' => 'instructor@rahbarhesab.com',
-                'mobile' => '09120000001',
-                'password' => 'password',
-                'status' => 'active',
-            ]
-        );
-        $instructor->syncRoles([AccessCatalog::ROLE_INSTRUCTOR]);
+        $instructor = SampleInstructor::findOrCreate();
 
         $courses = [
             [
@@ -98,7 +87,7 @@ class RahbarHesabSeeder extends Seeder
             $course = Course::query()->updateOrCreate(
                 ['shop_product_id' => $product->id],
                 [
-                    'instructor_id' => $instructor->id,
+                    'instructor_id' => $instructor?->id,
                     'level' => $data['level'],
                     'duration_minutes' => $data['duration'],
                     'what_you_learn' => ['آموزش عملی', 'پشتیبانی تخصصی', 'مدرک معتبر'],

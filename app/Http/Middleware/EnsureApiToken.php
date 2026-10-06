@@ -10,9 +10,10 @@ class EnsureApiToken
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $token = config('cms.api_token');
+        $configured = (string) config('cms.api_token');
+        $presented = (string) $request->bearerToken();
 
-        if (! $token || $request->bearerToken() !== $token) {
+        if ($configured === '' || ! hash_equals($configured, $presented)) {
             abort(401, 'Unauthorized');
         }
 

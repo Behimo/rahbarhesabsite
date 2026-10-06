@@ -5,8 +5,7 @@ namespace Database\Seeders;
 use App\Models\Category;
 use App\Models\Course;
 use App\Models\ShopProduct;
-use App\Models\User;
-use App\Support\AccessCatalog;
+use Database\Seeders\Support\SampleInstructor;
 use Illuminate\Database\Seeder;
 
 /**
@@ -16,6 +15,12 @@ class ProductCategorySeeder extends Seeder
 {
     public function run(): void
     {
+        if (app()->environment('production')) {
+            $this->command?->warn('ProductCategorySeeder در production اجرا نشد.');
+
+            return;
+        }
+
         $accounting = $this->category('accounting', 'حسابداری', null, 1, 'آموزش و ابزار حسابداری');
         $tax = $this->category('tax', 'مالیات', $accounting, 1, 'اظهارنامه و ارزش افزوده');
         $payroll = $this->category('payroll', 'حقوق و دستمزد', $accounting, 2, 'محاسبه و ارسال لیست بیمه');
@@ -28,17 +33,8 @@ class ProductCategorySeeder extends Seeder
 
         $this->call(RolesAndPermissionsSeeder::class);
 
-        $instructor = User::query()->updateOrCreate(
-            ['phone' => '09120000001'],
-            [
-                'name' => 'مرتضی رهبر',
-                'email' => 'instructor@rahbarhesab.com',
-                'mobile' => '09120000001',
-                'password' => 'password',
-                'status' => 'active',
-            ]
-        );
-        $instructor->syncRoles([AccessCatalog::ROLE_INSTRUCTOR]);
+        $instructor = SampleInstructor::findOrCreate()
+            ?? throw new \RuntimeException('مدرس نمونه ساخته نشد.');
 
         $taxCourse = $this->product('demo-tax-return-course', [
             'title' => 'دوره اظهارنامه مالیاتی',

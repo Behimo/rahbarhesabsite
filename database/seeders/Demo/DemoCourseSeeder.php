@@ -2,30 +2,26 @@
 
 namespace Database\Seeders\Demo;
 
-use App\Models\User;
-use App\Support\AccessCatalog;
 use Database\Seeders\Demo\Builders\DemoCourseBuilder;
 use Database\Seeders\Demo\Catalogs\AccountingCourseCatalog;
 use Database\Seeders\RolesAndPermissionsSeeder;
+use Database\Seeders\Support\SampleInstructor;
 use Illuminate\Database\Seeder;
 
 final class DemoCourseSeeder extends Seeder
 {
     public function run(): void
     {
+        if (app()->environment('production')) {
+            $this->command?->warn('DemoCourseSeeder در production اجرا نشد.');
+
+            return;
+        }
+
         $this->call(RolesAndPermissionsSeeder::class);
 
-        $instructor = User::query()->updateOrCreate(
-            ['phone' => '09120000001'],
-            [
-                'name' => 'مرتضی رهبر',
-                'email' => 'instructor@rahbarhesab.com',
-                'mobile' => '09120000001',
-                'password' => 'password',
-                'status' => 'active',
-            ]
-        );
-        $instructor->syncRoles([AccessCatalog::ROLE_INSTRUCTOR]);
+        $instructor = SampleInstructor::findOrCreate()
+            ?? throw new \RuntimeException('مدرس نمونه ساخته نشد.');
 
         $catalog = app(AccountingCourseCatalog::class);
         $builder = app(DemoCourseBuilder::class);

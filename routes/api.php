@@ -5,7 +5,7 @@ use App\Http\Controllers\Api\V1\PageController;
 use App\Http\Controllers\Api\V1\PostController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('v1')->middleware('api.token')->group(function () {
+Route::prefix('v1')->middleware(['throttle:api', 'api.token'])->group(function () {
     Route::get('pages', [PageController::class, 'index']);
     Route::get('pages/{slug}', [PageController::class, 'show']);
     Route::get('posts', [PostController::class, 'index']);

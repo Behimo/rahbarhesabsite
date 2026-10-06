@@ -6,6 +6,8 @@ use App\Models\User;
 use App\Support\AccessCatalog;
 use App\Support\PhoneNormalizer;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
+use RuntimeException;
 
 class DefaultUsersSeeder extends Seeder
 {
@@ -13,10 +15,31 @@ class DefaultUsersSeeder extends Seeder
     {
         $this->call(RolesAndPermissionsSeeder::class);
 
+        $isProduction = app()->environment('production');
+
         $adminEmail = mb_strtolower(trim((string) config('cms.admin_email', 'admin@rahbarhesab.ir')));
         $adminPassword = trim((string) config('cms.admin_password'));
-        if ($adminPassword === '') {
+
+        if ($adminEmail === '') {
+            $this->command?->error('CMS_ADMIN_EMAIL تنظیم نشده است.');
+
+            throw new RuntimeException('CMS_ADMIN_EMAIL تنظیم نشده است.');
+        }
+
+        if (! $isProduction && $adminPassword === '') {
             $adminPassword = 'password';
+        }
+
+        $existingAdmin = User::query()->where('email', $adminEmail)->first();
+
+        if ($isProduction && ! $existingAdmin && Str::length($adminPassword) < 12) {
+            $message = $adminPassword === ''
+                ? 'CMS_ADMIN_PASSWORD در production خالی است — ساخت کاربران پیش‌فرض متوقف شد.'
+                : 'CMS_ADMIN_PASSWORD در production باید حداقل ۱۲ کاراکتر باشد.';
+
+            $this->command?->error($message);
+
+            throw new RuntimeException($message);
         }
 
         $accounts = [
@@ -33,6 +56,7 @@ class DefaultUsersSeeder extends Seeder
                 'phone' => '09120000002',
                 'password' => 'password',
                 'role' => AccessCatalog::ROLE_EDITOR,
+                'demo' => true,
             ],
             [
                 'email' => 'shop@rahbarhesab.ir',
@@ -40,6 +64,7 @@ class DefaultUsersSeeder extends Seeder
                 'phone' => '09120000003',
                 'password' => 'password',
                 'role' => AccessCatalog::ROLE_SHOP_MANAGER,
+                'demo' => true,
             ],
             [
                 'email' => 'instructor@example.com',
@@ -47,6 +72,7 @@ class DefaultUsersSeeder extends Seeder
                 'phone' => '09120000004',
                 'password' => 'password',
                 'role' => AccessCatalog::ROLE_INSTRUCTOR,
+                'demo' => true,
             ],
             [
                 'email' => 'demo@example.com',
@@ -54,14 +80,28 @@ class DefaultUsersSeeder extends Seeder
                 'phone' => '09121111111',
                 'password' => 'password',
                 'role' => AccessCatalog::ROLE_USER,
+                'demo' => true,
             ],
         ];
 
         foreach ($accounts as $account) {
             $role = $account['role'];
-            unset($account['role']);
+            $isDemo = $account['demo'] ?? false;
+            unset($account['role'], $account['demo']);
+
+            if ($isProduction && $isDemo) {
+                continue;
+            }
 
             $phone = PhoneNormalizer::toLocal($account['phone']);
+            $existing = User::query()->where('email', $account['email'])->first();
+
+            if ($isProduction && $existing) {
+                $existing->syncRoles([$role]);
+
+                continue;
+            }
+
             $user = User::query()->updateOrCreate(
                 ['email' => $account['email']],
                 [
