@@ -92,4 +92,9 @@ class ShopProduct extends Model
     {
         return $this->type === self::TYPE_BUNDLE || $this->bundleItems()->exists();
     }
+
+    public function tracksInventory(): bool
+    {
+        return $this->type === self::TYPE_PHYSICAL && $this->stock !== null;
+    }
 }

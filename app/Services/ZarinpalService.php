@@ -119,7 +119,9 @@ class ZarinpalService implements \App\Contracts\PaymentGatewayInterface
                 'error_message' => 'پرداخت توسط کاربر لغو شد.',
                 'gateway_payload' => $query,
             ]);
-            $payment->order?->update(['status' => Order::STATUS_FAILED]);
+            if ($payment->order) {
+                $this->orders->markFailed($payment->order);
+            }
 
             return null;
         }
@@ -186,7 +188,9 @@ class ZarinpalService implements \App\Contracts\PaymentGatewayInterface
                 'gateway_response' => $payload,
                 'error_message' => (string) ($response->json('errors.message') ?? 'تأیید پرداخت ناموفق بود.'),
             ]);
-            $payment->order?->update(['status' => Order::STATUS_FAILED]);
+            if ($payment->order) {
+                $this->orders->markFailed($payment->order);
+            }
 
             return null;
         } finally {

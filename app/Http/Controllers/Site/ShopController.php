@@ -52,7 +52,11 @@ class ShopController extends SiteController
             }
         }
 
-        $this->cart->add($product);
+        try {
+            $this->cart->add($product);
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
 
         return redirect()->route('cart.index')->with('success', 'به سبد خرید اضافه شد.');
     }
@@ -60,7 +64,12 @@ class ShopController extends SiteController
     public function updateCart(Request $request, CartItem $item): RedirectResponse
     {
         $this->authorizeCartItem($item);
-        $this->cart->update($item, (int) $request->input('quantity', 1));
+
+        try {
+            $this->cart->update($item, (int) $request->input('quantity', 1));
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
 
         return back()->with('success', 'سبد خرید به‌روزرسانی شد.');
     }
@@ -140,7 +149,13 @@ class ShopController extends SiteController
         }
 
         if ($order->total <= 0) {
-            $this->orders->markPaid($order);
+            try {
+                $this->orders->markPaid($order);
+            } catch (\Throwable $e) {
+                $this->orders->markFailed($order);
+
+                return redirect()->route('cart.index')->with('error', $e->getMessage());
+            }
 
             return redirect()->route('checkout.success', $order);
         }
@@ -150,6 +165,8 @@ class ShopController extends SiteController
 
             return redirect()->away($paymentUrl);
         } catch (\Throwable $e) {
+            $this->orders->markFailed($order);
+
             return redirect()->route('checkout.index')->with('error', $e->getMessage());
         }
     }
@@ -164,11 +181,20 @@ class ShopController extends SiteController
 
         try {
             $gateway = $this->payments->resolveForCheckout($request->input('gateway'));
-            $order->update(['status' => Order::STATUS_PENDING]);
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        $order->update(['status' => Order::STATUS_PENDING]);
+
+        try {
+            $this->orders->reserveForRetry($order);
             $paymentUrl = $this->payments->requestPayment($order, $gateway);
 
             return redirect()->away($paymentUrl);
         } catch (\Throwable $e) {
+            $this->orders->markFailed($order);
+
             return back()->with('error', $e->getMessage());
         }
     }

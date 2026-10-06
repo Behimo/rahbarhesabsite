@@ -2,8 +2,8 @@
 
 namespace App\Services\Concerns;
 
-use App\Models\Order;
 use App\Models\Payment;
+use App\Services\OrderService;
 use App\Support\PaymentAmount;
 
 trait GuardsVerifiedPaymentAmount
@@ -26,6 +26,8 @@ trait GuardsVerifiedPaymentAmount
             'gateway_response' => $payload,
             'error_message' => 'مبلغ تأییدشده با مبلغ سفارش یکسان نیست.',
         ]);
-        $payment->order?->update(['status' => Order::STATUS_FAILED]);
+        if ($payment->order) {
+            app(OrderService::class)->markFailed($payment->order);
+        }
     }
 }

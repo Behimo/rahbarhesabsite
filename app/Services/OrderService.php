@@ -35,6 +35,23 @@ class OrderService
         $total = max(0, $subtotal - $discount);
 
         return DB::transaction(function () use ($user, $items, $coupon, $subtotal, $discount, $total, $ip, $userAgent) {
+            $lockedProducts = ShopProduct::query()
+                ->whereIn('id', $items->pluck('shop_product_id'))
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            foreach ($items as $item) {
+                $product = $lockedProducts->get($item->shop_product_id);
+                if (! $product || ! $product->is_published) {
+                    throw new \RuntimeException('یکی از محصولات سبد خرید دیگر در دسترس نیست.');
+                }
+                if ($product->tracksInventory() && $item->quantity > (int) $product->stock) {
+                    throw new \RuntimeException('موجودی محصول «'.$product->title.'» برای تعداد درخواستی کافی نیست.');
+                }
+            }
+
             $order = Order::query()->create([
                 'user_id' => $user->id,
                 'order_number' => Order::generateOrderNumber(),
@@ -49,7 +66,8 @@ class OrderService
             ]);
 
             foreach ($items as $item) {
-                $product = $item->product;
+                $product = $lockedProducts->get($item->shop_product_id);
+                $reserved = $this->reserveItem($product, (int) $item->quantity);
 
                 OrderItem::query()->create([
                     'order_id' => $order->id,
@@ -61,6 +79,7 @@ class OrderService
                         'slug' => $product->slug,
                         'type' => $product->type,
                         'course_ids' => $product->relatedCourses()->pluck('id')->all(),
+                        'stock_reserved' => $reserved,
                     ],
                 ]);
             }
@@ -77,11 +96,25 @@ class OrderService
             return;
         }
 
-        DB::transaction(function () use ($order, $paymentFields) {
+        DB::transaction(function () use ($order) {
             $locked = Order::query()->lockForUpdate()->find($order->id);
 
             if (! $locked || $locked->isPaid()) {
                 return;
+            }
+
+            $locked->load('items.product');
+            foreach ($locked->items as $item) {
+                if ($item->metadata['stock_reserved'] ?? false) {
+                    continue;
+                }
+
+                $product = $item->product;
+                if (! $product?->tracksInventory()) {
+                    continue;
+                }
+
+                $this->reserveItem($product, (int) $item->quantity);
             }
 
             $locked->update([
@@ -101,6 +134,57 @@ class OrderService
         if ($paymentFields !== []) {
             $order->payment()?->update($paymentFields);
         }
+    }
+
+    public function markFailed(Order $order): void
+    {
+        DB::transaction(function () use ($order) {
+            $locked = Order::query()->lockForUpdate()->find($order->id);
+
+            if (! $locked || $locked->isPaid()) {
+                return;
+            }
+
+            $this->releaseReservedStock($locked);
+
+            if ($locked->status !== Order::STATUS_FAILED) {
+                $locked->update(['status' => Order::STATUS_FAILED]);
+            }
+        });
+    }
+
+    public function reserveForRetry(Order $order): void
+    {
+        DB::transaction(function () use ($order) {
+            $order->load('items');
+            $productIds = $order->items->pluck('shop_product_id')->filter()->unique()->sort()->values();
+            $lockedProducts = ShopProduct::query()
+                ->whereIn('id', $productIds)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            foreach ($order->items as $item) {
+                if ($item->metadata['stock_reserved'] ?? false) {
+                    continue;
+                }
+
+                $product = $lockedProducts->get($item->shop_product_id);
+
+                if (! $product || ! $product->is_published) {
+                    throw new \RuntimeException('یکی از محصولات سفارش دیگر در دسترس نیست.');
+                }
+
+                if (! $this->reserveItem($product, (int) $item->quantity)) {
+                    continue;
+                }
+
+                $metadata = $item->metadata ?? [];
+                $metadata['stock_reserved'] = true;
+                $item->update(['metadata' => $metadata]);
+            }
+        });
     }
 
     public function fulfill(Order $order): void
@@ -212,5 +296,53 @@ class OrderService
             'progress_percent' => $percent,
             'completed_at' => $percent >= 100 ? now() : null,
         ]);
+    }
+
+    private function reserveItem(ShopProduct $product, int $quantity): bool
+    {
+        if (! $product->tracksInventory()) {
+            return false;
+        }
+
+        $updated = ShopProduct::query()
+            ->whereKey($product->id)
+            ->where('stock', '>=', $quantity)
+            ->decrement('stock', $quantity);
+
+        if ($updated !== 1) {
+            throw new \RuntimeException('موجودی محصول «'.$product->title.'» برای تعداد درخواستی کافی نیست.');
+        }
+
+        $product->stock = (int) $product->stock - $quantity;
+
+        return true;
+    }
+
+    private function releaseReservedStock(Order $order): void
+    {
+        $order->load('items');
+        $reserved = $order->items->filter(
+            fn (OrderItem $item) => (bool) ($item->metadata['stock_reserved'] ?? false)
+        );
+
+        if ($reserved->isEmpty()) {
+            return;
+        }
+
+        ShopProduct::query()
+            ->whereIn('id', $reserved->pluck('shop_product_id')->filter()->unique())
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($reserved as $item) {
+            if ($item->shop_product_id) {
+                ShopProduct::query()->whereKey($item->shop_product_id)->increment('stock', $item->quantity);
+            }
+
+            $metadata = $item->metadata ?? [];
+            $metadata['stock_reserved'] = false;
+            $item->update(['metadata' => $metadata]);
+        }
     }
 }

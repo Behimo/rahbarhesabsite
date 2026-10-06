@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\IssueSpotplayerLicenseJob;
 use App\Models\CmsSetting;
 use App\Models\Coupon;
 use App\Models\Course;
@@ -11,6 +12,7 @@ use App\Models\User;
 use App\Support\Money;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class ShopCheckoutTest extends TestCase
@@ -230,6 +232,91 @@ class ShopCheckoutTest extends TestCase
             'status' => 'failed',
         ]);
         $this->assertFalse($user->fresh()->isEnrolledIn($product->course));
+    }
+
+    public function test_course_purchase_ignores_stock_and_queues_a_license(): void
+    {
+        $user = User::factory()->create();
+        $product = $this->paidCourse();
+        $product->update(['stock' => 1]);
+        $product->course->update(['spotplayer_course_id' => 'course-spot-1']);
+        Queue::fake();
+
+        $this->actingAs($user)->post(route('cart.add', $product));
+        $this->actingAs($user)->post(route('cart.add', $product));
+
+        $this->assertDatabaseHas('cart_items', [
+            'user_id' => $user->id,
+            'shop_product_id' => $product->id,
+            'quantity' => 1,
+        ]);
+
+        Http::fake([
+            'https://gateway.zibal.ir/v1/request' => Http::response(['result' => 100, 'trackId' => 901], 200),
+            'https://gateway.zibal.ir/v1/verify' => Http::response([
+                'result' => 100,
+                'amount' => 1_000_000,
+                'refNumber' => 'REF-COURSE',
+            ], 200),
+        ]);
+
+        $this->actingAs($user)->post(route('checkout.process'));
+        $order = Order::query()->first();
+
+        $this->actingAs($user)
+            ->get(route('checkout.callback', ['gateway' => 'zibal', 'trackId' => 901, 'success' => 1]));
+
+        $this->assertSame(1, $product->fresh()->stock);
+        $this->assertTrue($order->fresh()->isPaid());
+        $this->assertTrue($user->fresh()->isEnrolledIn($product->course));
+        Queue::assertPushed(IssueSpotplayerLicenseJob::class, function (IssueSpotplayerLicenseJob $job) use ($user, $product, $order) {
+            return $job->userId === $user->id
+                && $job->courseId === $product->course->id
+                && $job->orderId === $order->id;
+        });
+    }
+
+    public function test_physical_stock_is_reserved_until_payment_and_restored_on_failure(): void
+    {
+        $first = User::factory()->create();
+        $second = User::factory()->create();
+        $product = ShopProduct::query()->create([
+            'slug' => 'reader-'.uniqid(),
+            'title' => 'کارت‌خوان',
+            'price' => 50000,
+            'type' => ShopProduct::TYPE_PHYSICAL,
+            'stock' => 1,
+            'is_published' => true,
+        ]);
+
+        $this->actingAs($first)->post(route('cart.add', $product));
+        $this->actingAs($second)->post(route('cart.add', $product));
+
+        Http::fake([
+            'https://gateway.zibal.ir/v1/request' => Http::response(['result' => 100, 'trackId' => 902], 200),
+        ]);
+
+        $this->actingAs($first)->post(route('checkout.process'))
+            ->assertRedirect('https://gateway.zibal.ir/start/902');
+
+        $this->assertSame(0, $product->fresh()->stock);
+
+        $this->actingAs($second)
+            ->post(route('checkout.process'))
+            ->assertRedirect(route('cart.index'))
+            ->assertSessionHas('error');
+
+        $this->assertSame(0, $product->fresh()->stock);
+        $this->assertSame(1, Order::query()->count());
+
+        $order = Order::query()->first();
+
+        $this->actingAs($first)
+            ->get(route('checkout.callback', ['gateway' => 'zibal', 'trackId' => 902, 'success' => 0]))
+            ->assertRedirect(route('checkout.failed', $order));
+
+        $this->assertSame(Order::STATUS_FAILED, $order->fresh()->status);
+        $this->assertSame(1, $product->fresh()->stock);
     }
 
     public function test_unknown_callback_gateway_does_not_settle_the_payment(): void
