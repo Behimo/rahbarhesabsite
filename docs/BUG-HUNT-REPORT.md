@@ -6,7 +6,7 @@
 | **وضعیت مخزن** | commit `0effb69` (Refactor admin forms for improved layout and usability) |
 | **پشته** | Laravel 12 · PHP 8.3.30 · PHPUnit 11.5.55 · Vite/Alpine |
 | **روش** | شکار خواندنی ۴ بخش موازی (پول/پرداخت، احراز هویت/RBAC، ادمین/آپلود/XSS، فرانت‌اند JS) + اجرای کامل تست‌سوئیت + بازتولید مستقل یافته‌های کلیدی با تست‌های اثباتی موقت |
-| **نتیجه سوئیت** | `Tests: 103, Assertions: 500, Failures: 1` (شکستگی قدیمی `PlatformTest::test_free_course_enrollment`) |
+| **نتیجه سوئیت** | در زمان شکار: `Tests: 103, Failures: 1` (شکستگی قدیمی `PlatformTest::test_free_course_enrollment`) · بعد از افزودن ۱۹ تست رگرسیون: `Tests: 122, Failures: 15` (۱۴ قرمز = لیست زنده باگ‌ها + ۱ مورد قدیمی) |
 | **وضعیت** | 🔴 ۱ Critical · ۵ High تأییدشده · ۱۰ Medium تأییدشده · ۱۳ مشکوک (static) |
 
 ---
@@ -14,7 +14,7 @@
 ## روش و شواهد
 
 - یافته‌های «تأییدشده» با تست PHPUnit بازتولید شدند (۱۶ تست اثباتی اجرا شد و نتیجه ثبت گردید).
-- تست‌های اثباتی **موقت** بودند و بعد از اجرا حذف شدند؛ تست‌های دائمی باید در مرحله «تست رگرسیون» به‌صورت ثبت‌شده اضافه شوند (لیست تسک‌ها در انتها).
+- تست‌های اثباتی ابتدا موقتی بودند و حذف شدند، اما بعداً به‌صورت **۴ فایل تست رگرسیون دائمی** بازگردانده شدند (assertها برعکس شدند تا **رفتار مطلوب** را بسنجند — لیست در بخش ۵).
 - یافته‌های «مشکوک» فقط استدلال ایستا هستند و هنوز بازتولید نشده‌اند؛ برچسب `suspected` دارند.
 - تفکیک «باگ» از «hardening» رعایت شده: موارد بدون تریگر مشخص به‌عنوان hardening ذکر شده‌اند.
 
@@ -197,8 +197,19 @@
 - [ ] **T24** رفع شماره سفارش `uniqid` (برخورد احتمالی) و limiter مردهٔ `otp-verify` per-phone
 - [ ] **T25** پاک‌سازی ریپو: `git rm tests/Feature/ZzHuntAdminTest.php` + مرور کامیت‌های `8367aae`/`0effb69` (که تست‌های موقت را وارد تاریخچه کردند)
 
-### تست‌های رگرسیون دائمی (از تست‌های موقت بازتولیدشده)
-- [ ] **T26** ثبت دائمی تست‌های تأییدشده در `tests/Feature/`: ارتقای نقش، سبد بعد از لاگین، تمدید enrollment، بنِ نشست، `javascript:` در منو، ایمپورت/کش، بلاک نامعتبر بیلدر، پسوند آپلود، `current_password`
+### تست‌های رگرسیون دائمی — ✅ انجام شد (T26)
+- [x] **T26** ثبت دائمی تست‌های تأییدشده در `tests/Feature/` — **۴ فایل / ۱۹ تست** با assert مطلوب (رفتار درست). وضعیت فعلی سوئیت: **۱۴ تست قرمز = لیست زنده باگ‌ها** (با رفع هر تسک سبز می‌شود) + ۵ تست سبز برای رفتارهایی که از قبل درست‌اند.
+
+| فایل تست | تست‌ها | قرمز برای (تسک) |
+|---|---|---|
+| `tests/Feature/RbacRegressionTest.php` | ۲ | T1 — ارتقای نقش به admin |
+| `tests/Feature/AccountSecurityRegressionTest.php` | ۷ (۲ قرمز) | T4 — نشست بن، T12 — رمز فعلی |
+| `tests/Feature/AdminContentRegressionTest.php` | ۸ (۸ قرمز) | T7 منو، T8 XSS، T9 ایمپورت×۲، T10 بیلدر، T11 آپلود، T15 draft، T16 پاپاپ |
+| `tests/Feature/CheckoutRegressionTest.php` | ۲ | T2 سبد مهمان، T3 تمدید enrollment |
+
+- تست‌های سبز فعلی: `guest_cannot_change_password`، `otp_code_cannot_be_replayed`، `otp_code_is_bound_to_session_phone`، `otp_send_route_is_rate_limited`، `unauthenticated_admin_logout_redirects_to_login`.
+- اجرای فقط همین‌ها: `php vendor/bin/phpunit --filter '(Rbac|AccountSecurity|AdminContent|Checkout)RegressionTest'`
+- نکته: یک شکست قدیمی دیگر هم خارج از این‌ها هست: `PlatformTest::test_free_course_enrollment` (= T13).
 
 ---
 
