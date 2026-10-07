@@ -5,14 +5,14 @@
 | **تاریخ** | 2026-10-07 |
 | **کامیت پایه** | `a828e4b` |
 | **دامنه** | سبد خرید → checkout → درگاه پرداخت → callback → verify → markPaid/fulfill |
-| **روش** | شکار باگ‌های پنهان (read-only) + تست‌های خصمانه؛ بدون تغییر کد اپلیکیشن |
-| **نتیجه** | **6 باگ تأییدشده (Confirmed)** — همه با تستِ قرمز اثبات شده‌اند |
-| **وضعیت تست** | `Tests: 6 failed, 122 passed` — ۶ تست جدیدِ `PaymentFlowHardeningTest` قرمزند، ۱۲۲ تست قبلی بدون تغییر سبز |
+| **روش** | شکار باگ، سپس رفع همان یافته‌ها |
+| **نتیجه** | **۶ باگ رفع شد** — به‌علاوه مسیر حذف کوپن که پشت `/cart/{item}` گم می‌شد |
+| **وضعیت تست** | `Tests: 132 passed` — از جمله `PaymentFlowHardeningTest` (۱۰ تست) |
 | **فایل شواهد** | `tests/Feature/PaymentFlowHardeningTest.php` |
 
-> این گزارش فقط «یافته» است؛ طبق روش شکار، هیچ کد اصلاحی اعمال نشده تا مالک پروژه
-> ترتیب رفع را انتخاب کند. هر باگ پایین یک تستِ در حالِ شکست دارد که پس از رفع،
-> باید سبز (regression) شود.
+> یافته‌های پایین همان نقص‌های تأییدشدهٔ ۲۰۲۶-۱۰-۰۷ هستند. کد اصلاح شده و تست‌ها سبز هستند.
+> مصرف کوپن بعد از verify موفق دیگر سفارش را failed نمی‌کند؛ اگر سقف پر شده باشد سفارش paid می‌ماند،
+> دسترسی صادر می‌شود، و روی سفارش یادداشت «سقف کوپن رد شد» برای ادمین می‌ماند.
 
 ---
 
@@ -20,12 +20,12 @@
 
 | # | شدت | یافته | وضعیت |
 |---|---|---|---|
-| 1 | Critical | پولِ ضبط‌شده + سفارش failed (استثنای `recordUsage` بعد از verify) | Confirmed |
-| 2 | Critical | برداشت دوباره از کارت (verify پرداخت دوم روی سفارش paid) | Confirmed |
-| 3 | High | ثبت موفقیت روی ردیف پرداختِ اشتباه (`latestOfMany`) | Confirmed |
-| 4 | High | مبلغ شارژشده ≠ مبلغ نمایش‌داده‌شده (reuse سفارش pending بدون در نظر گرفتن کوپن/قیمت) | Confirmed |
-| 5 | High | کال‌بکِ cancelِ پرداخت قدیمی، سفارشِ در حال پرداخت را failed می‌کند | Confirmed |
-| 6 | Medium | پرداخت pending بدون reconciliation (callback گم‌شده = پول بدون تسویه) | Confirmed (غیابی) |
+| 1 | Critical | پولِ ضبط‌شده + سفارش failed (استثنای `recordUsage` بعد از verify) | Fixed |
+| 2 | Critical | برداشت دوباره از کارت (verify پرداخت دوم روی سفارش paid) | Fixed |
+| 3 | High | ثبت موفقیت روی ردیف پرداختِ اشتباه (`latestOfMany`) | Fixed |
+| 4 | High | مبلغ شارژشده ≠ مبلغ نمایش‌داده‌شده (reuse سفارش pending بدون در نظر گرفتن کوپن/قیمت) | Fixed |
+| 5 | High | کال‌بکِ cancelِ پرداخت قدیمی، سفارشِ در حال پرداخت را failed می‌کند | Fixed |
+| 6 | Medium | پرداخت pending بدون reconciliation (callback گم‌شده = پول بدون تسویه) | Fixed |
 
 ---
 
@@ -47,8 +47,9 @@
   after coupon validation».
 - **Fix:** بعد از verify موفقِ درگاه، هرگز وضعیت پولی را بازنگردان. `recordUsage` را
   مستقل از تراکنشِ paid (try/catch + لاگ + علامت‌گذاری سقف‌شکسته برای ادمین) اجرا کن؛
-  ستون‌های `payment/status` باید مستقل از نتیجه‌ی کوپن success شوند. (این همان یافته‌ی
-  «suspected» گزارش قبلی `BUG-HUNT-REPORT.md` است که اکنون **confirmed** شد.)
+  ستون‌های `payment/status` باید مستقل از نتیجه‌ی کوپن success شوند. یافتهٔ مشکوک
+  `BUG-HUNT-REPORT.md` چیز دیگری بود: آنجا سقف کوپن اصلاً دوباره چک نمی‌شد و قابل دور زدن بود.
+  این باگ اثرِ همان چک است؛ چک داخل تراکنشِ paid، بعد از verify، سفارش را برمی‌گرداند.
 
 ### [Critical] برداشت دوباره از کارت — verify پرداخت دوم روی سفارشِ قبلاً paid
 
@@ -71,12 +72,11 @@
 ### [High] موفقیت روی ردیف پرداختِ اشتباه نوشته می‌شود
 
 - **توضیح:** `markPaid` فیلدهای success (status/ref_id/card/verified_at) را از طریق
-  `$locked->payment()` به‌روزرسانی می‌کند که `hasOne(...)->latestOfMany()` است؛ یعنی
-  **جدیدترین** ردیف، نه ردیفِ verifyشده. اگر payment دوم (جدیدتر) زودتر ایجاد شده باشد،
-  موفقیتِ پرداختِ واقعی (مثلاً zibal) روی ردیفِ پرداختِ انجام‌نشده (zarinpal) نوشته
-  می‌شود و ردیف واقعی تا ابد `pending` می‌ماند. صفحه‌ی موفقیت، صفحه‌ی شکست و پنل ادمین
-  همگی از همین `payment()` می‌خوانند → نام درگاه، ref_id و شماره کارتِ نمایش‌داده‌شده
-  غلط است → تطبیق بانکی/مالی می‌شکند.
+  `$locked->payment()` به‌روزرسانی می‌کند که `hasOne(...)->latestOfMany()` است و روی بزرگ‌ترین `id`
+  می‌نشیند؛ یعنی **جدیدترین** ردیف، نه ردیفِ verifyشده. موفقیتِ پرداختِ واقعی (مثلاً zibal)
+  روی ردیفِ پرداختِ انجام‌نشدهٔ بعدی (zarinpal) نوشته می‌شود و ردیف واقعی تا ابد `pending` می‌ماند.
+  صفحهٔ موفقیت فقط `ref_id` را از همین رابطه نشان می‌دهد؛ نام درگاه، `ref_id` و کارت با هم در
+  جزئیات سفارش ادمین هستند. صفحهٔ شکست `error_message` آخرین تلاش را نشان می‌دهد.
 - **Where:** `app/Services/OrderService.php:140` (`$locked->payment()?->update($paymentFields)`)،
   رابط `app/Models/Order.php:52-55`؛ خوانندگان: `resources/views/pages/shop/success.blade.php:75-78`،
   `failed.blade.php:64-67`، `admin/orders/show.blade.php:112-118`،
@@ -131,7 +131,8 @@
 - **Where:** `routes/console.php` (هیچ Schedule‌ای برای verify پرداخت‌های pending نیست)؛
   مسیرهای `ZibalService::verifyCallback` / `ZarinpalService::verifyCallback` فقط از
   callback مرورگر صدا زده می‌شوند.
-- **Evidence:** static — غیابِ مسیر کدی confirmed است؛ بازتولیدِ شکستِ شبکه لازم نیست.
+- **Evidence:** static در زمان ممیزی — دستور `payments:reconcile` هر ۱۵ دقیقه اضافه شد
+  و سه تستِ reconcile در `PaymentFlowHardeningTest` آن را می‌پوشانند.
 - **Fix:** دستور زمان‌بندی‌شده (مثلاً هر ۱۵ دقیقه): paymentهای `pending` قدیمی‌تر از X
   دقیقه را با verifyِ idempotent (کدهای 101/201 از قبل پشتیبانی می‌شوند) تسویه یا fail کن
   و نتیجه را لاگ/اعلام کن.
@@ -144,8 +145,9 @@
   مبلغِ ریالیِ verify را با جمعِ سفارش تطبیق می‌دهد؛ مسیر «مبلغِ نامعتبر» درست است و تست
   `test_callback_rejects_a_mismatched_gateway_amount` دارد. واحد (تومان ↔ ریال) یکجا و
   صحیح است (`Money::tomanToRials`).
-- **توکن callback:** `hash_equals` + توکن ۴۰ کاراکتری در `gateway_payload` و session؛
-  بدون توکن هیچ state‌ای تغییر نمی‌کند (تست `unknown_callback_gateway` سبز).
+- **توکن callback:** `hash_equals` روی توکن ۴۰ کاراکتریِ `gateway_payload`. اگر query توکن نداشته باشد،
+  توکن همان session پذیرفته می‌شود. بدون توکنِ query و بدون session، هیچ state‌ای تغییر نمی‌کند.
+  تست `unknown_callback_gateway` فقط نام درگاه ناشناس را می‌پوشاند، نه نبودِ توکن.
 - **انتخاب درگاه از سمت کلاینت:** `resolveForCheckout` فقط نامِ فعال را می‌پذیرد (تست سبز).
 - **مسیر رایگان (total ≤ 0):** به درگاه نمی‌رود، مستقیم markPaid؛ بدون پول در میان.
 - **قفل verify:** `payment:verify:{id}` per-payment با `waitUntilSettled` برای هم‌زمانیِ
@@ -172,8 +174,7 @@
 ```bash
 composer test                       # یا: php artisan test
 php artisan test --filter=PaymentFlowHardeningTest
-# انتظار پس از رفعِ هر یافته: آن تست سبز می‌شود
-# وضعیت فعلی: Tests: 6 failed, 122 passed
+# وضعیت پس از رفع: Tests: 132 passed
 ```
 
 ترتیب پیشنهادی رفع: **1 → 2 → 3 → 4 → 5 → 6** (اول جلوگیری از ضبط/حذف پولِ بدون

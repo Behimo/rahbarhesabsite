@@ -23,6 +23,12 @@ interface PaymentGatewayInterface
     public function verifyCallback(array $query): ?Payment;
 
     /**
+     * Settle or fail a pending payment when the browser never returned.
+     * Must not call the gateway once the order is already paid.
+     */
+    public function reconcile(Payment $payment): void;
+
+    /**
      * Paid amount echoed by the gateway verify response, in rials.
      * Null when this gateway does not return the amount.
      *

@@ -109,14 +109,18 @@
                 <p><strong>جمع:</strong> {{ number_format($order->subtotal) }} تومان</p>
                 <p><strong>تخفیف:</strong> {{ number_format($order->discount) }} تومان @if($order->coupon_code) ({{ $order->coupon_code }}) @endif</p>
                 <p><strong>قابل پرداخت:</strong> {{ number_format($order->total) }} تومان</p>
-                @if ($order->payment)
-                    <p><strong>درگاه:</strong> {{ $order->payment->gateway }}</p>
-                    @if ($order->payment->ref_id)
-                        <p><strong>کد پیگیری:</strong> {{ $order->payment->ref_id }}</p>
+                @php($receipt = $order->receiptPayment())
+                @if ($receipt)
+                    <p><strong>درگاه:</strong> {{ $receipt->gateway }}</p>
+                    @if ($receipt->ref_id)
+                        <p><strong>کد پیگیری:</strong> {{ $receipt->ref_id }}</p>
                     @endif
-                    @if ($order->payment->card_pan)
-                        <p><strong>کارت:</strong> {{ $order->payment->card_pan }}</p>
+                    @if ($receipt->card_pan)
+                        <p><strong>کارت:</strong> {{ $receipt->card_pan }}</p>
                     @endif
+                @endif
+                @if ($order->notes)
+                    <p class="mb-0"><strong>یادداشت:</strong> {!! nl2br(e($order->notes)) !!}</p>
                 @endif
             </div>
         </div>

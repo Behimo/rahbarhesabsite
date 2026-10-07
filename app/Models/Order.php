@@ -3,10 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Str;
 
 class Order extends Model
 {
@@ -57,6 +57,23 @@ class Order extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * The payment that actually settled a paid order, otherwise the latest attempt.
+     */
+    public function receiptPayment(): ?Payment
+    {
+        $payments = $this->relationLoaded('payments')
+            ? $this->payments
+            : $this->payments()->get();
+
+        $successful = $payments
+            ->where('status', Payment::STATUS_SUCCESS)
+            ->sortByDesc('id')
+            ->first();
+
+        return $successful ?? $payments->sortByDesc('id')->first();
     }
 
     public function isPaid(): bool

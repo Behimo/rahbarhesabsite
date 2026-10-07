@@ -29,7 +29,7 @@ class OrderController extends Controller
 
     public function show(Order $order): View
     {
-        $order->load(['user', 'items.product', 'payment', 'coupon']);
+        $order->load(['user', 'items.product', 'payments', 'coupon']);
 
         $licenses = SpotplayerLicense::query()
             ->with('course.product')

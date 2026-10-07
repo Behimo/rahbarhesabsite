@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Contracts\PaymentGatewayInterface;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Services\Concerns\AuthorizesPaymentCallback;
@@ -10,7 +11,7 @@ use App\Support\Money;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class ZarinpalService implements \App\Contracts\PaymentGatewayInterface
+class ZarinpalService implements PaymentGatewayInterface
 {
     use AuthorizesPaymentCallback;
     use GuardsVerifiedPaymentAmount;
@@ -57,9 +58,7 @@ class ZarinpalService implements \App\Contracts\PaymentGatewayInterface
 
         $merchantId = $this->merchantId();
         $sandbox = $this->sandbox();
-        $baseUrl = $sandbox
-            ? 'https://sandbox.zarinpal.com/pg/v4/payment'
-            : 'https://api.zarinpal.com/pg/v4/payment';
+        $baseUrl = $this->paymentBaseUrl();
         if ($existingUrl = $this->reusablePaymentUrl($order->id, $this->name())) {
             return $existingUrl;
         }
@@ -118,16 +117,16 @@ class ZarinpalService implements \App\Contracts\PaymentGatewayInterface
 
         $payment = Payment::query()->where('gateway', 'zarinpal')->where('authority', $authority)->first();
 
-        if (! $payment) {
-            return null;
-        }
-
-        if (! $this->callbackAuthorized($payment, $query)) {
+        if (! $payment || ! $this->callbackAuthorized($payment, $query)) {
             return null;
         }
 
         if ($payment->isSuccessful() && $payment->order?->isPaid()) {
             return $payment;
+        }
+
+        if ($payment->status === Payment::STATUS_FAILED) {
+            return null;
         }
 
         if ($status !== 'OK') {
@@ -136,9 +135,7 @@ class ZarinpalService implements \App\Contracts\PaymentGatewayInterface
                 'error_message' => 'پرداخت توسط کاربر لغو شد.',
                 'gateway_payload' => array_merge($payment->gateway_payload ?? [], ['callback' => $query]),
             ]);
-            if ($payment->order) {
-                $this->orders->markFailed($payment->order);
-            }
+            $this->orders->markFailedFromPayment($payment);
 
             return null;
         }
@@ -150,73 +147,148 @@ class ZarinpalService implements \App\Contracts\PaymentGatewayInterface
         }
 
         try {
-            $payment->refresh();
+            return $this->runWithOrderLock($payment, function () use ($payment, $authority) {
+                $resolved = $this->resolveAlreadyPaidOrder($payment);
 
-            if ($payment->isSuccessful() && $payment->order?->isPaid()) {
-                return $payment;
-            }
-
-            $sandbox = $this->sandbox();
-            $baseUrl = $sandbox
-                ? 'https://sandbox.zarinpal.com/pg/v4/payment'
-                : 'https://api.zarinpal.com/pg/v4/payment';
-
-            $response = Http::post($baseUrl.'/verify.json', [
-                'merchant_id' => $this->merchantId(),
-                'amount' => Money::tomanToRials((int) $payment->amount),
-                'authority' => $authority,
-            ]);
-
-            $code = $response->json('data.code');
-            $payload = $response->json();
-
-            if (in_array($code, [100, 101], true)) {
-                if (! $this->amountAccepted($payment, $payload)) {
-                    $this->rejectUntrustedAmount($payment, $payload);
-
-                    return null;
+                if ($resolved !== false) {
+                    return $resolved?->fresh('order');
                 }
 
-                $cardPan = $response->json('data.card_pan') ?? $response->json('data.cardPan');
-                $cardHash = $response->json('data.card_hash') ?? $response->json('data.cardHash');
+                $response = Http::post($this->paymentBaseUrl().'/verify.json', [
+                    'merchant_id' => $this->merchantId(),
+                    'amount' => Money::tomanToRials((int) $payment->amount),
+                    'authority' => $authority,
+                ]);
 
-                try {
-                    $this->orders->markPaid($payment->order, [
-                        'status' => Payment::STATUS_SUCCESS,
-                        'ref_id' => (string) $response->json('data.ref_id'),
-                        'card_pan' => $cardPan,
-                        'card_hash' => $cardHash,
-                        'user_id' => $payment->user_id ?: $payment->order?->user_id,
-                        'gateway_response' => $payload,
-                        'verified_at' => now(),
-                        'paid_at' => now(),
-                        'error_message' => null,
-                    ]);
-                } catch (\RuntimeException) {
-                    $payment->refresh();
-                    if ($payment->order && ! $payment->order->isPaid()) {
-                        $this->orders->markFailed($payment->order);
-                    }
+                $payload = $response->json();
 
-                    return null;
-                }
-
-                return $payment->fresh('order');
-            }
-
-            $payment->update([
-                'status' => Payment::STATUS_FAILED,
-                'gateway_response' => $payload,
-                'error_message' => (string) ($response->json('errors.message') ?? 'تأیید پرداخت ناموفق بود.'),
-            ]);
-            if ($payment->order) {
-                $this->orders->markFailed($payment->order);
-            }
-
-            return null;
+                return $this->applyZarinpalVerification($payment, is_array($payload) ? $payload : [], true);
+            });
         } finally {
             $lock->release();
         }
+    }
+
+    public function reconcile(Payment $payment): void
+    {
+        if ($payment->gateway !== $this->name() || $payment->status !== Payment::STATUS_PENDING || ! $payment->authority) {
+            return;
+        }
+
+        $this->runWithOrderLock($payment, function () use ($payment) {
+            $resolved = $this->resolveAlreadyPaidOrder($payment);
+
+            if ($resolved !== false || $payment->status !== Payment::STATUS_PENDING) {
+                return;
+            }
+
+            try {
+                $response = Http::timeout(10)->post($this->paymentBaseUrl().'/verify.json', [
+                    'merchant_id' => $this->merchantId(),
+                    'amount' => Money::tomanToRials((int) $payment->amount),
+                    'authority' => $payment->authority,
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('Zarinpal reconcile request failed.', [
+                    'payment_id' => $payment->id,
+                    'message' => $e->getMessage(),
+                ]);
+
+                return;
+            }
+
+            $payload = $response->json();
+
+            if (! is_array($payload)) {
+                Log::warning('Zarinpal reconcile returned an unreadable response.', [
+                    'payment_id' => $payment->id,
+                ]);
+
+                return;
+            }
+
+            $this->applyZarinpalVerification($payment, $payload, false);
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function applyZarinpalVerification(Payment $payment, array $payload, bool $failOnUnknown): ?Payment
+    {
+        $code = $payload['data']['code'] ?? null;
+        $code = is_numeric($code) ? (int) $code : null;
+
+        // 100 = first verify, 101 = already verified
+        if (in_array($code, [100, 101], true)) {
+            if (! $this->amountAccepted($payment, $payload)) {
+                $this->rejectUntrustedAmount($payment, $payload);
+
+                return null;
+            }
+
+            $cardPan = $payload['data']['card_pan'] ?? $payload['data']['cardPan'] ?? null;
+            $cardHash = $payload['data']['card_hash'] ?? $payload['data']['cardHash'] ?? null;
+
+            try {
+                $this->orders->markPaid($payment->order, [
+                    'status' => Payment::STATUS_SUCCESS,
+                    'ref_id' => (string) ($payload['data']['ref_id'] ?? ''),
+                    'card_pan' => $cardPan,
+                    'card_hash' => $cardHash,
+                    'user_id' => $payment->user_id ?: $payment->order?->user_id,
+                    'gateway_response' => $payload,
+                    'verified_at' => now(),
+                    'paid_at' => now(),
+                    'error_message' => null,
+                ], $payment);
+            } catch (\RuntimeException $e) {
+                Log::critical('Zarinpal payment was verified but the order could not be fulfilled.', [
+                    'payment_id' => $payment->id,
+                    'order_id' => $payment->order_id,
+                    'message' => $e->getMessage(),
+                ]);
+                $payment->refresh();
+                if ($payment->order && ! $payment->order->isPaid()) {
+                    $this->orders->markFailedFromPayment($payment);
+                }
+
+                return null;
+            }
+
+            return $payment->fresh('order');
+        }
+
+        $errorCode = $payload['errors']['code'] ?? null;
+        $errorCode = is_numeric($errorCode) ? (int) $errorCode : null;
+        // -50 amount mismatch, -51 unpaid session, -54 invalid authority.
+        $finalFailure = in_array($errorCode, [-50, -51, -54], true);
+
+        if (! $finalFailure && ! $failOnUnknown) {
+            Log::warning('Zarinpal reconcile left the payment pending.', [
+                'payment_id' => $payment->id,
+                'code' => $code,
+                'error_code' => $errorCode,
+            ]);
+
+            return null;
+        }
+
+        $payment->update([
+            'status' => Payment::STATUS_FAILED,
+            'gateway_response' => $payload,
+            'error_message' => (string) ($payload['errors']['message'] ?? 'تأیید پرداخت ناموفق بود.'),
+        ]);
+        $this->orders->markFailedFromPayment($payment);
+
+        return null;
+    }
+
+    private function paymentBaseUrl(): string
+    {
+        return $this->sandbox()
+            ? 'https://sandbox.zarinpal.com/pg/v4/payment'
+            : 'https://api.zarinpal.com/pg/v4/payment';
     }
 
     private function merchantId(): mixed

@@ -112,11 +112,10 @@ Route::get('/p/{slug}', [PageController::class, 'show'])->name('pages.show');
 Route::controller(ShopController::class)->group(function () {
     Route::get('/cart', 'cart')->name('cart.index');
     Route::post('/cart/add/{product}', 'addToCart')->name('cart.add');
-    Route::put('/cart/{item}', 'updateCart')->name('cart.update');
-    Route::delete('/cart/{item}', 'removeFromCart')->name('cart.remove');
-
     Route::post('/cart/coupon', 'applyCoupon')->middleware('throttle:coupon')->name('cart.coupon');
     Route::delete('/cart/coupon', 'removeCoupon')->name('cart.coupon.remove');
+    Route::put('/cart/{item}', 'updateCart')->name('cart.update');
+    Route::delete('/cart/{item}', 'removeFromCart')->name('cart.remove');
 
     Route::get('/checkout/callback', 'callback')->name('checkout.callback');
     Route::get('/checkout/failed/{order?}', 'failed')->name('checkout.failed');

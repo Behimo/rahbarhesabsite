@@ -61,10 +61,11 @@
                         <dt>مبلغ</dt>
                         <dd>{{ fa_digits(number_format($order->total)) }} تومان</dd>
                     </div>
-                    @if ($order->payment?->error_message)
+                    @php($receipt = $order->receiptPayment())
+                    @if ($receipt?->error_message)
                         <div class="rh-result__meta-wide">
                             <dt>جزئیات</dt>
-                            <dd>{{ $order->payment->error_message }}</dd>
+                            <dd>{{ $receipt->error_message }}</dd>
                         </div>
                     @endif
                 </dl>

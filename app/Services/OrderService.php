@@ -3,16 +3,19 @@
 namespace App\Services;
 
 use App\Jobs\IssueSpotplayerLicenseJob;
+use App\Models\Coupon;
 use App\Models\Course;
 use App\Models\CourseEnrollment;
 use App\Models\CourseLesson;
 use App\Models\LessonProgress;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Payment;
 use App\Models\ShopProduct;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class OrderService
 {
@@ -31,7 +34,7 @@ class OrderService
 
         $coupon = $this->coupons->applied($user);
 
-        $reusable = $this->reusablePendingOrder($user, $items);
+        $reusable = $this->reusablePendingOrder($user, $items, $coupon);
         if ($reusable) {
             return $reusable;
         }
@@ -98,7 +101,7 @@ class OrderService
         });
     }
 
-    public function markPaid(Order $order, array $paymentFields = []): void
+    public function markPaid(Order $order, array $paymentFields = [], ?Payment $payment = null): void
     {
         $order->refresh();
 
@@ -106,7 +109,7 @@ class OrderService
             return;
         }
 
-        DB::transaction(function () use ($order, $paymentFields) {
+        DB::transaction(function () use ($order, $paymentFields, $payment) {
             $locked = Order::query()->lockForUpdate()->find($order->id);
 
             if (! $locked || $locked->isPaid()) {
@@ -132,16 +135,14 @@ class OrderService
                 'paid_at' => now(),
             ]);
 
-            if ($locked->coupon_id) {
-                $this->coupons->recordUsage($locked);
-            }
-
             if ($paymentFields !== []) {
-                $locked->payment()?->update($paymentFields);
+                $this->recordPaymentResult($locked, $paymentFields, $payment);
             }
 
             $this->fulfill($locked->fresh(['items.product.course', 'user']));
         });
+
+        $this->recordCouponUsage($order->fresh());
 
         $order->load('items');
         $this->cart->clearProductsForUser(
@@ -153,17 +154,35 @@ class OrderService
     public function markFailed(Order $order): void
     {
         DB::transaction(function () use ($order) {
-            $locked = Order::query()->lockForUpdate()->find($order->id);
+            $this->failLockedOrder(Order::query()->lockForUpdate()->find($order->id));
+        });
+    }
+
+    /**
+     * Fail the order only when no other payment attempt is still open.
+     * A stale cancel for an older attempt must not release stock or
+     * abandon the payment the customer is completing now.
+     */
+    public function markFailedFromPayment(Payment $payment): void
+    {
+        DB::transaction(function () use ($payment) {
+            $locked = Order::query()->lockForUpdate()->find($payment->order_id);
 
             if (! $locked || $locked->isPaid()) {
                 return;
             }
 
-            $this->releaseReservedStock($locked);
+            $hasOtherOpenPayment = Payment::query()
+                ->where('order_id', $locked->id)
+                ->whereKeyNot($payment->id)
+                ->where('status', Payment::STATUS_PENDING)
+                ->exists();
 
-            if ($locked->status !== Order::STATUS_FAILED) {
-                $locked->update(['status' => Order::STATUS_FAILED]);
+            if ($hasOtherOpenPayment) {
+                return;
             }
+
+            $this->failLockedOrder($locked);
         });
     }
 
@@ -315,7 +334,7 @@ class OrderService
         ]);
     }
 
-    private function reusablePendingOrder(User $user, Collection $items): ?Order
+    private function reusablePendingOrder(User $user, Collection $items, ?Coupon $coupon): ?Order
     {
         $pending = Order::query()
             ->where('user_id', $user->id)
@@ -331,13 +350,102 @@ class OrderService
         $current = $items->map(fn ($item) => $item->shop_product_id.':'.$item->quantity)->sort()->values()->all();
         $existing = $pending->items->map(fn ($item) => $item->shop_product_id.':'.$item->quantity)->sort()->values()->all();
 
-        if ($current === $existing) {
-            return $pending->load('items.product');
+        if ($current !== $existing || ! $this->pendingQuoteMatches($pending, $items, $coupon)) {
+            $this->markFailed($pending);
+
+            return null;
         }
 
-        $this->markFailed($pending);
+        return $pending->load('items.product');
+    }
 
-        return null;
+    private function pendingQuoteMatches(Order $pending, Collection $items, ?Coupon $coupon): bool
+    {
+        $items->loadMissing('product');
+
+        if ($items->contains(fn ($item) => $item->product === null)) {
+            return false;
+        }
+
+        $pricesMatch = $pending->items->every(function (OrderItem $item) use ($items) {
+            $cartItem = $items->first(
+                fn ($cartItem) => (int) $cartItem->shop_product_id === (int) $item->shop_product_id
+            );
+
+            return $cartItem && (int) $item->price === (int) $cartItem->product->effectivePrice();
+        });
+
+        $subtotal = (int) $items->sum(
+            fn ($item) => (int) $item->product->effectivePrice() * (int) $item->quantity
+        );
+        $discount = $coupon ? $this->coupons->discountFor($coupon, $items) : 0;
+        $total = max(0, $subtotal - $discount);
+
+        return $pricesMatch
+            && (int) $pending->coupon_id === (int) ($coupon?->id ?? 0)
+            && (int) $pending->subtotal === $subtotal
+            && (int) $pending->discount === $discount
+            && (int) $pending->total === $total;
+    }
+
+    /** @param  array<string, mixed>  $paymentFields */
+    private function recordPaymentResult(Order $order, array $paymentFields, ?Payment $payment): void
+    {
+        $target = Payment::query()
+            ->where('order_id', $order->id)
+            ->when($payment, fn ($query) => $query->whereKey($payment->id))
+            ->when(! $payment, fn ($query) => $query->latest('id'))
+            ->lockForUpdate()
+            ->first();
+
+        $target?->update($paymentFields);
+    }
+
+    private function recordCouponUsage(Order $order): void
+    {
+        if (! $order->coupon_id || ! $order->isPaid()) {
+            return;
+        }
+
+        try {
+            DB::transaction(fn () => $this->coupons->recordUsage($order));
+        } catch (\RuntimeException $e) {
+            Log::error('Coupon usage was not recorded after a captured payment.', [
+                'order_id' => $order->id,
+                'coupon_id' => $order->coupon_id,
+                'message' => $e->getMessage(),
+            ]);
+
+            $note = 'سقف کوپن بعد از پرداخت موفق رد شد و مصرف ثبت نشد.';
+            $existing = trim((string) $order->notes);
+
+            if (! str_contains($existing, $note)) {
+                $order->update([
+                    'notes' => trim($existing."\n".$note),
+                ]);
+            }
+        }
+    }
+
+    private function failLockedOrder(?Order $locked): void
+    {
+        if (! $locked || $locked->isPaid()) {
+            return;
+        }
+
+        $this->releaseReservedStock($locked);
+
+        if ($locked->status !== Order::STATUS_FAILED) {
+            $locked->update(['status' => Order::STATUS_FAILED]);
+        }
+
+        Payment::query()
+            ->where('order_id', $locked->id)
+            ->where('status', Payment::STATUS_PENDING)
+            ->update([
+                'status' => Payment::STATUS_FAILED,
+                'error_message' => 'سفارش بسته شد.',
+            ]);
     }
 
     private function reserveItem(ShopProduct $product, int $quantity): bool

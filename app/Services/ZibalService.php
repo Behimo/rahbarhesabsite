@@ -114,16 +114,16 @@ class ZibalService implements PaymentGatewayInterface
 
         $payment = Payment::query()->where('gateway', 'zibal')->where('authority', (string) $trackId)->first();
 
-        if (! $payment) {
-            return null;
-        }
-
-        if (! $this->callbackAuthorized($payment, $query)) {
+        if (! $payment || ! $this->callbackAuthorized($payment, $query)) {
             return null;
         }
 
         if ($payment->isSuccessful() && $payment->order?->isPaid()) {
             return $payment;
+        }
+
+        if ($payment->status === Payment::STATUS_FAILED) {
+            return null;
         }
 
         if (! $success) {
@@ -132,9 +132,7 @@ class ZibalService implements PaymentGatewayInterface
                 'error_message' => 'پرداخت توسط کاربر لغو شد.',
                 'gateway_payload' => array_merge($payment->gateway_payload ?? [], ['callback' => $query]),
             ]);
-            if ($payment->order) {
-                $this->orders->markFailed($payment->order);
-            }
+            $this->orders->markFailedFromPayment($payment);
 
             return null;
         }
@@ -146,66 +144,132 @@ class ZibalService implements PaymentGatewayInterface
         }
 
         try {
-            $payment->refresh();
+            return $this->runWithOrderLock($payment, function () use ($payment, $trackId) {
+                $resolved = $this->resolveAlreadyPaidOrder($payment);
 
-            if ($payment->isSuccessful() && $payment->order?->isPaid()) {
-                return $payment;
-            }
-
-            $baseUrl = $this->baseUrl();
-            $response = Http::post($baseUrl.'/v1/verify', [
-                'merchant' => $this->setting('merchant'),
-                'trackId' => $trackId,
-            ]);
-
-            $result = $response->json('result');
-            $payload = $response->json();
-
-            // 100 = first verify, 201 = already verified
-            if (in_array($result, [100, 201], true)) {
-                if (! $this->amountAccepted($payment, $payload)) {
-                    $this->rejectUntrustedAmount($payment, $payload);
-
-                    return null;
+                if ($resolved !== false) {
+                    return $resolved?->fresh('order');
                 }
 
-                try {
-                    $this->orders->markPaid($payment->order, [
-                        'status' => Payment::STATUS_SUCCESS,
-                        'ref_id' => (string) ($payload['refNumber'] ?? $payment->ref_id),
-                        'card_pan' => $payload['cardNumber'] ?? $payment->card_pan,
-                        'card_hash' => $payload['cardHash'] ?? $payment->card_hash,
-                        'user_id' => $payment->user_id ?: $payment->order?->user_id,
-                        'gateway_response' => $payload,
-                        'verified_at' => now(),
-                        'paid_at' => now(),
-                        'error_message' => null,
-                    ]);
-                } catch (\RuntimeException) {
-                    $payment->refresh();
-                    if ($payment->order && ! $payment->order->isPaid()) {
-                        $this->orders->markFailed($payment->order);
-                    }
+                $response = Http::post($this->baseUrl().'/v1/verify', [
+                    'merchant' => $this->setting('merchant'),
+                    'trackId' => $trackId,
+                ]);
 
-                    return null;
-                }
+                $payload = $response->json();
 
-                return $payment->fresh('order');
-            }
-
-            $payment->update([
-                'status' => Payment::STATUS_FAILED,
-                'gateway_response' => $payload,
-                'error_message' => (string) ($payload['message'] ?? 'تأیید پرداخت ناموفق بود.'),
-            ]);
-            if ($payment->order) {
-                $this->orders->markFailed($payment->order);
-            }
-
-            return null;
+                return $this->applyZibalVerification($payment, is_array($payload) ? $payload : [], true);
+            });
         } finally {
             $lock->release();
         }
+    }
+
+    public function reconcile(Payment $payment): void
+    {
+        if ($payment->gateway !== $this->name() || $payment->status !== Payment::STATUS_PENDING || ! $payment->authority) {
+            return;
+        }
+
+        $this->runWithOrderLock($payment, function () use ($payment) {
+            $resolved = $this->resolveAlreadyPaidOrder($payment);
+
+            if ($resolved !== false || $payment->status !== Payment::STATUS_PENDING) {
+                return;
+            }
+
+            try {
+                $response = Http::timeout(10)->post($this->baseUrl().'/v1/verify', [
+                    'merchant' => $this->setting('merchant'),
+                    'trackId' => $payment->authority,
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('Zibal reconcile request failed.', [
+                    'payment_id' => $payment->id,
+                    'message' => $e->getMessage(),
+                ]);
+
+                return;
+            }
+
+            $payload = $response->json();
+
+            if (! is_array($payload)) {
+                Log::warning('Zibal reconcile returned an unreadable response.', [
+                    'payment_id' => $payment->id,
+                ]);
+
+                return;
+            }
+
+            $this->applyZibalVerification($payment, $payload, false);
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function applyZibalVerification(Payment $payment, array $payload, bool $failOnUnknown): ?Payment
+    {
+        $result = $payload['result'] ?? null;
+
+        // 100 = first verify, 201 = already verified
+        if (in_array($result, [100, 201], true)) {
+            if (! $this->amountAccepted($payment, $payload)) {
+                $this->rejectUntrustedAmount($payment, $payload);
+
+                return null;
+            }
+
+            try {
+                $this->orders->markPaid($payment->order, [
+                    'status' => Payment::STATUS_SUCCESS,
+                    'ref_id' => (string) ($payload['refNumber'] ?? $payment->ref_id),
+                    'card_pan' => $payload['cardNumber'] ?? $payment->card_pan,
+                    'card_hash' => $payload['cardHash'] ?? $payment->card_hash,
+                    'user_id' => $payment->user_id ?: $payment->order?->user_id,
+                    'gateway_response' => $payload,
+                    'verified_at' => now(),
+                    'paid_at' => now(),
+                    'error_message' => null,
+                ], $payment);
+            } catch (\RuntimeException $e) {
+                Log::critical('Zibal payment was verified but the order could not be fulfilled.', [
+                    'payment_id' => $payment->id,
+                    'order_id' => $payment->order_id,
+                    'message' => $e->getMessage(),
+                ]);
+                $payment->refresh();
+                if ($payment->order && ! $payment->order->isPaid()) {
+                    $this->orders->markFailedFromPayment($payment);
+                }
+
+                return null;
+            }
+
+            return $payment->fresh('order');
+        }
+
+        // 202 = unpaid or failed, 203 = unknown track id. Other codes can be transient.
+        $finalFailure = in_array($result, [202, 203], true);
+
+        if (! $finalFailure && ! $failOnUnknown) {
+            Log::warning('Zibal reconcile left the payment pending.', [
+                'payment_id' => $payment->id,
+                'result' => $result,
+            ]);
+
+            return null;
+        }
+
+        $payment->update([
+            'status' => Payment::STATUS_FAILED,
+            'gateway_response' => $payload,
+            'error_message' => (string) ($payload['message'] ?? 'تأیید پرداخت ناموفق بود.'),
+        ]);
+        $this->orders->markFailedFromPayment($payment);
+
+        return null;
     }
 
     private function setting(string $key, mixed $default = null): mixed

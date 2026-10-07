@@ -179,7 +179,7 @@ class ShopController extends SiteController
             return redirect()->route('panel.orders')->with('error', 'این سفارش قابل پرداخت مجدد نیست.');
         }
 
-        $openPayment = $order->payments()->where('status', \App\Models\Payment::STATUS_PENDING)->latest('id')->first();
+        $openPayment = $order->payments()->where('status', Payment::STATUS_PENDING)->latest('id')->first();
         $openUrl = $openPayment->gateway_payload['start_url'] ?? null;
 
         if (is_string($openUrl) && $openUrl !== '') {
@@ -235,7 +235,7 @@ class ShopController extends SiteController
             abort(403);
         }
 
-        $order->load(['items.product.course', 'payment']);
+        $order->load(['items.product.course', 'payments']);
 
         $licenses = SpotplayerLicense::query()
             ->with('course.product')
@@ -261,7 +261,7 @@ class ShopController extends SiteController
         }
 
         if ($order) {
-            $order->load(['payment']);
+            $order->load(['payments']);
         }
 
         return $this->render('pages.shop.failed', [

@@ -72,10 +72,11 @@
                         <dd>{{ fa_date($order->paid_at, 'yyyy/MM/dd HH:mm') }}</dd>
                     </div>
                 @endif
-                @if ($order->payment?->ref_id)
+                @php($receipt = $order->receiptPayment())
+                @if ($receipt?->ref_id)
                     <div>
                         <dt>کد پیگیری</dt>
-                        <dd dir="ltr">{{ $order->payment->ref_id }}</dd>
+                        <dd dir="ltr">{{ $receipt->ref_id }}</dd>
                     </div>
                 @endif
             </dl>

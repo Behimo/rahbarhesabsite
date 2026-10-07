@@ -141,6 +141,10 @@ class PaymentFlowHardeningTest extends TestCase
         // The zarinpal payment was never completed at the gateway.
         $this->assertSame(Payment::STATUS_PENDING, $zarinpalPayment->status, 'Unpaid zarinpal payment was written with the zibal success.');
         $this->assertNull($zarinpalPayment->ref_id);
+
+        $this->actingAs($user)
+            ->get(route('checkout.success', $order))
+            ->assertSee('REF-ZIBAL');
     }
 
     public function test_second_gateway_payment_is_not_captured_after_order_is_paid(): void
@@ -250,6 +254,7 @@ class PaymentFlowHardeningTest extends TestCase
             'Gateway captured the payment (verify result 100) but the order was failed after coupon validation.'
         );
         $this->assertSame(Payment::STATUS_SUCCESS, $secondOrder->payment->status);
+        $this->assertStringContainsString('سقف کوپن', (string) $secondOrder->notes);
         $this->assertTrue($second->fresh()->isEnrolledIn($product->course));
     }
 
@@ -304,6 +309,149 @@ class PaymentFlowHardeningTest extends TestCase
             ->get(route('checkout.callback', ['gateway' => 'zibal', 'trackId' => $secondAuthority, 'success' => 1]))
             ->assertRedirect(route('checkout.success', $order));
         $this->assertTrue($order->fresh()->isPaid());
+    }
+
+    public function test_superseded_pending_payment_is_not_verified_after_the_cart_total_changes(): void
+    {
+        $user = User::factory()->create();
+        $product = $this->makeProduct();
+        Coupon::query()->create([
+            'code' => 'OFF10',
+            'type' => 'percentage_cart',
+            'value' => 10,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($user)->post(route('cart.add', $product));
+
+        Http::fake([
+            'https://gateway.zibal.ir/v1/request' => Http::sequence()
+                ->push(['result' => 100, 'trackId' => 861], 200)
+                ->push(['result' => 100, 'trackId' => 862], 200),
+            'https://gateway.zibal.ir/v1/verify' => Http::response([
+                'result' => 100,
+                'amount' => 1000000,
+                'refNumber' => 'REF-OLD',
+            ], 200),
+        ]);
+
+        $this->actingAs($user)->post(route('checkout.process'));
+        $firstOrder = Order::query()->firstOrFail();
+        $firstAuthority = $firstOrder->payment->authority;
+
+        $this->actingAs($user)->post(route('cart.coupon'), ['code' => 'OFF10']);
+        $this->actingAs($user)->post(route('checkout.process'));
+
+        $this->assertSame(Order::STATUS_FAILED, $firstOrder->fresh()->status);
+
+        $this->actingAs($user)->get(route('checkout.callback', [
+            'gateway' => 'zibal',
+            'trackId' => $firstAuthority,
+            'success' => 1,
+        ]));
+
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'gateway.zibal.ir/v1/verify'));
+        $this->assertSame(Order::STATUS_FAILED, $firstOrder->fresh()->status);
+        $this->assertSame(
+            Payment::STATUS_FAILED,
+            Payment::query()->where('authority', (string) $firstAuthority)->firstOrFail()->status
+        );
+        $this->assertDatabaseHas('orders', ['user_id' => $user->id, 'total' => 90000, 'status' => Order::STATUS_PENDING]);
+    }
+
+    public function test_reconcile_settles_a_payment_whose_callback_never_arrived(): void
+    {
+        $user = User::factory()->create();
+        $product = $this->makeProduct();
+        $this->actingAs($user)->post(route('cart.add', $product));
+
+        Http::fake([
+            'https://gateway.zibal.ir/v1/request' => Http::response(['result' => 100, 'trackId' => 971], 200),
+            'https://gateway.zibal.ir/v1/verify' => Http::response([
+                'result' => 100,
+                'amount' => 1000000,
+                'refNumber' => 'REF-RECONCILE',
+            ], 200),
+        ]);
+
+        $this->actingAs($user)->post(route('checkout.process'));
+        $payment = Payment::query()->firstOrFail();
+        $payment->forceFill(['created_at' => now()->subMinutes(31)])->save();
+
+        $this->artisan('payments:reconcile')->assertSuccessful();
+
+        $this->assertTrue($payment->order->fresh()->isPaid());
+        $this->assertSame(Payment::STATUS_SUCCESS, $payment->fresh()->status);
+        $this->assertSame('REF-RECONCILE', $payment->fresh()->ref_id);
+        $this->assertTrue($user->fresh()->isEnrolledIn($product->course));
+    }
+
+    public function test_reconcile_does_not_capture_a_second_payment_after_the_order_is_paid(): void
+    {
+        $this->enableBothGateways();
+        $user = User::factory()->create();
+        $product = $this->makeProduct();
+        $this->actingAs($user)->post(route('cart.add', $product));
+
+        Http::fake([
+            'https://gateway.zibal.ir/v1/request' => Http::response(['result' => 100, 'trackId' => 981], 200),
+            'https://sandbox.zarinpal.com/pg/v4/payment/request.json' => Http::response([
+                'data' => ['authority' => 'AUTH-981', 'code' => 100],
+            ], 200),
+            'https://sandbox.zarinpal.com/pg/v4/payment/verify.json' => Http::response([
+                'data' => ['code' => 100, 'ref_id' => 'REF-ZARINPAL'],
+            ], 200),
+        ]);
+
+        $this->actingAs($user)->post(route('checkout.process'), ['gateway' => 'zibal']);
+        $this->actingAs($user)->post(route('checkout.process'), ['gateway' => 'zarinpal']);
+        $this->actingAs($user)->get(route('checkout.callback', [
+            'gateway' => 'zarinpal',
+            'Authority' => 'AUTH-981',
+            'Status' => 'OK',
+        ]));
+
+        Payment::query()->where('authority', '981')->firstOrFail()
+            ->forceFill(['created_at' => now()->subMinutes(31)])
+            ->save();
+
+        Http::fake([
+            'https://gateway.zibal.ir/v1/verify' => Http::response([
+                'result' => 100,
+                'amount' => 1000000,
+                'refNumber' => 'REF-SHOULD-NOT-CAPTURE',
+            ], 200),
+        ]);
+
+        $this->artisan('payments:reconcile')->assertSuccessful();
+
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'gateway.zibal.ir/v1/verify'));
+        $this->assertSame(Payment::STATUS_FAILED, Payment::query()->where('authority', '981')->firstOrFail()->status);
+        $this->assertTrue(Order::query()->firstOrFail()->isPaid());
+    }
+
+    public function test_reconcile_fails_an_unpaid_attempt_and_releases_the_order(): void
+    {
+        $user = User::factory()->create();
+        $product = $this->makeProduct();
+        $this->actingAs($user)->post(route('cart.add', $product));
+
+        Http::fake([
+            'https://gateway.zibal.ir/v1/request' => Http::response(['result' => 100, 'trackId' => 991], 200),
+            'https://gateway.zibal.ir/v1/verify' => Http::response([
+                'result' => 202,
+                'message' => 'unpaid',
+            ], 200),
+        ]);
+
+        $this->actingAs($user)->post(route('checkout.process'));
+        Payment::query()->firstOrFail()->forceFill(['created_at' => now()->subMinutes(31)])->save();
+
+        $this->artisan('payments:reconcile')->assertSuccessful();
+
+        $this->assertSame(Order::STATUS_FAILED, Order::query()->firstOrFail()->status);
+        $this->assertSame(Payment::STATUS_FAILED, Payment::query()->firstOrFail()->status);
+        $this->assertFalse($user->fresh()->isEnrolledIn($product->course));
     }
 
     private function enableBothGateways(): void
