@@ -76,7 +76,7 @@ class SidebarService
     {
         return [
             'id' => $sidebar->id,
-            'title' => $sidebar->title,
+            'title' => $sidebar->heading(),
             'more_url' => $this->moreUrl($sidebar),
             'items' => $this->items($sidebar),
         ];

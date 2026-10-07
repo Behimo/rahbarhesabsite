@@ -43,8 +43,9 @@
                             @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label" for="sidebar-title">عنوان روی سایت *</label>
-                            <input type="text" name="title" id="sidebar-title" value="{{ old('title', $sidebar->title) }}" class="form-control @error('title') is-invalid @enderror" required>
+                            <label class="form-label" for="sidebar-title">عنوان روی سایت</label>
+                            <input type="text" name="title" id="sidebar-title" value="{{ old('title', $sidebar->exists ? $sidebar->heading() : 'آخرین دوره‌ها') }}" class="form-control @error('title') is-invalid @enderror" readonly required>
+                            <div class="form-text">با نوع محتوا یکی است و جداگانه عوض نمی‌شود.</div>
                             @error('title') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                         <div class="col-md-6">
@@ -198,6 +199,7 @@ document.querySelectorAll('[name="source"]').forEach((input) => {
 document.querySelectorAll('[name="selection"]').forEach((input) => {
     input.addEventListener('change', syncSidebarContent);
 });
+document.getElementById('sidebar-category')?.addEventListener('change', syncSidebarContent);
 document.querySelectorAll('#sidebar-pages input[type="checkbox"]').forEach((input) => {
     input.addEventListener('change', syncPageCount);
 });
@@ -256,6 +258,30 @@ function syncSidebarContent() {
     const limit = limitInput?.value || '5';
     const summary = document.getElementById('sidebar-summary');
     if (summary) summary.textContent = sourceLabel + '، ' + selectionLabel + '، ' + limit + ' مورد';
+
+    const title = document.getElementById('sidebar-title');
+    if (title) title.value = suggestedSidebarTitle(source, currentSelection());
+}
+
+function suggestedSidebarTitle(source, selection) {
+    const category = document.getElementById('sidebar-category');
+    const categoryName = (category?.selectedOptions?.[0]?.textContent || '').replace(/^[–\-\s]+/, '').trim();
+
+    if (selection === 'category' && categoryName) {
+        if (source === 'post') return 'مقالات ' + categoryName;
+        if (source === 'product') return 'محصولات ' + categoryName;
+        return 'دوره‌های ' + categoryName;
+    }
+
+    if (selection === 'bestseller') {
+        if (source === 'post') return 'پربازدیدترین مقالات';
+        if (source === 'product') return 'پرفروش‌ترین محصولات';
+        return 'پرفروش‌ترین دوره‌ها';
+    }
+
+    if (source === 'post') return 'آخرین مقالات';
+    if (source === 'product') return 'آخرین محصولات';
+    return 'آخرین دوره‌ها';
 }
 
 function syncPageCount() {

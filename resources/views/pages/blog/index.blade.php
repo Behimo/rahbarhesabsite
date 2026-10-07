@@ -1,5 +1,18 @@
 @extends('layouts.site')
 
+@section('page-banner')
+<div class="blog-page blog-page--masthead">
+    <header class="blog-masthead">
+        <div class="blog-masthead__ledger" aria-hidden="true"></div>
+        <div class="blog-masthead__inner">
+            <p class="blog-masthead__brand">راهبر حساب</p>
+            <h1 class="blog-masthead__title">اخبار و مقالات حسابداری</h1>
+            <p class="blog-masthead__lead">بخشنامه‌ها، راهنماهای مالیاتی و تحلیل‌های کاربردی برای حسابداران و مدیران مالی</p>
+        </div>
+    </header>
+</div>
+@endsection
+
 @section('page')
 @php
     $listing = $posts->getCollection();
@@ -9,15 +22,6 @@
 @endphp
 
 <div class="blog-page">
-    <header class="blog-masthead">
-        <div class="blog-masthead__ledger" aria-hidden="true"></div>
-        <div class="blog-masthead__inner">
-            <p class="blog-masthead__brand">راهبر حساب</p>
-            <h1 class="blog-masthead__title">اخبار و مقالات حسابداری</h1>
-            <p class="blog-masthead__lead">بخشنامه‌ها، راهنماهای مالیاتی و تحلیل‌های کاربردی برای حسابداران و مدیران مالی</p>
-        </div>
-    </header>
-
     <div class="blog-shell">
         @if ($categories->isNotEmpty())
             <nav class="blog-filters" aria-label="دسته‌بندی مطالب">

@@ -6,8 +6,8 @@
 | **وضعیت مخزن** | commit `0effb69` (Refactor admin forms for improved layout and usability) |
 | **پشته** | Laravel 12 · PHP 8.3.30 · PHPUnit 11.5.55 · Vite/Alpine |
 | **روش** | شکار خواندنی ۴ بخش موازی (پول/پرداخت، احراز هویت/RBAC، ادمین/آپلود/XSS، فرانت‌اند JS) + اجرای کامل تست‌سوئیت + بازتولید مستقل یافته‌های کلیدی با تست‌های اثباتی موقت |
-| **نتیجه سوئیت** | در زمان شکار: `Tests: 103, Failures: 1` (شکستگی قدیمی `PlatformTest::test_free_course_enrollment`) · بعد از افزودن ۱۹ تست رگرسیون: `Tests: 122, Failures: 15` (۱۴ قرمز = لیست زنده باگ‌ها + ۱ مورد قدیمی) |
-| **وضعیت** | 🔴 ۱ Critical · ۵ High تأییدشده · ۱۰ Medium تأییدشده · ۱۳ مشکوک (static) |
+| **نتیجه سوئیت** | ✅ **پس از رفع باگ‌ها (کامیت `a828e4b`): `OK (122 tests, 569 assertions)`** — شامل ۱۹ تست رگرسیون + `PlatformTest` · در زمان شکار: `Failures: 15` |
+| **وضعیت** | ✅ **T1–T26 همگی رفع و تأیید شدند** (کامیت‌های `a828e4b` + `7a59f4f`) — بازبینی diff و اجرای کامل سوئیت در ۲۰۲۶-۱۰-۰۷ |
 
 ---
 
@@ -167,35 +167,35 @@
 ## ۴) لیست تسک‌ها (اولویت‌دار)
 
 ### P0 — قبل از هر استقرار عمومی
-- [ ] **T1** بستن ارتقای نقش به `admin`: ممنوعیت تغییر نقش خود در `UserController::update` + جدا کردن گروه مجوزی `admin.roles` از `users` (+ تست رگرسیون دائمی برای «ارتقای خود» و «ارتقای دیگری») — `UserController.php:61-63`
-- [ ] **T2** رفع گم‌شدن سبد مهمان هنگام ورود: ذخیره شناسهٔ session قبل از `regenerate()` و پاس دادن به merge (+ تست: مهمان → لاگین → سبد) — `AuthController.php:102,137`
-- [ ] **T3** تمدید enrollment هنگام خرید مجدد دورهٔ منقضی (شرط `OrderService.php:228`) (+ تست: expires_at گذشته → خرید → isEnrolledIn=true)
-- [ ] **T4** چک وضعیت کاربر در هر درخواست احرازشده: بن/تعلیق → 403 + logout (`EnsureUser`/`EnsureCmsAdmin`) (+ تست: بن بعد از لاگین)
-- [ ] **T5** رفع XSS نام فایل رسانه در مدیا‌پیکر: escape در `posts/form.blade.php:238` + نام hash سرور در `MediaController.php:46`
+- [x] **T1** بستن ارتقای نقش به `admin`: ممنوعیت تغییر نقش خود در `UserController::update` + جدا کردن گروه مجوزی `admin.roles` از `users` (+ تست رگرسیون دائمی برای «ارتقای خود» و «ارتقای دیگری») — `UserController.php:61-63`
+- [x] **T2** رفع گم‌شدن سبد مهمان هنگام ورود: ذخیره شناسهٔ session قبل از `regenerate()` و پاس دادن به merge (+ تست: مهمان → لاگین → سبد) — `AuthController.php:102,137`
+- [x] **T3** تمدید enrollment هنگام خرید مجدد دورهٔ منقضی (شرط `OrderService.php:228`) (+ تست: expires_at گذشته → خرید → isEnrolledIn=true)
+- [x] **T4** چک وضعیت کاربر در هر درخواست احرازشده: بن/تعلیق → 403 + logout (`EnsureUser`/`EnsureCmsAdmin`) (+ تست: بن بعد از لاگین)
+- [x] **T5** رفع XSS نام فایل رسانه در مدیا‌پیکر: escape در `posts/form.blade.php:238` + نام hash سرور در `MediaController.php:46`
 
 ### P1 — یکپارچگی پول و امنیت محتوا
-- [ ] **T6** اعتبارسنجی مجدد کوپن در `markPaid` قبل از `recordUsage` + مسدود کردن سفارش pending تکراری از یک سبد (`ShopController.php:141`, `OrderService.php:125`)
-- [ ] **T7** قاعده URL منو: فقط http/https/نسبی + `rel="noopener"` در `nav-link.blade.php:66-68` (+ تست دائمی)
-- [ ] **T8** پاک‌سازی HTML خام برای نقش غیر admin (یا محدود کردن بلوک HTML به admin)
-- [ ] **T9** تراکنش + اعتبارسنجی + flush کش در ایمپورت (`ImportExportService.php:24`, `CmsImportRequest.php`)
-- [ ] **T10** اعتبارسنجی ساختار بلاک در `BuilderSaveRequest` + مقاوم‌سازی `BuilderCanvasRenderer` (+ تست: بیلدر 500 نشود)
-- [ ] **T11** آپلود: نام hash + پسوند از محتوا/لیست سفید در `ProductController.php:96` (و بررسی خواهرخوانده‌های آپلود: Media/Plugin/Theme)
-- [ ] **T12** قاعده `current_password` + `session()->invalidate()` در پنل (`UpdatePasswordRequest.php`)
-- [ ] **T13** تعیین تکلیف `enrollFree` (redirect به learn یا اصلاح تست) و سبز کردن کل سوئیت (`CourseController.php:308`)
+- [x] **T6** اعتبارسنجی مجدد کوپن در `markPaid` قبل از `recordUsage` + مسدود کردن سفارش pending تکراری از یک سبد (`ShopController.php:141`, `OrderService.php:125`)
+- [x] **T7** قاعده URL منو: فقط http/https/نسبی + `rel="noopener"` در `nav-link.blade.php:66-68` (+ تست دائمی)
+- [x] **T8** پاک‌سازی HTML خام برای نقش غیر admin (یا محدود کردن بلوک HTML به admin)
+- [x] **T9** تراکنش + اعتبارسنجی + flush کش در ایمپورت (`ImportExportService.php:24`, `CmsImportRequest.php`)
+- [x] **T10** اعتبارسنجی ساختار بلاک در `BuilderSaveRequest` + مقاوم‌سازی `BuilderCanvasRenderer` (+ تست: بیلدر 500 نشود)
+- [x] **T11** آپلود: نام hash + پسوند از محتوا/لیست سفید در `ProductController.php:96` (و بررسی خواهرخوانده‌های آپلود: Media/Plugin/Theme)
+- [x] **T12** قاعده `current_password` + `session()->invalidate()` در پنل (`UpdatePasswordRequest.php`)
+- [x] **T13** تعیین تکلیف `enrollFree` (redirect به learn یا اصلاح تست) و سبز کردن کل سوئیت (`CourseController.php:308`)
 
 ### P2 — استحکام و لبه‌ها
-- [ ] **T14** حلقه `querySelectorAll` برای بخش‌های تکراری بیلدر در `public/site/script.js` + حذف id تکراری
-- [ ] **T15** جلوگیری از publish خودکار در ذخیره بیلدر (`PageBuilderController.php:51`)
-- [ ] **T16** رفع double-escape متن پاپاپ (یک لایه کافی است)
-- [ ] **T17** امضای callback پرداخت یا نادیده‌گرفتن `success=0` برای پرداخت جوان (`ShopController.php:202`)
-- [ ] **T18** جلوگیری از جلسه پرداخت دوم در `retryPayment` (`ShopController.php:174`)
-- [ ] **T19** انتقال آپدیت `payment=success` داخل تراکنش `markPaid`
-- [ ] **T20** پاک‌سازی فقط اقلام سفارش در `markPaid` (`OrderService.php:132`) + محاسبه subtotal از ردیف قفل‌شده
-- [ ] **T21** throttle کوپن + پیام خطای یکسان (`routes/web.php:118`)
-- [ ] **T22** ریدایرکت‌ها: رد scheme مطلق در `to_path` + افزودن `login/logout/up` به skip list (`HandleCmsRedirects.php`)
-- [ ] **T23** تنظیمات امنیتی: `trustProxies`، `SESSION_SECURE_COOKIE` پیش‌فرض در production، رد `CMS_API_TOKEN=change-me`
-- [ ] **T24** رفع شماره سفارش `uniqid` (برخورد احتمالی) و limiter مردهٔ `otp-verify` per-phone
-- [ ] **T25** پاک‌سازی ریپو: `git rm tests/Feature/ZzHuntAdminTest.php` + مرور کامیت‌های `8367aae`/`0effb69` (که تست‌های موقت را وارد تاریخچه کردند)
+- [x] **T14** حلقه `querySelectorAll` برای بخش‌های تکراری بیلدر در `public/site/script.js` + حذف id تکراری
+- [x] **T15** جلوگیری از publish خودکار در ذخیره بیلدر (`PageBuilderController.php:51`)
+- [x] **T16** رفع double-escape متن پاپاپ (یک لایه کافی است)
+- [x] **T17** امضای callback پرداخت یا نادیده‌گرفتن `success=0` برای پرداخت جوان (`ShopController.php:202`)
+- [x] **T18** جلوگیری از جلسه پرداخت دوم در `retryPayment` (`ShopController.php:174`)
+- [x] **T19** انتقال آپدیت `payment=success` داخل تراکنش `markPaid`
+- [x] **T20** پاک‌سازی فقط اقلام سفارش در `markPaid` (`OrderService.php:132`) + محاسبه subtotal از ردیف قفل‌شده
+- [x] **T21** throttle کوپن + پیام خطای یکسان (`routes/web.php:118`)
+- [x] **T22** ریدایرکت‌ها: رد scheme مطلق در `to_path` + افزودن `login/logout/up` به skip list (`HandleCmsRedirects.php`)
+- [x] **T23** تنظیمات امنیتی: `trustProxies`، `SESSION_SECURE_COOKIE` پیش‌فرض در production، رد `CMS_API_TOKEN=change-me`
+- [x] **T24** رفع شماره سفارش `uniqid` (برخورد احتمالی) و limiter مردهٔ `otp-verify` per-phone
+- [x] **T25** پاک‌سازی ریپو: `git rm tests/Feature/ZzHuntAdminTest.php` + مرور کامیت‌های `8367aae`/`0effb69` (که تست‌های موقت را وارد تاریخچه کردند)
 
 ### تست‌های رگرسیون دائمی — ✅ انجام شد (T26)
 - [x] **T26** ثبت دائمی تست‌های تأییدشده در `tests/Feature/` — **۴ فایل / ۱۹ تست** با assert مطلوب (رفتار درست). وضعیت فعلی سوئیت: **۱۴ تست قرمز = لیست زنده باگ‌ها** (با رفع هر تسک سبز می‌شود) + ۵ تست سبز برای رفتارهایی که از قبل درست‌اند.
@@ -213,4 +213,15 @@
 
 ---
 
-*تولیدشده توسط شکار باگ opencode — ۱۵ مهر ۱۴۰۴ (2026-10-07) · HEAD: `0effb69`*
+## ۵) راستی‌آزمایی رفع (2026-10-07)
+
+- **سوئیت کامل:** `OK (122 tests, 569 assertions)` — هر ۱۹ تست رگرسیون + `PlatformTest` پاس.
+- **تست‌ها تضعیف نشدند:** diff تست‌ها فقط تعدیل مشروع دارد (کوکی session در تست سبد برای شبیه‌سازی مرورگر، `current_password` در `ProfileTest`، حذف آرگومان نامعتبر پیام در `assertDatabaseMissing`) — assertionها دست‌نخورده.
+- **بازبینی diff فیکس‌ها (نمونه):** ریشه‌ای بودن تأیید شد — `UserController` (شرط نقش خود + Gate نقش admin)، `mergeGuestCart($userId, $oldSessionId)` قبل از regenerate، `EnsureActiveAccount` روی کل web stack، `guessExtension()` در آپلود، `DB::transaction` در ایمپورت + `flushContent`، امضای callback با `hash_equals` (`AuthorizesPaymentCallback`)، `Str::ulid()` برای شماره سفارش، `throttle:coupon` + limiter تعریف‌شده، `clean_html()` در همه sinkهای HTML خام.
+- **`npm run build`:** ✅ بدون خطا (51s).
+- **نکته عملیاتی:** `.env` هنوز `CMS_API_TOKEN=change-me` است و middleware آن را رد می‌کند (fail-closed) → برای فعال‌کردن API باید توکن واقعی تنظیم شود.
+- **تعهد باقی‌مانده از شکار:** تاریخچه گیت هنوز فایل‌های تست موقت `ZzHunt*` را در کامیت‌های `8367aae`/`0effb69` دارد (مرور شد؛ فقط تست بودند).
+
+---
+
+*تولیدشده توسط شکار باگ opencode — ۱۵ مهر ۱۴۰۴ (2026-10-07) · HEAD: `a828e4b`*

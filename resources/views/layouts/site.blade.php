@@ -52,8 +52,14 @@
 
     @php $pageSidebars = app(\App\Services\SidebarService::class)->current(); @endphp
     <main @class(['rh-inner-page' => ! request()->routeIs(['home', 'about', 'contact', 'courses.index', 'courses.show', 'blog.*', 'panel.*', 'login', 'login.verify', 'cart.index', 'checkout.index', 'checkout.success', 'checkout.failed', 'search'])])>
+        @yield('page-banner')
         @if ($pageSidebars->isNotEmpty())
-            <div class="rh-sidebar-layout">
+            <div @class([
+                'rh-sidebar-layout',
+                'rh-sidebar-layout--under-banner' => $__env->hasSection('page-banner'),
+                'rh-sidebar-layout--blog' => request()->routeIs('blog.index'),
+                'rh-sidebar-layout--courses' => request()->routeIs('courses.index'),
+            ])>
                 <div class="rh-sidebar-layout__main">
                     @yield('page')
                 </div>

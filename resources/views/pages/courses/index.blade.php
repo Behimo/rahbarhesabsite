@@ -23,8 +23,8 @@
     ];
 @endphp
 
-@section('page')
-<section class="courses-archive">
+@section('page-banner')
+<div class="courses-archive courses-archive--hero">
     <div class="courses-archive-hero">
         <div class="courses-archive-hero-glow" aria-hidden="true"></div>
         <div class="courses-archive-hero-dots" aria-hidden="true"></div>
@@ -76,7 +76,11 @@
             @endif
         </div>
     </div>
+</div>
+@endsection
 
+@section('page')
+<section class="courses-archive">
     <div class="courses-archive-body">
         <div class="courses-archive-toolbar">
             <div class="courses-archive-toolbar-start">

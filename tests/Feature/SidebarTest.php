@@ -95,7 +95,7 @@ class SidebarTest extends TestCase
 
         CmsSidebar::query()->create([
             'name' => 'پرفروش',
-            'title' => 'پرفروش‌های سایدبار',
+            'title' => 'آخرین دوره‌ها',
             'is_active' => true,
             'target_mode' => CmsSidebar::MODE_PAGES,
             'pages' => ['contact'],
@@ -106,6 +106,8 @@ class SidebarTest extends TestCase
 
         $this->get(route('contact'))
             ->assertOk()
+            ->assertSee('پرفروش‌ترین دوره‌ها')
+            ->assertDontSee('آخرین دوره‌ها')
             ->assertSee('دوره پرفروش سایدبار')
             ->assertDontSee('دوره کم‌فروش سایدبار');
 
@@ -126,6 +128,8 @@ class SidebarTest extends TestCase
 
         $this->get(route('about'))
             ->assertOk()
+            ->assertSee('پربازدیدترین مقالات')
+            ->assertDontSee('مقالات پربازدید')
             ->assertSee('مقاله پربازدید سایدبار')
             ->assertDontSee('مقاله کم‌بازدید سایدبار');
     }

@@ -69,10 +69,13 @@ class SidebarRequest extends FormRequest
         $data = $this->validated();
         $mode = $data['target_mode'];
         $selection = $data['selection'];
+        $categoryName = $selection === CmsSidebar::SELECTION_CATEGORY
+            ? Category::query()->find($data['category_id'])?->name
+            : null;
 
         return [
             'name' => $data['name'],
-            'title' => $data['title'],
+            'title' => CmsSidebar::headingFor($data['source'], $selection, $categoryName),
             'is_active' => $this->boolean('is_active'),
             'target_mode' => $mode,
             'pages' => $mode === CmsSidebar::MODE_PAGES ? array_values(array_unique($data['pages'] ?? [])) : null,

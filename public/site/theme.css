@@ -2550,8 +2550,10 @@ body.rh-theme select {
     padding-bottom: 72px;
 }
 
-.blog-page--article {
-    background: var(--blog-paper);
+.blog-page--article,
+.blog-page--masthead {
+    background: transparent;
+    padding-bottom: 0;
 }
 
 .blog-masthead {
@@ -5192,8 +5194,49 @@ body.rh-popup-open {
     margin: 28px auto 48px;
 }
 
+.rh-sidebar-layout--under-banner {
+    margin-top: 0;
+    padding-top: 48px;
+}
+
+.rh-sidebar-layout--blog {
+    width: min(1120px, calc(100% - 40px));
+}
+
+.rh-sidebar-layout--courses {
+    width: min(1320px, calc(100% - 50px));
+}
+
 .rh-sidebar-layout__main {
     min-width: 0;
+}
+
+.rh-sidebar-layout--under-banner .blog-shell,
+.rh-sidebar-layout--under-banner .courses-archive-body {
+    width: auto;
+    max-width: none;
+    margin: 0;
+}
+
+.rh-sidebar-layout--under-banner .blog-shell > :first-child {
+    margin-top: 0;
+}
+
+.rh-sidebar-layout--under-banner .blog-filters {
+    margin: 0 0 20px;
+    padding-block: 16px 8px;
+    padding-inline-start: 16px;
+    padding-inline-end: 4px;
+}
+
+.rh-sidebar-layout--under-banner .courses-archive-body {
+    padding-top: 0;
+}
+
+@media (min-width: 900px) {
+    .rh-sidebar-layout--blog {
+        width: min(1120px, calc(100% - 48px));
+    }
 }
 
 .rh-page-sidebar {
@@ -5246,7 +5289,7 @@ body.rh-popup-open {
 
 .rh-side-item {
     display: grid;
-    grid-template-columns: 56px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) 56px;
     gap: 10px;
     align-items: center;
     color: inherit;
@@ -5298,6 +5341,11 @@ a.rh-side-item:hover .rh-side-item__title {
         grid-template-columns: 1fr;
         width: min(1120px, calc(100% - 24px));
         margin-top: 20px;
+    }
+
+    .rh-sidebar-layout--under-banner {
+        margin-top: 0;
+        padding-top: 28px;
     }
 
     .rh-page-sidebar {

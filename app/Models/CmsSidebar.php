@@ -77,6 +77,42 @@ class CmsSidebar extends Model
         return self::SELECTIONS[$this->selection] ?? (string) $this->selection;
     }
 
+    public function heading(): string
+    {
+        $categoryName = $this->selection === self::SELECTION_CATEGORY
+            ? $this->category?->name
+            : null;
+
+        return self::headingFor((string) $this->source, (string) $this->selection, $categoryName);
+    }
+
+    public static function headingFor(string $source, string $selection, ?string $categoryName = null): string
+    {
+        $categoryName = trim((string) $categoryName);
+
+        if ($selection === self::SELECTION_CATEGORY && $categoryName !== '') {
+            return match ($source) {
+                self::SOURCE_POST => 'مقالات '.$categoryName,
+                self::SOURCE_PRODUCT => 'محصولات '.$categoryName,
+                default => 'دوره‌های '.$categoryName,
+            };
+        }
+
+        if ($selection === self::SELECTION_BESTSELLER) {
+            return match ($source) {
+                self::SOURCE_POST => 'پربازدیدترین مقالات',
+                self::SOURCE_PRODUCT => 'پرفروش‌ترین محصولات',
+                default => 'پرفروش‌ترین دوره‌ها',
+            };
+        }
+
+        return match ($source) {
+            self::SOURCE_POST => 'آخرین مقالات',
+            self::SOURCE_PRODUCT => 'آخرین محصولات',
+            default => 'آخرین دوره‌ها',
+        };
+    }
+
     public function contentSummary(): string
     {
         $source = self::SOURCES[$this->source] ?? $this->source;
