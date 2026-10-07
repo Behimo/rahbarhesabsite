@@ -69,7 +69,6 @@ class AuthController extends SiteController
 
         return $this->render('auth.verify-otp', [
             'phone' => session('otp_phone'),
-            'devCode' => $this->otp->peekLatestCode(session('otp_phone')),
         ]);
     }
 
@@ -98,9 +97,10 @@ class AuthController extends SiteController
             'last_login_at' => now(),
         ])->save();
 
+        $guestSessionId = $request->session()->getId();
         Auth::login($user);
         $request->session()->regenerate();
-        $this->cart->mergeGuestCart($user->id);
+        $this->cart->mergeGuestCart($user->id, $guestSessionId);
 
         session()->forget(['otp_phone', 'otp_name']);
 
@@ -111,10 +111,15 @@ class AuthController extends SiteController
     {
         $validated = $request->validated();
         $login = $validated['login'];
+        $phone = PhoneNormalizer::toLocal($login);
         $user = User::query()
-            ->where('email', $login)
-            ->orWhere('phone', PhoneNormalizer::toLocal($login))
-            ->orWhere('mobile', PhoneNormalizer::toLocal($login))
+            ->where(function ($query) use ($login, $phone) {
+                $query->where('email', $login);
+
+                if ($phone !== '') {
+                    $query->orWhere('phone', $phone)->orWhere('mobile', $phone);
+                }
+            })
             ->first();
 
         if (! $user || ! $user->passwordMatches($validated['password'])) {
@@ -133,9 +138,10 @@ class AuthController extends SiteController
         }
 
         $user->markLoggedIn();
+        $guestSessionId = $request->session()->getId();
         Auth::login($user);
         $request->session()->regenerate();
-        $this->cart->mergeGuestCart($user->id);
+        $this->cart->mergeGuestCart($user->id, $guestSessionId);
 
         return redirect()->intended(route('panel.dashboard'));
     }

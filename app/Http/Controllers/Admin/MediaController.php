@@ -43,7 +43,7 @@ class MediaController extends Controller
         $media = CmsMedia::query()->create([
             'disk' => 'public',
             'path' => $path,
-            'filename' => $file->getClientOriginalName(),
+            'filename' => $this->safeOriginalName($file),
             'mime_type' => $file->getMimeType(),
             'size' => $file->getSize(),
             'alt' => $request->input('alt'),
@@ -66,5 +66,14 @@ class MediaController extends Controller
         $medium->delete();
 
         return back()->with('success', 'فایل حذف شد.');
+    }
+
+    private function safeOriginalName(\Illuminate\Http\UploadedFile $file): string
+    {
+        $name = basename(str_replace('\\', '/', $file->getClientOriginalName()));
+        $name = preg_replace('/[^\p{L}\p{N}.\- _]/u', '', $name) ?? '';
+        $name = trim($name, '. ');
+
+        return $name !== '' ? mb_substr($name, 0, 180) : $file->hashName();
     }
 }

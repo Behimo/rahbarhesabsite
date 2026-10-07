@@ -12,7 +12,7 @@
             @endif
             <div class="rh-popup__content">
                 <h2 id="rh-popup-title">{{ $sitePopup['title'] }}</h2>
-                <p id="rh-popup-body">{{ $sitePopup['body'] }}</p>
+                <p id="rh-popup-body">{!! $sitePopup['body'] !!}</p>
                 @if (! empty($sitePopup['button_url']))
                     <a class="rh-popup__action" href="{{ $sitePopup['button_url'] }}">{{ $sitePopup['button_label'] }}</a>
                 @endif

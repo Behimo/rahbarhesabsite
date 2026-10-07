@@ -103,7 +103,10 @@ class DashboardController extends SiteController
         $request->user()->forceFill([
             'password' => $request->validated('password'),
             'is_wp_password' => false,
+            'remember_token' => \Illuminate\Support\Str::random(60),
         ])->save();
+
+        $request->session()->regenerate();
 
         return back()->with('success', 'رمز عبور به‌روزرسانی شد.');
     }

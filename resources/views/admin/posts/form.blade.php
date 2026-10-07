@@ -222,27 +222,52 @@ window.RahbarMediaPicker = (function () {
     }
 
     async function loadMedia(page = 1) {
-        status.textContent = 'در حال بارگذاری...';
-        grid.innerHTML = '';
+        if (page === 1) {
+            status.textContent = 'در حال بارگذاری...';
+            grid.innerHTML = '';
+        }
+        grid.querySelector('[data-media-more]')?.remove();
         const url = new URL(mediaIndexUrl, window.location.origin);
         url.searchParams.set('json', '1');
         url.searchParams.set('page', String(page));
-        const res = await fetch(url.toString(), { headers: { 'Accept': 'application/json' } });
-        const data = await res.json();
-        status.textContent = data.data?.length ? '' : 'رسانه‌ای یافت نشد.';
-        (data.data || []).forEach((item) => {
-            if (!item.is_image) return;
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'media-picker-item';
-            btn.innerHTML = `<img src="${item.url}" alt=""><div class="small text-truncate mt-1">${item.filename}</div>`;
-            btn.addEventListener('click', () => {
-                grid.querySelectorAll('.media-picker-item').forEach(el => el.classList.remove('is-selected'));
-                btn.classList.add('is-selected');
-                selectedUrl = item.url;
+        try {
+            const res = await fetch(url.toString(), { headers: { 'Accept': 'application/json' } });
+            if (!res.ok) {
+                throw new Error('media');
+            }
+            const data = await res.json();
+            status.textContent = (data.data?.length || grid.children.length) ? '' : 'رسانه‌ای یافت نشد.';
+            (data.data || []).forEach((item) => {
+                if (!item.is_image) return;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'media-picker-item';
+                const img = document.createElement('img');
+                img.alt = '';
+                img.src = item.url;
+                const caption = document.createElement('div');
+                caption.className = 'small text-truncate mt-1';
+                caption.textContent = item.filename || '';
+                btn.append(img, caption);
+                btn.addEventListener('click', () => {
+                    grid.querySelectorAll('.media-picker-item').forEach(el => el.classList.remove('is-selected'));
+                    btn.classList.add('is-selected');
+                    selectedUrl = item.url;
+                });
+                grid.appendChild(btn);
             });
-            grid.appendChild(btn);
-        });
+            if (data.next_page_url) {
+                const more = document.createElement('button');
+                more.type = 'button';
+                more.dataset.mediaMore = '1';
+                more.className = 'btn btn-sm btn-outline-secondary w-100 mt-2';
+                more.textContent = 'موارد بیشتر';
+                more.addEventListener('click', () => loadMedia(page + 1));
+                grid.appendChild(more);
+            }
+        } catch (error) {
+            status.textContent = 'بارگذاری رسانه‌ها ناموفق بود.';
+        }
     }
 
     async function uploadFile(file) {

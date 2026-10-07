@@ -305,6 +305,6 @@ class CourseController extends SiteController
             ? 'ثبت‌نام انجام شد. دسترسی اسپات‌پلیر به‌زودی آماده می‌شود.'
             : 'ثبت‌نام در دوره انجام شد.';
 
-        return redirect()->route('courses.show', $slug)->with('success', $message);
+        return redirect()->route('courses.learn', $slug)->with('success', $message);
     }
 }

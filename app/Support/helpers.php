@@ -2,6 +2,13 @@
 
 use Illuminate\Support\Carbon;
 
+if (! function_exists('clean_html')) {
+    function clean_html(?string $html): string
+    {
+        return \App\Support\HtmlSanitizer::clean($html);
+    }
+}
+
 if (! function_exists('block_media')) {
     function block_media(?string $path, string $fallback = ''): string
     {

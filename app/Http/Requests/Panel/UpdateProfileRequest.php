@@ -55,6 +55,14 @@ class UpdateProfileRequest extends FormRequest
             if ($phoneTaken) {
                 $validator->errors()->add('phone', 'این شماره موبایل قبلاً ثبت شده است.');
             }
+
+            $email = filled($this->input('email')) ? (string) $this->input('email') : null;
+            $phoneChanged = $user && $phone !== ($user->mobile ?: $user->phone);
+            $emailChanged = $user && $email !== $user->email;
+
+            if (($phoneChanged || $emailChanged) && ! \Illuminate\Support\Facades\Hash::check((string) $this->input('current_password'), (string) $user->password)) {
+                $validator->errors()->add('current_password', 'برای تغییر موبایل یا ایمیل، رمز فعلی را درست وارد کنید.');
+            }
         });
     }
 

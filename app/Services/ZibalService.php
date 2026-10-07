@@ -5,14 +5,15 @@ namespace App\Services;
 use App\Contracts\PaymentGatewayInterface;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Services\Concerns\AuthorizesPaymentCallback;
 use App\Services\Concerns\GuardsVerifiedPaymentAmount;
 use App\Support\Money;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class ZibalService implements PaymentGatewayInterface
 {
+    use AuthorizesPaymentCallback;
     use GuardsVerifiedPaymentAmount;
 
     public function __construct(private OrderService $orders) {}
@@ -55,14 +56,19 @@ class ZibalService implements PaymentGatewayInterface
             return route('checkout.success', $order);
         }
 
+        if ($existingUrl = $this->reusablePaymentUrl($order->id, $this->name())) {
+            return $existingUrl;
+        }
+
         $merchant = $this->setting('merchant');
         $baseUrl = $this->baseUrl();
         $amountRials = Money::tomanToRials((int) $order->total);
+        $callbackToken = $this->newCallbackToken();
 
         $response = Http::post($baseUrl.'/v1/request', [
             'merchant' => $merchant,
             'amount' => $amountRials,
-            'callbackUrl' => route('checkout.callback', ['gateway' => 'zibal']),
+            'callbackUrl' => route('checkout.callback', ['gateway' => 'zibal', 'token' => $callbackToken]),
             'description' => 'سفارش '.$order->order_number,
             'orderId' => $order->order_number,
         ]);
@@ -75,6 +81,8 @@ class ZibalService implements PaymentGatewayInterface
             throw new \RuntimeException('خطا در اتصال به درگاه زیبال.');
         }
 
+        $startUrl = $baseUrl.'/start/'.$trackId;
+
         Payment::query()->create([
             'order_id' => $order->id,
             'user_id' => $order->user_id,
@@ -82,11 +90,17 @@ class ZibalService implements PaymentGatewayInterface
             'authority' => (string) $trackId,
             'amount' => $order->total,
             'status' => Payment::STATUS_PENDING,
-            'gateway_payload' => ['amount_rial' => $amountRials],
+            'gateway_payload' => [
+                'amount_rial' => $amountRials,
+                'callback_token' => $callbackToken,
+                'start_url' => $startUrl,
+            ],
             'gateway_response' => $response->json(),
         ]);
 
-        return $baseUrl.'/start/'.$trackId;
+        $this->rememberCallbackToken((string) $trackId, $callbackToken);
+
+        return $startUrl;
     }
 
     public function verifyCallback(array $query): ?Payment
@@ -104,6 +118,10 @@ class ZibalService implements PaymentGatewayInterface
             return null;
         }
 
+        if (! $this->callbackAuthorized($payment, $query)) {
+            return null;
+        }
+
         if ($payment->isSuccessful() && $payment->order?->isPaid()) {
             return $payment;
         }
@@ -112,7 +130,7 @@ class ZibalService implements PaymentGatewayInterface
             $payment->update([
                 'status' => Payment::STATUS_FAILED,
                 'error_message' => 'پرداخت توسط کاربر لغو شد.',
-                'gateway_payload' => $query,
+                'gateway_payload' => array_merge($payment->gateway_payload ?? [], ['callback' => $query]),
             ]);
             if ($payment->order) {
                 $this->orders->markFailed($payment->order);
@@ -121,13 +139,10 @@ class ZibalService implements PaymentGatewayInterface
             return null;
         }
 
-        $lock = Cache::lock('payment:verify:'.$payment->id, 30);
+        $lock = $this->lockPayment($payment);
 
         if (! $lock->get()) {
-            usleep(250000);
-            $payment->refresh();
-
-            return $payment->isSuccessful() ? $payment : null;
+            return $this->waitUntilSettled($payment);
         }
 
         try {
@@ -154,19 +169,26 @@ class ZibalService implements PaymentGatewayInterface
                     return null;
                 }
 
-                $payment->update([
-                    'status' => Payment::STATUS_SUCCESS,
-                    'ref_id' => (string) ($payload['refNumber'] ?? $payment->ref_id),
-                    'card_pan' => $payload['cardNumber'] ?? $payment->card_pan,
-                    'card_hash' => $payload['cardHash'] ?? $payment->card_hash,
-                    'user_id' => $payment->user_id ?: $payment->order?->user_id,
-                    'gateway_response' => $payload,
-                    'verified_at' => now(),
-                    'paid_at' => now(),
-                    'error_message' => null,
-                ]);
+                try {
+                    $this->orders->markPaid($payment->order, [
+                        'status' => Payment::STATUS_SUCCESS,
+                        'ref_id' => (string) ($payload['refNumber'] ?? $payment->ref_id),
+                        'card_pan' => $payload['cardNumber'] ?? $payment->card_pan,
+                        'card_hash' => $payload['cardHash'] ?? $payment->card_hash,
+                        'user_id' => $payment->user_id ?: $payment->order?->user_id,
+                        'gateway_response' => $payload,
+                        'verified_at' => now(),
+                        'paid_at' => now(),
+                        'error_message' => null,
+                    ]);
+                } catch (\RuntimeException) {
+                    $payment->refresh();
+                    if ($payment->order && ! $payment->order->isPaid()) {
+                        $this->orders->markFailed($payment->order);
+                    }
 
-                $this->orders->markPaid($payment->order);
+                    return null;
+                }
 
                 return $payment->fresh('order');
             }

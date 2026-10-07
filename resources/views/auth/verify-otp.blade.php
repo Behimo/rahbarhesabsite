@@ -38,10 +38,6 @@
                     <div class="rh-auth__alert rh-auth__alert--error" role="alert">{{ $errors->first() }}</div>
                 @endif
 
-                @if (!empty($devCode) && app()->environment('local', 'testing'))
-                    <div class="rh-auth__alert rh-auth__alert--dev" role="status">کد تست: <strong dir="ltr">{{ $devCode }}</strong></div>
-                @endif
-
                 <form method="POST" action="{{ route('login.verify.submit') }}" class="rh-auth__form" data-auth-form novalidate>
                     @csrf
                     <div class="rh-auth__field">

@@ -27,6 +27,9 @@ class BuilderSaveRequest extends FormRequest
     {
         return [
             'builder_content' => ['required', 'array'],
+            'builder_content.blocks' => ['present', 'array'],
+            'builder_content.blocks.*' => ['array'],
+            'builder_content.blocks.*.type' => ['required', 'string', 'max:100'],
             'note' => ['nullable', 'string'],
         ];
     }

@@ -1,4 +1,4 @@
-<section class="rahbar-benefits" id="rahbarBenefits">
+<section class="rahbar-benefits">
       <div class="benefits-container">
         <div class="benefits-grid">
           <!-- 1 -->

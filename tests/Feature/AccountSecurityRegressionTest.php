@@ -47,7 +47,7 @@ class AccountSecurityRegressionTest extends TestCase
                 'password' => 'brand-new-password',
                 'password_confirmation' => 'brand-new-password',
             ])
-            ->assertSessionHasErrors('current_password');
+            ->assertSessionHasErrors('current_password', null, 'password');
 
         $this->assertTrue(
             $user->fresh()->passwordMatches('original-password-1'),

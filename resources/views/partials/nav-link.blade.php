@@ -39,6 +39,7 @@
         || (! empty($link['route']) && request()->routeIs($link['route'], $link['route'].'.*'))
         || $branchHasCurrent($children);
     $target = $link['target'] ?? '_self';
+    $rel = $target === '_blank' ? 'noopener noreferrer' : '';
     $label = $link['label'] ?? '';
 @endphp
 
@@ -63,7 +64,7 @@
         </div>
     </div>
 @elseif ($nested)
-    <a class="dropdown-link{{ $isActive ? ' active' : '' }}" href="{{ $href }}" target="{{ $target }}">{{ $label }}</a>
+    <a class="dropdown-link{{ $isActive ? ' active' : '' }}" href="{{ $href }}" target="{{ $target }}" @if ($rel) rel="{{ $rel }}" @endif>{{ $label }}</a>
 @else
-    <a class="nav-item{{ $isActive ? ' active' : '' }}" href="{{ $href }}" target="{{ $target }}">{{ $label }}</a>
+    <a class="nav-item{{ $isActive ? ' active' : '' }}" href="{{ $href }}" target="{{ $target }}" @if ($rel) rel="{{ $rel }}" @endif>{{ $label }}</a>
 @endif

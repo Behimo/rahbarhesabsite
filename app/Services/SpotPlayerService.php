@@ -39,6 +39,11 @@ class SpotPlayerService
             $license->update(['order_id' => $orderId]);
         }
 
+        if ($force && filled($license->spot_license_id) && $license->status === SpotplayerLicense::STATUS_ISSUED) {
+            $this->revokeLicense($license);
+            $license->refresh();
+        }
+
         if (! $force && $license->status === SpotplayerLicense::STATUS_ISSUED && $license->license_key) {
             Log::channel('jobs')->info('SpotPlayer: لایسنس از قبل صادر شده', $context + [
                 'license_id' => $license->id,
@@ -169,6 +174,41 @@ class SpotPlayerService
         }
 
         return $license->fresh();
+    }
+
+    public function revokeForCourse(int $userId, int $courseId): void
+    {
+        $license = SpotplayerLicense::query()
+            ->where('user_id', $userId)
+            ->where('course_id', $courseId)
+            ->first();
+
+        if ($license) {
+            $this->revokeLicense($license);
+        }
+    }
+
+    public function revokeLicense(SpotplayerLicense $license): void
+    {
+        if ($this->isConfigured() && filled($license->spot_license_id)) {
+            try {
+                Http::withHeaders([
+                    'Authorization' => 'Bearer '.config('cms.spotplayer.api_key'),
+                    'Accept' => 'application/json',
+                ])->delete(rtrim((string) config('cms.spotplayer.base_url'), '/').'/licenses/'.$license->spot_license_id);
+            } catch (\Throwable $e) {
+                Log::channel('jobs')->error('SpotPlayer: لغو لایسنس ناموفق بود', [
+                    'license_id' => $license->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $license->update([
+            'status' => SpotplayerLicense::STATUS_REVOKED,
+            'license_key' => null,
+            'spot_url' => null,
+        ]);
     }
 
     public function embedUrl(Course $course, User $user, ?string $itemId = null): ?string

@@ -13,7 +13,7 @@ class EnsureApiToken
         $configured = (string) config('cms.api_token');
         $presented = (string) $request->bearerToken();
 
-        if ($configured === '' || ! hash_equals($configured, $presented)) {
+        if ($configured === '' || strcasecmp($configured, 'change-me') === 0 || ! hash_equals($configured, $presented)) {
             abort(401, 'Unauthorized');
         }
 

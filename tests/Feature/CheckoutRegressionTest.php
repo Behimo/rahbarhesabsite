@@ -25,14 +25,22 @@ class CheckoutRegressionTest extends TestCase
         $user = User::factory()->create();
         $product = ShopProduct::factory()->create();
 
-        $this->post(route('cart.add', $product))->assertRedirect(route('cart.index'));
+        $added = $this->post(route('cart.add', $product))->assertRedirect(route('cart.index'));
 
         $this->assertDatabaseHas('cart_items', [
             'shop_product_id' => $product->id,
             'user_id' => null,
         ]);
 
-        $this->post(route('login.password'), [
+        $sessionCookie = config('session.cookie');
+        $cookies = [];
+        foreach ($added->headers->getCookies() as $cookie) {
+            if ($cookie->getName() === $sessionCookie) {
+                $cookies[$sessionCookie] = $cookie->getValue();
+            }
+        }
+
+        $this->withUnencryptedCookies($cookies)->post(route('login.password'), [
             'login' => $user->email,
             'password' => 'password',
         ]);

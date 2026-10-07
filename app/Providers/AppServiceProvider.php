@@ -90,6 +90,18 @@ class AppServiceProvider extends ServiceProvider
             return $this->phoneAndIpLimits('otp-verify', $request, 12);
         });
 
+        RateLimiter::for('coupon', function (Request $request) {
+            $limits = [
+                Limit::perMinute(8)->by('coupon:ip:'.$request->ip()),
+            ];
+
+            if ($request->user()) {
+                $limits[] = Limit::perMinute(8)->by('coupon:user:'.$request->user()->id);
+            }
+
+            return $limits;
+        });
+
         RateLimiter::for('contact', function (Request $request) {
             return Limit::perMinute(3)->by('contact:ip:'.$request->ip());
         });
@@ -109,6 +121,10 @@ class AppServiceProvider extends ServiceProvider
         ];
 
         $phone = $this->stringInput($request, 'phone');
+
+        if ($phone === null && is_string(session('otp_phone')) && session('otp_phone') !== '') {
+            $phone = session('otp_phone');
+        }
 
         if ($phone !== null && PhoneNormalizer::isValidIranMobile($phone)) {
             $limits[] = Limit::perMinute($perMinute)->by($name.':phone:'.PhoneNormalizer::toLocal($phone));

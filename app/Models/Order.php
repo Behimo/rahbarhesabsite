@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -70,6 +71,6 @@ class Order extends Model
 
     public static function generateOrderNumber(): string
     {
-        return 'ORD-'.now()->format('Ymd').'-'.strtoupper(substr(uniqid(), -6));
+        return 'ORD-'.Str::ulid();
     }
 }

@@ -51,8 +51,6 @@ class PageBuilderController extends Controller
         $page->update([
             'builder_enabled' => true,
             'builder_content' => $builderContent,
-            'is_published' => true,
-            'status' => 'published',
         ]);
 
         $this->cache->flushContent();

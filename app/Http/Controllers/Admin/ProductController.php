@@ -93,7 +93,16 @@ class ProductController extends Controller
 
     private function storeDashboardImage(UploadedFile $file, string $slug): string
     {
-        $extension = $file->getClientOriginalExtension() ?: 'webp';
+        $extension = strtolower((string) $file->guessExtension());
+        $allowed = ['jpg', 'jpeg', 'png', 'webp'];
+
+        if (! in_array($extension, $allowed, true)) {
+            throw new \RuntimeException('فرمت تصویر داشبورد مجاز نیست.');
+        }
+
+        if ($extension === 'jpeg') {
+            $extension = 'jpg';
+        }
 
         return $file->storeAs('cms/products', $slug.'-dashboard.'.$extension, 'public');
     }

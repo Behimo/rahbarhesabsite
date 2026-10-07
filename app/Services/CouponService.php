@@ -12,6 +12,7 @@ use Illuminate\Support\Collection;
 
 class CouponService
 {
+    private const REJECTED = 'کد تخفیف معتبر نیست.';
     public function findActive(string $code): ?Coupon
     {
         $code = strtoupper(trim($code));
@@ -57,7 +58,7 @@ class CouponService
         $coupon = $this->findActive($code);
 
         if (! $coupon) {
-            throw new \RuntimeException('کد تخفیف معتبر نیست.');
+            throw new \RuntimeException(self::REJECTED);
         }
 
         $this->assertValid($coupon, $items, $user, $subtotal);
@@ -74,13 +75,13 @@ class CouponService
     public function assertValid(Coupon $coupon, Collection $items, ?User $user, float $subtotal): void
     {
         if (! $coupon->isValidForCart($subtotal, $user)) {
-            throw new \RuntimeException('این کد تخفیف قابل استفاده نیست.');
+            throw new \RuntimeException(self::REJECTED);
         }
 
         $eligible = $this->eligibleSubtotal($coupon, $items);
 
         if ($eligible <= 0) {
-            throw new \RuntimeException('این کد روی اقلام سبد اعمال نمی‌شود.');
+            throw new \RuntimeException(self::REJECTED);
         }
     }
 
@@ -130,7 +131,13 @@ class CouponService
             return;
         }
 
-        CouponUsage::query()->firstOrCreate(
+        $coupon = Coupon::query()->whereKey($order->coupon_id)->lockForUpdate()->first();
+
+        if (! $coupon || ! $coupon->isValidForCart((float) $order->subtotal, $order->user)) {
+            throw new \RuntimeException(self::REJECTED);
+        }
+
+        $usage = CouponUsage::query()->firstOrCreate(
             ['coupon_id' => $order->coupon_id, 'order_id' => $order->id],
             [
                 'user_id' => $order->user_id,
@@ -139,7 +146,9 @@ class CouponService
             ]
         );
 
-        Coupon::query()->whereKey($order->coupon_id)->increment('used_count');
+        if ($usage->wasRecentlyCreated) {
+            $coupon->increment('used_count');
+        }
     }
 
     private function matchesTargets(Collection $targets, ShopProduct $product, CartItem $item): bool

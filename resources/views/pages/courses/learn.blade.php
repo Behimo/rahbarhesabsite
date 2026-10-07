@@ -33,7 +33,7 @@
                 <a href="{{ route('courses.lesson.download', [$product->slug, $currentLesson->slug]) }}" class="mb-4 inline-block rounded-lg bg-teal-600 px-4 py-2 text-white">دانلود فایل درس</a>
             @endif
             @if ($currentLesson->content)
-                <div class="prose mb-6 max-w-none">{!! $currentLesson->content !!}</div>
+                <div class="prose mb-6 max-w-none">{!! clean_html($currentLesson->content) !!}</div>
             @endif
             @auth
                 <form method="POST" action="{{ route('courses.lesson.complete', [$product->slug, $currentLesson->slug]) }}">@csrf<button class="rounded-lg bg-teal-600 px-4 py-2 text-white">تکمیل درس</button></form>

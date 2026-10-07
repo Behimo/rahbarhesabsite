@@ -58,8 +58,16 @@ class UserController extends Controller
             return back()->withErrors(['status' => 'نمی‌توانید حساب خودتان را مسدود کنید.'])->withInput();
         }
 
-        if ($request->user()?->is($user) && $role !== AccessCatalog::ROLE_ADMIN) {
+        $user->loadMissing('roles');
+        $actor = $request->user();
+        $currentRole = $user->roles->first()?->name;
+
+        if ($actor?->is($user) && $role !== $currentRole) {
             return back()->withErrors(['role' => 'نمی‌توانید نقش خودتان را تغییر دهید.'])->withInput();
+        }
+
+        if ($role === AccessCatalog::ROLE_ADMIN && ! $actor?->hasRole(AccessCatalog::ROLE_ADMIN)) {
+            return back()->withErrors(['role' => 'فقط مدیر سیستم می‌تواند نقش مدیر را اختصاص دهد.'])->withInput();
         }
 
         if ($user->hasRole(AccessCatalog::ROLE_ADMIN) && $role !== AccessCatalog::ROLE_ADMIN) {

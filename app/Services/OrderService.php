@@ -30,11 +30,13 @@ class OrderService
         }
 
         $coupon = $this->coupons->applied($user);
-        $subtotal = $this->cart->subtotal();
-        $discount = $coupon ? $this->coupons->discountFor($coupon, $items) : 0;
-        $total = max(0, $subtotal - $discount);
 
-        return DB::transaction(function () use ($user, $items, $coupon, $subtotal, $discount, $total, $ip, $userAgent) {
+        $reusable = $this->reusablePendingOrder($user, $items);
+        if ($reusable) {
+            return $reusable;
+        }
+
+        return DB::transaction(function () use ($user, $items, $coupon, $ip, $userAgent) {
             $lockedProducts = ShopProduct::query()
                 ->whereIn('id', $items->pluck('shop_product_id'))
                 ->orderBy('id')
@@ -50,7 +52,15 @@ class OrderService
                 if ($product->tracksInventory() && $item->quantity > (int) $product->stock) {
                     throw new \RuntimeException('موجودی محصول «'.$product->title.'» برای تعداد درخواستی کافی نیست.');
                 }
+
+                $item->setRelation('product', $product);
             }
+
+            $subtotal = (int) $items->sum(
+                fn ($item) => (int) $item->product->effectivePrice() * (int) $item->quantity
+            );
+            $discount = $coupon ? $this->coupons->discountFor($coupon, $items) : 0;
+            $total = max(0, $subtotal - $discount);
 
             $order = Order::query()->create([
                 'user_id' => $user->id,
@@ -96,7 +106,7 @@ class OrderService
             return;
         }
 
-        DB::transaction(function () use ($order) {
+        DB::transaction(function () use ($order, $paymentFields) {
             $locked = Order::query()->lockForUpdate()->find($order->id);
 
             if (! $locked || $locked->isPaid()) {
@@ -126,14 +136,18 @@ class OrderService
                 $this->coupons->recordUsage($locked);
             }
 
+            if ($paymentFields !== []) {
+                $locked->payment()?->update($paymentFields);
+            }
+
             $this->fulfill($locked->fresh(['items.product.course', 'user']));
         });
 
-        $this->cart->clearForUser((int) $order->user_id);
-
-        if ($paymentFields !== []) {
-            $order->payment()?->update($paymentFields);
-        }
+        $order->load('items');
+        $this->cart->clearProductsForUser(
+            (int) $order->user_id,
+            $order->items->pluck('shop_product_id')->filter()->map(fn ($id) => (int) $id)->all(),
+        );
     }
 
     public function markFailed(Order $order): void
@@ -225,11 +239,12 @@ class OrderService
             ]
         );
 
-        if ($enrollment->status !== CourseEnrollment::STATUS_ACTIVE) {
+        if (! $enrollment->wasRecentlyCreated && ! $enrollment->isActive()) {
             $enrollment->update([
                 'status' => CourseEnrollment::STATUS_ACTIVE,
                 'order_id' => $order?->id ?? $enrollment->order_id,
                 'expires_at' => $months > 0 ? now()->addMonths($months) : null,
+                'source' => $source,
             ]);
         }
 
@@ -246,6 +261,8 @@ class OrderService
             'status' => CourseEnrollment::STATUS_REVOKED,
             'expires_at' => now(),
         ]);
+
+        app(SpotPlayerService::class)->revokeForCourse((int) $enrollment->user_id, (int) $enrollment->course_id);
     }
 
     public function retryLicenses(Order $order): void
@@ -296,6 +313,31 @@ class OrderService
             'progress_percent' => $percent,
             'completed_at' => $percent >= 100 ? now() : null,
         ]);
+    }
+
+    private function reusablePendingOrder(User $user, Collection $items): ?Order
+    {
+        $pending = Order::query()
+            ->where('user_id', $user->id)
+            ->where('status', Order::STATUS_PENDING)
+            ->latest('id')
+            ->first();
+
+        if (! $pending) {
+            return null;
+        }
+
+        $pending->load('items');
+        $current = $items->map(fn ($item) => $item->shop_product_id.':'.$item->quantity)->sort()->values()->all();
+        $existing = $pending->items->map(fn ($item) => $item->shop_product_id.':'.$item->quantity)->sort()->values()->all();
+
+        if ($current === $existing) {
+            return $pending->load('items.product');
+        }
+
+        $this->markFailed($pending);
+
+        return null;
     }
 
     private function reserveItem(ShopProduct $product, int $quantity): bool

@@ -115,7 +115,7 @@ Route::controller(ShopController::class)->group(function () {
     Route::put('/cart/{item}', 'updateCart')->name('cart.update');
     Route::delete('/cart/{item}', 'removeFromCart')->name('cart.remove');
 
-    Route::post('/cart/coupon', 'applyCoupon')->name('cart.coupon');
+    Route::post('/cart/coupon', 'applyCoupon')->middleware('throttle:coupon')->name('cart.coupon');
     Route::delete('/cart/coupon', 'removeCoupon')->name('cart.coupon.remove');
 
     Route::get('/checkout/callback', 'callback')->name('checkout.callback');

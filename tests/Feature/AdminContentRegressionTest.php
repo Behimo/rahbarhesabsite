@@ -116,7 +116,7 @@ class AdminContentRegressionTest extends TestCase
         $this->assertDatabaseMissing('cms_settings', [
             'key' => 'contact_email',
             'value' => 'partial@example.test',
-        ], 'Import applied settings before failing; the import is not atomic.');
+        ]);
         $this->assertSame('old@example.test', CmsSetting::get('contact_email'));
         $this->assertDatabaseMissing('cms_pages', ['title' => 'missing slug']);
     }

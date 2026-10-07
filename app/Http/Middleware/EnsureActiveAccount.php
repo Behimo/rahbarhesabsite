@@ -7,17 +7,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
-class EnsureUser
+class EnsureActiveAccount
 {
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
 
-        if (! $user) {
-            return redirect()->route('login')->with('error', 'لطفاً وارد حساب کاربری شوید.');
-        }
-
-        if ($user->isBlocked()) {
+        if ($user && method_exists($user, 'isBlocked') && $user->isBlocked()) {
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();

@@ -174,40 +174,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
 /*Ø³Ú©Ø´Ù Ø¯ÙÙ*/
 document.addEventListener("DOMContentLoaded", () => {
-  const aboutSection = document.querySelector(".rahbar-about");
+  document.querySelectorAll(".rahbar-about").forEach((aboutSection) => {
+    const aboutCard = aboutSection.querySelector(".about-card");
+    const pawn = aboutSection.querySelector(".main-pawn");
 
-  const aboutCard = document.querySelector(".about-card");
+    if (!aboutCard || !pawn) return;
 
-  const pawn = document.querySelector(".main-pawn");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            aboutCard.classList.add("show");
+            pawn.classList.add("show");
 
-  if (!aboutSection) return;
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.25 },
+    );
 
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          aboutCard.classList.add("show");
-          pawn.classList.add("show");
-
-          observer.unobserve(entry.target);
-        }
-      });
-    },
-
-    {
-      threshold: 0.25,
-    },
-  );
-
-  observer.observe(aboutSection);
+    observer.observe(aboutSection);
+  });
 });
 
 /*Ø³Ú©Ø´Ù Ø³ÙÙ*/
 
 document.addEventListener("DOMContentLoaded", () => {
-  const appSection = document.querySelector(".rahbar-app-section");
-
-  if (!appSection) return;
+  const appSections = document.querySelectorAll(".rahbar-app-section");
 
   /* ======================================
        ÙÙØ§ÛØ´ ÙØ±Ù Ø³Ú©Ø´Ù ÙÙÚ¯Ø§Ù Ø§Ø³Ú©Ø±ÙÙ
@@ -229,7 +223,7 @@ document.addEventListener("DOMContentLoaded", () => {
     },
   );
 
-  appObserver.observe(appSection);
+  appSections.forEach((appSection) => appObserver.observe(appSection));
 
   /* ======================================
        Download Button
@@ -263,9 +257,9 @@ document.addEventListener("DOMContentLoaded", () => {
 /* Ø³Ú©Ø´Ù ÚÙØ§Ø±Ù*/
 
 document.addEventListener("DOMContentLoaded", () => {
-  const benefitsSection = document.querySelector(".rahbar-benefits");
+  const benefitsSections = document.querySelectorAll(".rahbar-benefits");
 
-  if (!benefitsSection) return;
+  if (!benefitsSections.length) return;
 
   const benefitsObserver = new IntersectionObserver(
     (entries) => {
@@ -283,7 +277,7 @@ document.addEventListener("DOMContentLoaded", () => {
     },
   );
 
-  benefitsObserver.observe(benefitsSection);
+  benefitsSections.forEach((benefitsSection) => benefitsObserver.observe(benefitsSection));
 });
 
 //Ø³Ú©Ø´Ù Ù¾ÙØ¬Ù
@@ -540,9 +534,9 @@ document.addEventListener("DOMContentLoaded", () => {
 /*Ø³Ú©Ø´Ù Ø´Ø´Ù*/
 
 document.addEventListener("DOMContentLoaded", () => {
-  const financeSection = document.querySelector(".rahbar-finance-section");
+  const financeSections = document.querySelectorAll(".rahbar-finance-section");
 
-  if (!financeSection) return;
+  if (!financeSections.length) return;
 
   const financeObserver = new IntersectionObserver(
     (entries) => {
@@ -560,15 +554,13 @@ document.addEventListener("DOMContentLoaded", () => {
     },
   );
 
-  financeObserver.observe(financeSection);
+  financeSections.forEach((financeSection) => financeObserver.observe(financeSection));
 });
 
 // Ø³Ú©Ø´ faq
 
 document.addEventListener("DOMContentLoaded", () => {
-  const faqSection = document.querySelector("#popularFaqs");
-
-  if (!faqSection) return;
+  document.querySelectorAll(".faq-carousel-section").forEach((faqSection) => {
 
   const viewport = faqSection.querySelector(".faq-viewport");
 
@@ -579,6 +571,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const prevButton = faqSection.querySelector(".faq-prev");
 
   const nextButton = faqSection.querySelector(".faq-next");
+
+  if (!viewport || !track || !prevButton || !nextButton) return;
 
   let currentIndex = 0;
 
@@ -811,14 +805,15 @@ document.addEventListener("DOMContentLoaded", () => {
   observer.observe(faqSection);
 
   updateSlider(false);
+  });
 });
 
 //Ø³Ú©Ø´Ùnews-guides-section
 
 document.addEventListener("DOMContentLoaded", () => {
-  const section = document.querySelector(".news-guides-section");
+  const sections = document.querySelectorAll(".news-guides-section");
 
-  if (!section) return;
+  if (!sections.length) return;
 
   const observer = new IntersectionObserver(
     (entries) => {
@@ -836,15 +831,15 @@ document.addEventListener("DOMContentLoaded", () => {
     },
   );
 
-  observer.observe(section);
+  sections.forEach((section) => observer.observe(section));
 });
 
 /*Ø³Ú©Ø´Ù rahbar-system-section*/
 
 document.addEventListener("DOMContentLoaded", () => {
-  const systemSection = document.querySelector(".rahbar-system-section");
+  const systemSections = document.querySelectorAll(".rahbar-system-section");
 
-  if (!systemSection) return;
+  if (!systemSections.length) return;
 
   const systemObserver = new IntersectionObserver(
     (entries) => {
@@ -862,15 +857,15 @@ document.addEventListener("DOMContentLoaded", () => {
     },
   );
 
-  systemObserver.observe(systemSection);
+  systemSections.forEach((systemSection) => systemObserver.observe(systemSection));
 });
 
 /*Ø³Ú©Ø´Ù rahbar-instagram-section*/
 
 document.addEventListener("DOMContentLoaded", () => {
-  const instagramSection = document.querySelector(".rahbar-instagram-section");
+  const instagramSections = document.querySelectorAll(".rahbar-instagram-section");
 
-  if (!instagramSection) return;
+  if (!instagramSections.length) return;
 
   const instagramObserver = new IntersectionObserver(
     (entries) => {
@@ -888,14 +883,14 @@ document.addEventListener("DOMContentLoaded", () => {
     },
   );
 
-  instagramObserver.observe(instagramSection);
+  instagramSections.forEach((instagramSection) => instagramObserver.observe(instagramSection));
 });
 
 //Ø³Ú©Ø´Ù
 document.addEventListener("DOMContentLoaded", () => {
-  const mentorSection = document.querySelector(".mentor-section");
+  const mentorSections = document.querySelectorAll(".mentor-section");
 
-  if (!mentorSection) return;
+  if (!mentorSections.length) return;
 
   const mentorObserver = new IntersectionObserver(
     (entries) => {
@@ -913,17 +908,15 @@ document.addEventListener("DOMContentLoaded", () => {
     },
   );
 
-  mentorObserver.observe(mentorSection);
+  mentorSections.forEach((mentorSection) => mentorObserver.observe(mentorSection));
 });
 
 //Ø³Ú©Ø´Ù
 
 document.addEventListener("DOMContentLoaded", () => {
-  const experienceSection = document.querySelector(
-    ".student-experience-section",
-  );
+  const experienceSections = document.querySelectorAll(".student-experience-section");
 
-  if (!experienceSection) return;
+  if (!experienceSections.length) return;
 
   const experienceObserver = new IntersectionObserver(
     (entries) => {
@@ -941,7 +934,7 @@ document.addEventListener("DOMContentLoaded", () => {
     },
   );
 
-  experienceObserver.observe(experienceSection);
+  experienceSections.forEach((experienceSection) => experienceObserver.observe(experienceSection));
 });
 
 /*Ø³Ú©Ø´Ù rahbar-partners-section*/

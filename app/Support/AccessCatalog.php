@@ -69,7 +69,8 @@ class AccessCatalog
         $crud = [self::VIEW, self::CREATE, self::UPDATE, self::DELETE];
 
         return [
-            'users' => ['label' => 'کاربران و نقش‌ها', 'actions' => $crud],
+            'users' => ['label' => 'کاربران', 'actions' => $crud],
+            'roles' => ['label' => 'نقش‌ها', 'actions' => $crud],
             'courses' => ['label' => 'دوره‌ها', 'actions' => $crud],
             'orders' => ['label' => 'سفارش، لایسنس و تخفیف', 'actions' => $crud],
             'posts' => ['label' => 'بلاگ و محصولات', 'actions' => $crud],
@@ -194,7 +195,7 @@ class AccessCatalog
     {
         return [
             'admin.users' => 'users',
-            'admin.roles' => 'users',
+            'admin.roles' => 'roles',
             'admin.courses' => 'courses',
             'admin.orders' => 'orders',
             'admin.licenses' => 'orders',
@@ -438,7 +439,15 @@ class AccessCatalog
                 $role->save();
             }
 
-            $role->syncPermissions(self::rolePermissions($name));
+            $role->load('permissions');
+            $missing = array_values(array_diff(
+                self::rolePermissions($name),
+                $role->permissions->pluck('name')->all(),
+            ));
+
+            if ($missing !== []) {
+                $role->givePermissionTo($missing);
+            }
         }
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();

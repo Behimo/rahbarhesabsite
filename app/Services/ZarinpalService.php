@@ -4,14 +4,15 @@ namespace App\Services;
 
 use App\Models\Order;
 use App\Models\Payment;
+use App\Services\Concerns\AuthorizesPaymentCallback;
 use App\Services\Concerns\GuardsVerifiedPaymentAmount;
 use App\Support\Money;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class ZarinpalService implements \App\Contracts\PaymentGatewayInterface
 {
+    use AuthorizesPaymentCallback;
     use GuardsVerifiedPaymentAmount;
 
     public function __construct(private OrderService $orders) {}
@@ -59,12 +60,17 @@ class ZarinpalService implements \App\Contracts\PaymentGatewayInterface
         $baseUrl = $sandbox
             ? 'https://sandbox.zarinpal.com/pg/v4/payment'
             : 'https://api.zarinpal.com/pg/v4/payment';
+        if ($existingUrl = $this->reusablePaymentUrl($order->id, $this->name())) {
+            return $existingUrl;
+        }
+
         $amountRials = Money::tomanToRials((int) $order->total);
+        $callbackToken = $this->newCallbackToken();
 
         $response = Http::post($baseUrl.'/request.json', [
             'merchant_id' => $merchantId,
             'amount' => $amountRials,
-            'callback_url' => route('checkout.callback', ['gateway' => 'zarinpal']),
+            'callback_url' => route('checkout.callback', ['gateway' => 'zarinpal', 'token' => $callbackToken]),
             'description' => 'سفارش '.$order->order_number,
             'metadata' => ['order_id' => $order->id],
         ]);
@@ -83,15 +89,22 @@ class ZarinpalService implements \App\Contracts\PaymentGatewayInterface
             'authority' => $data['authority'],
             'amount' => $order->total,
             'status' => Payment::STATUS_PENDING,
-            'gateway_payload' => ['amount_rial' => $amountRials],
+            'gateway_payload' => [
+                'amount_rial' => $amountRials,
+                'callback_token' => $callbackToken,
+                'start_url' => ($sandbox
+                    ? 'https://sandbox.zarinpal.com/pg/StartPay/'
+                    : 'https://www.zarinpal.com/pg/StartPay/').$data['authority'],
+            ],
             'gateway_response' => $response->json(),
         ]);
 
-        $gatewayUrl = $sandbox
-            ? 'https://sandbox.zarinpal.com/pg/StartPay/'
-            : 'https://www.zarinpal.com/pg/StartPay/';
+        $this->rememberCallbackToken((string) $data['authority'], $callbackToken);
 
-        return $gatewayUrl.$data['authority'];
+        return $this->reusablePaymentUrl($order->id, $this->name())
+            ?? (($sandbox
+                ? 'https://sandbox.zarinpal.com/pg/StartPay/'
+                : 'https://www.zarinpal.com/pg/StartPay/').$data['authority']);
     }
 
     public function verifyCallback(array $query): ?Payment
@@ -109,6 +122,10 @@ class ZarinpalService implements \App\Contracts\PaymentGatewayInterface
             return null;
         }
 
+        if (! $this->callbackAuthorized($payment, $query)) {
+            return null;
+        }
+
         if ($payment->isSuccessful() && $payment->order?->isPaid()) {
             return $payment;
         }
@@ -117,7 +134,7 @@ class ZarinpalService implements \App\Contracts\PaymentGatewayInterface
             $payment->update([
                 'status' => Payment::STATUS_FAILED,
                 'error_message' => 'پرداخت توسط کاربر لغو شد.',
-                'gateway_payload' => $query,
+                'gateway_payload' => array_merge($payment->gateway_payload ?? [], ['callback' => $query]),
             ]);
             if ($payment->order) {
                 $this->orders->markFailed($payment->order);
@@ -126,13 +143,10 @@ class ZarinpalService implements \App\Contracts\PaymentGatewayInterface
             return null;
         }
 
-        $lock = Cache::lock('payment:verify:'.$payment->id, 30);
+        $lock = $this->lockPayment($payment);
 
         if (! $lock->get()) {
-            usleep(250000);
-            $payment->refresh();
-
-            return $payment->isSuccessful() ? $payment : null;
+            return $this->waitUntilSettled($payment);
         }
 
         try {
@@ -166,19 +180,26 @@ class ZarinpalService implements \App\Contracts\PaymentGatewayInterface
                 $cardPan = $response->json('data.card_pan') ?? $response->json('data.cardPan');
                 $cardHash = $response->json('data.card_hash') ?? $response->json('data.cardHash');
 
-                $payment->update([
-                    'status' => Payment::STATUS_SUCCESS,
-                    'ref_id' => (string) $response->json('data.ref_id'),
-                    'card_pan' => $cardPan,
-                    'card_hash' => $cardHash,
-                    'user_id' => $payment->user_id ?: $payment->order?->user_id,
-                    'gateway_response' => $payload,
-                    'verified_at' => now(),
-                    'paid_at' => now(),
-                    'error_message' => null,
-                ]);
+                try {
+                    $this->orders->markPaid($payment->order, [
+                        'status' => Payment::STATUS_SUCCESS,
+                        'ref_id' => (string) $response->json('data.ref_id'),
+                        'card_pan' => $cardPan,
+                        'card_hash' => $cardHash,
+                        'user_id' => $payment->user_id ?: $payment->order?->user_id,
+                        'gateway_response' => $payload,
+                        'verified_at' => now(),
+                        'paid_at' => now(),
+                        'error_message' => null,
+                    ]);
+                } catch (\RuntimeException) {
+                    $payment->refresh();
+                    if ($payment->order && ! $payment->order->isPaid()) {
+                        $this->orders->markFailed($payment->order);
+                    }
 
-                $this->orders->markPaid($payment->order);
+                    return null;
+                }
 
                 return $payment->fresh('order');
             }

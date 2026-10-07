@@ -93,6 +93,23 @@ class CartService
         app(CouponService::class)->forget();
     }
 
+    /**
+     * @param  array<int, int>  $productIds
+     */
+    public function clearProductsForUser(int $userId, array $productIds): void
+    {
+        if ($productIds === []) {
+            return;
+        }
+
+        CartItem::query()
+            ->where('user_id', $userId)
+            ->whereIn('shop_product_id', $productIds)
+            ->delete();
+
+        app(CouponService::class)->forget();
+    }
+
     private function assertInStock(ShopProduct $product, int $quantity): void
     {
         if ($product->tracksInventory() && $quantity > (int) $product->stock) {
@@ -100,9 +117,9 @@ class CartService
         }
     }
 
-    public function mergeGuestCart(int $userId): void
+    public function mergeGuestCart(int $userId, ?string $sessionId = null): void
     {
-        $sessionId = session()->getId();
+        $sessionId = $sessionId ?: session()->getId();
 
         CartItem::query()
             ->where('session_id', $sessionId)

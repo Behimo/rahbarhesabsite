@@ -22,6 +22,14 @@ class EnsureCmsAdmin
             abort(403, 'دسترسی غیرمجاز.');
         }
 
+        if ($user->isBlocked()) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            abort(403, 'حساب کاربری شما غیرفعال است.');
+        }
+
         return $next($request);
     }
 }

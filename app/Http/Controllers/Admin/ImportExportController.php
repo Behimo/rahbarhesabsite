@@ -29,7 +29,13 @@ class ImportExportController extends Controller
             return back()->withErrors(['export_file' => 'فایل نامعتبر است.']);
         }
 
-        $this->service->import($payload);
+        try {
+            $this->service->import($payload);
+        } catch (\InvalidArgumentException $e) {
+            return back()->withErrors(['export_file' => $e->getMessage()]);
+        } catch (\Throwable) {
+            return back()->withErrors(['export_file' => 'درون‌ریزی انجام نشد.']);
+        }
 
         return back()->with('success', 'درون‌ریزی انجام شد.');
     }

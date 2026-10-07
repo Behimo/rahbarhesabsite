@@ -144,10 +144,10 @@ class PopupService
             return [
                 'id' => $popup->id,
                 'version' => $popup->updated_at?->getTimestamp() ?? $popup->id,
-                'title' => e($popup->title),
-                'body' => nl2br(e($popup->body)),
+                'title' => $popup->title,
+                'body' => preg_replace("/\r\n|\r|\n/", '<br />', e((string) $popup->body)) ?? e((string) $popup->body),
                 'image' => self::safeUrl($popup->image_url),
-                'button_label' => $buttonUrl ? e($popup->button_label) : null,
+                'button_label' => $buttonUrl ? $popup->button_label : null,
                 'button_url' => $buttonUrl,
                 'delay' => max(0, min(300, (int) $popup->delay_seconds)),
                 'frequency' => array_key_exists($popup->frequency, CmsPopup::FREQUENCIES) ? $popup->frequency : 'session',

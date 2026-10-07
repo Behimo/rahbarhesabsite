@@ -1,4 +1,4 @@
-<section class="faq-carousel-section" id="popularFaqs">
+<section class="faq-carousel-section">
     <div class="faq-carousel-container">
         <div class="faq-section-header">
             <h2>{{ $sectionTitle ?? 'پرتکرارترین سوالات حسابداری' }}</h2>

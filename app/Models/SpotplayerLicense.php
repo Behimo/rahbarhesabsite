@@ -13,6 +13,8 @@ class SpotplayerLicense extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    public const STATUS_REVOKED = 'revoked';
+
     protected $fillable = [
             'user_id', 'course_id', 'order_id', 'spot_license_id', 'license_key',
             'spot_url', 'device_count', 'devices_limit',

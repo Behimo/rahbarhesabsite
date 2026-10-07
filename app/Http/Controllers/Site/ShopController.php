@@ -179,6 +179,13 @@ class ShopController extends SiteController
             return redirect()->route('panel.orders')->with('error', 'این سفارش قابل پرداخت مجدد نیست.');
         }
 
+        $openPayment = $order->payments()->where('status', \App\Models\Payment::STATUS_PENDING)->latest('id')->first();
+        $openUrl = $openPayment->gateway_payload['start_url'] ?? null;
+
+        if (is_string($openUrl) && $openUrl !== '') {
+            return redirect()->away($openUrl);
+        }
+
         try {
             $gateway = $this->payments->resolveForCheckout($request->input('gateway'));
         } catch (\RuntimeException $e) {

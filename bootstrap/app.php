@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureActiveAccount;
 use App\Http\Middleware\EnsureAdminPermission;
 use App\Http\Middleware\EnsureApiToken;
 use App\Http\Middleware\EnsureCmsAdmin;
@@ -20,7 +21,23 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->web(append: [
+            EnsureActiveAccount::class,
+        ]);
+
         $middleware->append(HandleCmsRedirects::class);
+
+        $proxies = env('TRUSTED_PROXIES');
+
+        if (is_string($proxies) && $proxies !== '') {
+            $at = $proxies === '*'
+                ? '*'
+                : array_values(array_filter(array_map('trim', explode(',', $proxies))));
+
+            if ($at !== [] && $at !== '') {
+                $middleware->trustProxies(at: $at);
+            }
+        }
 
         $middleware->alias([
             'cms.admin' => EnsureCmsAdmin::class,

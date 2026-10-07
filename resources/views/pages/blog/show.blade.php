@@ -52,7 +52,7 @@
             @endif
 
             <div class="blog-article__content prose prose-slate">
-                {!! $post->body !!}
+                {!! clean_html($post->body) !!}
             </div>
 
             @if ($post->relationLoaded('tags') ? $post->tags->isNotEmpty() : $post->tags()->exists())

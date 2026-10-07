@@ -13,11 +13,13 @@ class HandleCmsRedirects
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->is('admin/*', 'panel/*', 'api/*')) {
+        if ($request->is('admin/*', 'panel/*', 'api/*', 'login', 'login/*', 'logout', 'up')) {
             return $next($request);
         }
 
-        if (! Schema::hasTable('cms_redirects')) {
+        $tableReady = Cache::remember('schema.cms_redirects', 300, fn () => Schema::hasTable('cms_redirects'));
+
+        if (! $tableReady) {
             return $next($request);
         }
 
@@ -30,10 +32,25 @@ class HandleCmsRedirects
                 ->first();
         });
 
-        if ($redirect) {
-            return redirect($redirect->to_path, $redirect->status_code);
+        if ($redirect && ($target = $this->safeTarget((string) $redirect->to_path)) !== null) {
+            return redirect($target, $redirect->status_code);
         }
 
         return $next($request);
+    }
+
+    private function safeTarget(string $to): ?string
+    {
+        $to = trim($to);
+
+        if ($to === '' || ! str_starts_with($to, '/') || str_starts_with($to, '//') || str_contains($to, '\\')) {
+            return null;
+        }
+
+        if (preg_match('#^[a-z][a-z0-9+.-]*:#i', ltrim($to, '/'))) {
+            return null;
+        }
+
+        return $to;
     }
 }

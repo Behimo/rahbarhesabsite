@@ -72,8 +72,12 @@ class MenuTreeRequest extends FormRequest
                 $validator->errors()->add($key.'.type', 'نوع آیتم نامعتبر است.');
             }
 
-            if ($type === 'custom' && trim((string) ($node['url'] ?? '')) === '') {
+            $url = trim((string) ($node['url'] ?? ''));
+
+            if ($type === 'custom' && $url === '') {
                 $validator->errors()->add($key.'.url', 'آدرس لینک الزامی است.');
+            } elseif ($type === 'custom' && ! $this->isSafeUrl($url)) {
+                $validator->errors()->add($key.'.url', 'فقط آدرس http، https یا مسیر داخلی مجاز است.');
             }
 
             if ($type === 'route' && trim((string) ($node['route_name'] ?? '')) === '') {
@@ -96,5 +100,20 @@ class MenuTreeRequest extends FormRequest
 
             $this->validateLevel($node['children'], $validator, $key.'.children', $depth + 1);
         }
+    }
+
+    private function isSafeUrl(string $url): bool
+    {
+        if ($url === '' || str_starts_with($url, '//') || str_contains($url, '\\')) {
+            return false;
+        }
+
+        if (str_starts_with($url, '/') || str_starts_with($url, '#') || str_starts_with($url, '?')) {
+            return true;
+        }
+
+        $scheme = strtolower((string) (parse_url($url, PHP_URL_SCHEME) ?? ''));
+
+        return in_array($scheme, ['http', 'https'], true);
     }
 }

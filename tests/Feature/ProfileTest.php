@@ -48,6 +48,7 @@ class ProfileTest extends TestCase
                 'last_name' => 'کاظمی',
                 'email' => 'maryam@example.com',
                 'phone' => '09125556666',
+                'current_password' => 'password',
             ])
             ->assertRedirect()
             ->assertSessionHas('success');
@@ -85,6 +86,7 @@ class ProfileTest extends TestCase
 
         $this->actingAs($user)
             ->put(route('panel.profile.password'), [
+                'current_password' => 'password',
                 'password' => 'new-secret',
                 'password_confirmation' => 'new-secret',
             ])
@@ -101,6 +103,7 @@ class ProfileTest extends TestCase
         $this->actingAs($user)
             ->from(route('panel.profile'))
             ->put(route('panel.profile.password'), [
+                'current_password' => 'password',
                 'password' => 'new-secret',
                 'password_confirmation' => 'mismatch',
             ])

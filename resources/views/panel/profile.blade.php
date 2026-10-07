@@ -174,6 +174,24 @@
                         @enderror
                     </div>
                 </div>
+
+                <div class="profile-row">
+                    <label class="profile-label" for="field-profile-current-password">رمز فعلی</label>
+                    <div class="profile-control">
+                        <input
+                            id="field-profile-current-password"
+                            class="profile-input @error('current_password') profile-input--invalid @enderror"
+                            type="password"
+                            name="current_password"
+                            autocomplete="current-password"
+                            @error('current_password') aria-invalid="true" aria-describedby="error-profile-current-password" @enderror
+                        >
+                        <p class="profile-help">فقط وقتی موبایل یا ایمیل را عوض می‌کنید لازم است.</p>
+                        @error('current_password')
+                            <p id="error-profile-current-password" class="profile-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
             </div>
 
             <div class="profile-actions">
@@ -208,6 +226,24 @@
             @endif
 
             <div class="profile-ledger">
+                <div class="profile-row">
+                    <label class="profile-label" for="field-current-password">رمز فعلی</label>
+                    <div class="profile-control">
+                        <input
+                            id="field-current-password"
+                            class="profile-input @if ($passwordErrors->has('current_password')) profile-input--invalid @endif"
+                            type="password"
+                            name="current_password"
+                            autocomplete="current-password"
+                            required
+                            @if ($passwordErrors->has('current_password')) aria-invalid="true" aria-describedby="error-current-password" @endif
+                        >
+                        @if ($passwordErrors->has('current_password'))
+                            <p id="error-current-password" class="profile-error">{{ $passwordErrors->first('current_password') }}</p>
+                        @endif
+                    </div>
+                </div>
+
                 <div class="profile-row">
                     <label class="profile-label" for="field-password">رمز جدید</label>
                     <div class="profile-control">

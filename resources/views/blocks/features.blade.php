@@ -9,7 +9,7 @@
 @endphp
 
 @if ($cards->isNotEmpty())
-    <section class="rahbar-benefits" id="rahbarBenefits">
+    <section class="rahbar-benefits">
         <div class="benefits-container">
             <div class="{{ $gridClass }}">
                 @foreach ($cards as $index => $card)

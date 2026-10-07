@@ -22,7 +22,11 @@ class BuilderCanvasRenderer
             return $content;
         }
 
-        $content['blocks'] = array_map(function (array $block) use ($defs) {
+        $content['blocks'] = array_values(array_filter(array_map(function ($block) use ($defs) {
+            if (! is_array($block)) {
+                return null;
+            }
+
             $type = (string) ($block['type'] ?? '');
             $settings = array_replace($this->defaultSettings($defs[$type] ?? null), $block['settings'] ?? []);
 
@@ -34,7 +38,7 @@ class BuilderCanvasRenderer
                 'type' => $type,
                 'settings' => $settings,
             ];
-        }, array_values($items));
+        }, array_values($items))));
 
         return $content;
     }

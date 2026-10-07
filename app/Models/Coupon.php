@@ -65,14 +65,14 @@ class Coupon extends Model
             if ($userUsage >= $this->usage_limit_per_user) {
                 return false;
             }
+        }
 
-            if ($this->is_first_order_only) {
-                $hasPriorOrders = Order::where('user_id', $user->id)
-                    ->where('status', Order::STATUS_PAID)
-                    ->exists();
-                if ($hasPriorOrders) {
-                    return false;
-                }
+        if ($user && $this->is_first_order_only) {
+            $hasPriorOrders = Order::where('user_id', $user->id)
+                ->where('status', Order::STATUS_PAID)
+                ->exists();
+            if ($hasPriorOrders) {
+                return false;
             }
         }
 
