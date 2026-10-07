@@ -50,8 +50,18 @@
 <body class="rh-theme">
     @include('components.navbar', ['navLinks' => $navLinks ?? []])
 
+    @php $pageSidebars = app(\App\Services\SidebarService::class)->current(); @endphp
     <main @class(['rh-inner-page' => ! request()->routeIs(['home', 'about', 'contact', 'courses.index', 'courses.show', 'blog.*', 'panel.*', 'login', 'login.verify', 'cart.index', 'checkout.index', 'checkout.success', 'checkout.failed', 'search'])])>
-        @yield('page')
+        @if ($pageSidebars->isNotEmpty())
+            <div class="rh-sidebar-layout">
+                <div class="rh-sidebar-layout__main">
+                    @yield('page')
+                </div>
+                @include('components.page-sidebar', ['pageSidebars' => $pageSidebars])
+            </div>
+        @else
+            @yield('page')
+        @endif
     </main>
 
     @include('components.footer', ['contact' => $contact ?? []])

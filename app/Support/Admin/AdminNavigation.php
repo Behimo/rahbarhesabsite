@@ -37,6 +37,8 @@ class AdminNavigation
             'admin.pages.edit' => 'admin.pages.index',
             'admin.popups.create' => 'admin.popups.index',
             'admin.popups.edit' => 'admin.popups.index',
+            'admin.sidebars.create' => 'admin.sidebars.index',
+            'admin.sidebars.edit' => 'admin.sidebars.index',
             'admin.pages.builder' => 'admin.pages.index',
             'admin.posts.create' => 'admin.posts.index',
             'admin.posts.edit' => 'admin.posts.index',

@@ -44,6 +44,11 @@ class ShopProduct extends Model
         return $this->hasOne(Course::class);
     }
 
+    public function orderItems(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
     public function bundleItems(): HasMany
     {
         return $this->hasMany(CourseBundleItem::class)->orderBy('sort_order');

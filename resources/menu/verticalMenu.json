@@ -8,6 +8,7 @@
     { "url": "admin/home", "name": "صفحه اصلی", "icon": "menu-icon tf-icons ti ti-home", "slug": "admin.home" },
     { "url": "admin/pages", "name": "صفحات", "icon": "menu-icon tf-icons ti ti-file-text", "slug": "admin.pages" },
     { "url": "admin/popups", "name": "پاپ‌آپ‌ها", "icon": "menu-icon tf-icons ti ti-app-window", "slug": "admin.popups" },
+    { "url": "admin/sidebars", "name": "سایدبارها", "icon": "menu-icon tf-icons ti ti-layout-sidebar", "slug": "admin.sidebars" },
     { "url": "admin/posts", "name": "بلاگ", "icon": "menu-icon tf-icons ti ti-article", "slug": "admin.posts" },
     {
       "name": "دسته‌بندی",

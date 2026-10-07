@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             SiteCategorySeeder::class,
             DemoContentSeeder::class,
             HomeBlocksSeeder::class,
+            SidebarSeeder::class,
         ]);
     }
 }

@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\RedirectController as AdminRedirectController;
 use App\Http\Controllers\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Admin\SearchController as AdminSearchController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
+use App\Http\Controllers\Admin\SidebarController as AdminSidebarController;
 use App\Http\Controllers\Admin\TagController as AdminTagController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\AuthController;
@@ -183,6 +184,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::put('home', [AdminHomeController::class, 'update'])->name('home.update');
 
         Route::resource('popups', AdminPopupController::class)->except(['show']);
+        Route::resource('sidebars', AdminSidebarController::class)->except(['show']);
 
         Route::controller(AdminPageController::class)->prefix('pages')->name('pages.')->group(function () {
             Route::get('/', 'index')->name('index');
