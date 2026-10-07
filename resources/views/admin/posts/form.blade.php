@@ -21,13 +21,13 @@
 @endsection
 
 @section('vendor-style')
+@include('admin.partials.composer-styles')
 <style>
     .media-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: .75rem; max-height: 360px; overflow: auto; }
-    .media-picker-item { border: 1px solid #e4e4ec; border-radius: .5rem; padding: .35rem; cursor: pointer; background: #fff; text-align: center; }
-    .media-picker-item.is-selected, .media-picker-item:hover { border-color: #643abc; box-shadow: 0 0 0 2px rgba(100,58,188,.15); }
+    .media-picker-item { border: 1px solid var(--bs-border-color); border-radius: .5rem; padding: .35rem; cursor: pointer; background: #fff; text-align: center; }
+    .media-picker-item.is-selected, .media-picker-item:hover { border-color: var(--bs-primary); box-shadow: 0 0 0 2px rgba(var(--bs-primary-rgb), .15); }
     .media-picker-item img { width: 100%; height: 80px; object-fit: cover; border-radius: .35rem; }
-    .featured-preview { max-width: 280px; border-radius: .75rem; border: 1px solid #e4e4ec; }
-    .tag-check-grid { display: flex; flex-wrap: wrap; gap: .5rem .75rem; }
+    .featured-preview { max-width: 280px; border-radius: .75rem; border: 1px solid var(--bs-border-color); }
     .ck-editor__editable { min-height: 420px; direction: rtl; text-align: right; font-family: Vazirmatn, Tahoma, sans-serif; line-height: 1.9; }
     .ck.ck-editor { width: 100%; }
 </style>
@@ -104,21 +104,25 @@
             <div class="card mb-4">
                 <div class="card-header"><h5 class="mb-0">انتشار</h5></div>
                 <div class="card-body">
-                    <div class="form-check mb-3">
+                    <div class="form-check form-switch mb-3">
                         <input type="checkbox" name="is_published" value="1" class="form-check-input" id="is_published" @checked(old('is_published', $post->is_published))>
                         <label class="form-check-label" for="is_published">منتشر شود</label>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">وضعیت</label>
-                        <select name="status" id="post-status" class="form-select">
+                        <div class="form-label">وضعیت</div>
+                        @php $postStatus = old('status', $post->status ?: 'draft'); @endphp
+                        <div class="sb-pills" id="post-status">
                             @foreach ([
                                 'draft' => 'پیش‌نویس',
                                 'published' => 'منتشر شده',
                                 'scheduled' => 'زمان‌بندی‌شده',
                             ] as $value => $label)
-                                <option value="{{ $value }}" @selected(old('status', $post->status ?: 'draft') === $value)>{{ $label }}</option>
+                                <label class="sb-pill">
+                                    <input type="radio" name="status" value="{{ $value }}" @checked($postStatus === $value)>
+                                    <span>{{ $label }}</span>
+                                </label>
                             @endforeach
-                        </select>
+                        </div>
                         <div class="form-text">برای نمایش در سایت بلاگ، «منتشر شود» را فعال کنید.</div>
                     </div>
                     <div class="mb-3">
@@ -156,13 +160,13 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">برچسب‌ها</label>
-                        <div class="tag-check-grid">
+                        <div class="sb-page-grid">
                             @forelse ($tags as $tag)
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="tag_ids[]" value="{{ $tag->id }}" id="tag-{{ $tag->id }}"
+                                <label class="sb-page">
+                                    <input type="checkbox" name="tag_ids[]" value="{{ $tag->id }}" id="tag-{{ $tag->id }}"
                                            @checked(in_array($tag->id, array_map('intval', (array) old('tag_ids', $selectedTags)), true))>
-                                    <label class="form-check-label" for="tag-{{ $tag->id }}">{{ $tag->name }}</label>
-                                </div>
+                                    <span>{{ $tag->name }}</span>
+                                </label>
                             @empty
                                 <span class="text-muted small">برچسبی نیست.@if (admin_can('taxonomies', 'view')) از <a href="{{ route('admin.tags.index') }}">برچسب‌ها</a> بسازید.@endif</span>
                             @endforelse
@@ -434,18 +438,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const publishCheckbox = document.getElementById('is_published');
-    const statusSelect = document.getElementById('post-status');
-    if (publishCheckbox && statusSelect) {
+    const statusInputs = document.querySelectorAll('#post-status input[name="status"]');
+    const currentStatus = () => document.querySelector('#post-status input[name="status"]:checked')?.value;
+    const setStatus = (value) => {
+        const input = document.querySelector(`#post-status input[name="status"][value="${value}"]`);
+        if (input) input.checked = true;
+    };
+    if (publishCheckbox && statusInputs.length) {
         publishCheckbox.addEventListener('change', () => {
-            if (publishCheckbox.checked && statusSelect.value === 'draft') {
-                statusSelect.value = 'published';
+            if (publishCheckbox.checked && currentStatus() === 'draft') {
+                setStatus('published');
             }
             if (!publishCheckbox.checked) {
-                statusSelect.value = 'draft';
+                setStatus('draft');
             }
         });
-        statusSelect.addEventListener('change', () => {
-            publishCheckbox.checked = statusSelect.value !== 'draft';
+        statusInputs.forEach((input) => {
+            input.addEventListener('change', () => {
+                publishCheckbox.checked = currentStatus() !== 'draft';
+            });
         });
     }
 });

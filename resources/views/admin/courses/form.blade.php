@@ -1,84 +1,115 @@
 @extends('layouts.admin')
 
+@php
+    $level = old('level', $course->level ?? 'beginner');
+    $levels = ['beginner' => 'مقدماتی', 'intermediate' => 'متوسط', 'advanced' => 'پیشرفته'];
+@endphp
+
 @section('title', $product->exists ? 'ویرایش دوره' : 'دوره جدید')
 
 @section('heading', $product->exists ? 'ویرایش: '.$product->title : 'دوره جدید')
 
+@section('lede', 'شرح دوره و دسته‌بندی در ستون اصلی است. قیمت، سطح و انتشار کنار آن می‌ماند.')
+
+@section('vendor-style')
+@include('admin.partials.composer-styles')
+@endsection
+
 @section('content')
 
-<form method="POST" action="{{ $product->exists ? route('admin.courses.update', $product) : route('admin.courses.store') }}" class="card mb-4">
+<form method="POST" action="{{ $product->exists ? route('admin.courses.update', $product) : route('admin.courses.store') }}" class="mb-4">
     @csrf
     @if ($product->exists) @method('PUT') @endif
-    <div class="card-body">
-        <h5 class="mb-3">اطلاعات دوره</h5>
-        <div class="row g-3 mb-3">
-            <div class="col-md-6">
-                <label class="form-label">عنوان *</label>
-                <input type="text" name="title" value="{{ old('title', $product->title) }}" class="form-control" required>
+
+    <div class="row g-4">
+        <div class="col-xl-8">
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">شرح دوره</h5></div>
+                <div class="card-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="course-title">عنوان *</label>
+                            <input id="course-title" type="text" name="title" value="{{ old('title', $product->title) }}" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="course-slug">نامک *</label>
+                            <input id="course-slug" type="text" name="slug" value="{{ old('slug', $product->slug) }}" class="form-control" dir="ltr" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="course-subtitle">زیرعنوان</label>
+                        <input id="course-subtitle" type="text" name="subtitle" value="{{ old('subtitle', $product->subtitle) }}" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="course-description">توضیحات</label>
+                        <textarea id="course-description" name="description" rows="3" class="form-control">{{ old('description', $product->description) }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="course-learn">چه چیزهایی یاد می‌گیرند</label>
+                        <textarea id="course-learn" name="what_you_learn" rows="3" class="form-control">{{ old('what_you_learn', implode("\n", $course->what_you_learn ?? [])) }}</textarea>
+                        <div class="form-text">هر خط یک مورد.</div>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label" for="course-requirements">پیش‌نیازها</label>
+                        <textarea id="course-requirements" name="requirements" rows="2" class="form-control">{{ old('requirements', implode("\n", $course->requirements ?? [])) }}</textarea>
+                        <div class="form-text">هر خط یک مورد.</div>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-6">
-                <label class="form-label">Slug *</label>
-                <input type="text" name="slug" value="{{ old('slug', $product->slug) }}" class="form-control" dir="ltr" required>
-            </div>
-        </div>
-        <div class="row g-3 mb-3">
-            <div class="col-md-6">
-                <label class="form-label">زیرعنوان</label>
-                <input type="text" name="subtitle" value="{{ old('subtitle', $product->subtitle) }}" class="form-control">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">قیمت (تومان)</label>
-                <input type="number" name="price" value="{{ old('price', $product->price ?? 0) }}" class="form-control" min="0">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">قیمت تخفیف</label>
-                <input type="number" name="sale_price" value="{{ old('sale_price', $product->sale_price) }}" class="form-control" min="0">
-            </div>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">توضیحات</label>
-            <textarea name="description" rows="3" class="form-control">{{ old('description', $product->description) }}</textarea>
-        </div>
-        <div class="row g-3 mb-3">
-            <div class="col-md-4">
-                <label class="form-label">سطح</label>
-                <select name="level" class="form-select">
-                    @foreach (['beginner' => 'مقدماتی', 'intermediate' => 'متوسط', 'advanced' => 'پیشرفته'] as $val => $label)
-                        <option value="{{ $val }}" @selected(old('level', $course->level ?? 'beginner') === $val)>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">مدرس</label>
-                <select name="instructor_id" class="form-select">
-                    <option value="">—</option>
-                    @foreach ($instructors as $instructor)
-                        <option value="{{ $instructor->id }}" @selected(old('instructor_id', $course->instructor_id) == $instructor->id)>{{ $instructor->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">مدت (دقیقه)</label>
-                <input type="number" name="duration_minutes" value="{{ old('duration_minutes', $course->duration_minutes ?? 0) }}" class="form-control" min="0">
+
+            <div class="card">
+                <div class="card-header"><h5 class="mb-0">جایگاه در درخت محصول</h5></div>
+                <div class="card-body">
+                    @include('admin.partials.category-picker')
+                </div>
             </div>
         </div>
-        <div class="mb-3">
-            <label class="form-label">چه چیزهایی یاد می‌گیرند (هر خط یک مورد)</label>
-            <textarea name="what_you_learn" rows="3" class="form-control">{{ old('what_you_learn', implode("\n", $course->what_you_learn ?? [])) }}</textarea>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">پیش‌نیازها (هر خط یک مورد)</label>
-            <textarea name="requirements" rows="2" class="form-control">{{ old('requirements', implode("\n", $course->requirements ?? [])) }}</textarea>
-        </div>
-        <hr class="my-4">
-        <h5 class="mb-3">جایگاه در درخت محصول</h5>
-        @include('admin.partials.category-picker')
-        <div class="form-check mb-3">
-            <input type="checkbox" name="is_published" value="1" class="form-check-input" id="is_published" @checked(old('is_published', $product->is_published))>
-            <label class="form-check-label" for="is_published">منتشر شده</label>
-        </div>
-        <div class="admin-form-actions">
-            <button type="submit" class="btn btn-primary">ذخیره دوره</button>
+
+        <div class="col-xl-4 admin-form-side">
+            <div class="card">
+                <div class="card-header"><h5 class="mb-0">فروش و انتشار</h5></div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-3">
+                        <input type="checkbox" name="is_published" value="1" class="form-check-input" id="is_published" @checked(old('is_published', $product->is_published))>
+                        <label class="form-check-label" for="is_published">منتشر شده</label>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label" for="course-price">قیمت (تومان)</label>
+                            <input id="course-price" type="number" name="price" value="{{ old('price', $product->price ?? 0) }}" class="form-control" min="0">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label" for="course-sale">قیمت تخفیف</label>
+                            <input id="course-sale" type="number" name="sale_price" value="{{ old('sale_price', $product->sale_price) }}" class="form-control" min="0">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-label">سطح</div>
+                        <div class="sb-pills">
+                            @foreach ($levels as $val => $label)
+                                <label class="sb-pill">
+                                    <input type="radio" name="level" value="{{ $val }}" @checked($level === $val)>
+                                    <span>{{ $label }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="course-instructor">مدرس</label>
+                        <select id="course-instructor" name="instructor_id" class="form-select">
+                            <option value="">بدون مدرس</option>
+                            @foreach ($instructors as $instructor)
+                                <option value="{{ $instructor->id }}" @selected(old('instructor_id', $course->instructor_id) == $instructor->id)>{{ $instructor->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="course-duration">مدت (دقیقه)</label>
+                        <input id="course-duration" type="number" name="duration_minutes" value="{{ old('duration_minutes', $course->duration_minutes ?? 0) }}" class="form-control" min="0">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">ذخیره دوره</button>
+                </div>
+            </div>
         </div>
     </div>
 </form>

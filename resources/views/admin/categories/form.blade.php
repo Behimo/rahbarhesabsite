@@ -262,7 +262,7 @@
             </div>
         </div>
 
-        <div class="col-xl-4">
+        <div class="col-xl-4 admin-form-side">
             <div class="cat-form-side">
                 <div class="card mb-4">
                     <div class="card-header"><h5 class="mb-0">وضعیت</h5></div>

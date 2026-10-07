@@ -2,17 +2,40 @@
 @section('title', $menu->exists ? 'ویرایش منو' : 'منوی جدید')
 @section('heading', $menu->exists ? 'ویرایش: '.$menu->name : 'منوی جدید')
 @section('content')
-<form method="POST" action="{{ $menu->exists ? route('admin.menus.update', $menu) : route('admin.menus.store') }}" class="card mb-4">
+<form method="POST" action="{{ $menu->exists ? route('admin.menus.update', $menu) : route('admin.menus.store') }}" class="mb-4">
     @csrf @if($menu->exists) @method('PUT') @endif
-    <div class="card-body row g-3">
-        <div class="col-md-4"><label class="form-label">نام</label><input name="name" class="form-control" value="{{ old('name', $menu->name) }}" required></div>
-        <div class="col-md-4"><label class="form-label">Slug</label><input name="slug" class="form-control" dir="ltr" value="{{ old('slug', $menu->slug) }}" required></div>
-        <div class="col-md-4">
-            <label class="form-label">محل نمایش</label>
-            <input name="location" class="form-control" value="{{ old('location', $menu->location) }}" placeholder="primary">
-            <div class="form-text">برای نوار اصلی سایت مقدار <code>primary</code> را بگذارید.</div>
+    <div class="row g-4">
+        <div class="col-xl-8">
+            <div class="card">
+                <div class="card-header"><h5 class="mb-0">مشخصات منو</h5></div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="menu-name">نام *</label>
+                            <input id="menu-name" name="name" class="form-control" value="{{ old('name', $menu->name) }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="menu-slug">نامک *</label>
+                            <input id="menu-slug" name="slug" class="form-control" dir="ltr" value="{{ old('slug', $menu->slug) }}" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="menu-location">محل نمایش</label>
+                            <input id="menu-location" name="location" class="form-control" value="{{ old('location', $menu->location) }}" placeholder="primary">
+                            <div class="form-text">برای نوار اصلی سایت مقدار primary را بگذارید.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="col-12 admin-form-actions"><button class="btn btn-primary">ذخیره مشخصات</button></div>
+        <div class="col-xl-4 admin-form-side">
+            <div class="card">
+                <div class="card-header"><h5 class="mb-0">ذخیره</h5></div>
+                <div class="card-body">
+                    <p class="text-muted small">بعد از ذخیره مشخصات، آیتم‌ها و زیرمنوها را پایین همین صفحه بچینید.</p>
+                    <button class="btn btn-primary w-100">ذخیره مشخصات</button>
+                </div>
+            </div>
+        </div>
     </div>
 </form>
 

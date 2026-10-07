@@ -161,4 +161,27 @@ class ZzHuntAdminTest extends TestCase
             ->assertOk()
             ->assertSee('<img src=x onerror="alert(document.domain)">', false);
     }
+
+    public function test_admin_builder_editor_500s_after_saving_malformed_blocks(): void
+    {
+        $admin = $this->makeAdmin();
+
+        $page = CmsPage::query()->create([
+            'slug' => 'broken-builder',
+            'title' => 'Broken',
+            'is_published' => true,
+            'status' => 'published',
+            'is_system' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.pages.builder.save', $page), [
+                'builder_content' => ['blocks' => ['not-a-block']],
+            ])
+            ->assertRedirect(route('admin.pages.builder', $page));
+
+        $this->actingAs($admin)
+            ->get(route('admin.pages.builder', $page))
+            ->assertStatus(500);
+    }
 }
