@@ -1063,6 +1063,11 @@ input {
     fill: none;
   }
 
+  .mobile-tool--account {
+    background: var(--yellow);
+    color: var(--primary);
+  }
+
   .mobile-drawer-backdrop {
     display: block;
     position: fixed;
