@@ -28,10 +28,16 @@ class AuthController extends SiteController
         parent::__construct($siteData, $seo);
     }
 
-    public function showLogin(): View|RedirectResponse
+    public function showLogin(Request $request): View|RedirectResponse
     {
+        $intended = $this->safeIntendedUrl($request->query('redirect'));
+
+        if ($intended) {
+            $request->session()->put('url.intended', $intended);
+        }
+
         if (Auth::check()) {
-            return redirect()->route('panel.dashboard');
+            return redirect()->intended(route('panel.dashboard'));
         }
 
         return $this->render('auth.login');
@@ -153,5 +159,29 @@ class AuthController extends SiteController
         $request->session()->regenerateToken();
 
         return redirect()->route('home');
+    }
+
+    private function safeIntendedUrl(mixed $url): ?string
+    {
+        if (! is_string($url) || $url === '') {
+            return null;
+        }
+
+        $parts = parse_url($url);
+        if ($parts === false) {
+            return null;
+        }
+
+        $host = $parts['host'] ?? null;
+        if ($host !== null && $host !== request()->getHost()) {
+            return null;
+        }
+
+        $path = $parts['path'] ?? null;
+        if (! is_string($path) || ! str_starts_with($path, '/')) {
+            return null;
+        }
+
+        return isset($parts['query']) ? $path.'?'.$parts['query'] : $path;
     }
 }

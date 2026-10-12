@@ -37,6 +37,7 @@
     { "url": "admin/users", "name": "کاربران", "icon": "menu-icon tf-icons ti ti-users", "slug": "admin.users" },
     { "url": "admin/roles", "name": "نقش‌ها", "icon": "menu-icon tf-icons ti ti-shield", "slug": "admin.roles" },
     { "url": "admin/messages", "name": "پیام‌ها", "icon": "menu-icon tf-icons ti ti-mail", "slug": "admin.messages" },
+    { "url": "admin/questions", "name": "کافه سوال", "icon": "menu-icon tf-icons ti ti-message-question", "slug": "admin.questions" },
 
     { "menuHeader": "سیستم" },
     { "url": "admin/redirects", "name": "ریدایرکت‌ها", "icon": "menu-icon tf-icons ti ti-route", "slug": "admin.redirects" },

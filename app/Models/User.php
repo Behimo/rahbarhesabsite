@@ -69,6 +69,16 @@ class User extends Authenticatable
         return $this->hasMany(SpotplayerLicense::class);
     }
 
+    public function cafeQuestions(): HasMany
+    {
+        return $this->hasMany(CafeQuestion::class);
+    }
+
+    public function cafeAnswers(): HasMany
+    {
+        return $this->hasMany(CafeAnswer::class);
+    }
+
     public function isAdmin(): bool
     {
         return $this->hasRole(AccessCatalog::ROLE_ADMIN);

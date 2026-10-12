@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Panel;
 use App\Http\Controllers\Site\SiteController;
 use App\Http\Requests\Panel\UpdatePasswordRequest;
 use App\Http\Requests\Panel\UpdateProfileRequest;
+use App\Models\CafeQuestion;
 use App\Models\CourseEnrollment;
 use App\Models\Order;
 use App\Models\SpotplayerLicense;
 use App\Services\PaymentGatewayManager;
 use App\Support\PhoneNormalizer;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DashboardController extends SiteController
@@ -109,5 +111,41 @@ class DashboardController extends SiteController
         $request->session()->regenerate();
 
         return back()->with('success', 'رمز عبور به‌روزرسانی شد.');
+    }
+
+    public function questions(): View
+    {
+        $questions = CafeQuestion::query()
+            ->where('user_id', auth()->id())
+            ->latest()
+            ->paginate(15);
+
+        return $this->render('panel.questions', compact('questions'));
+    }
+
+    public function notifications(): View
+    {
+        $notifications = auth()->user()
+            ->notifications()
+            ->paginate(20);
+
+        return $this->render('panel.notifications', compact('notifications'));
+    }
+
+    public function markNotificationRead(Request $request, string $id): RedirectResponse
+    {
+        $notification = $request->user()->notifications()->where('id', $id)->firstOrFail();
+        $notification->markAsRead();
+
+        $url = $notification->data['url'] ?? route('panel.notifications');
+
+        return redirect()->to($url);
+    }
+
+    public function markAllNotificationsRead(Request $request): RedirectResponse
+    {
+        $request->user()->unreadNotifications->markAsRead();
+
+        return back()->with('success', 'همه اعلان‌ها خوانده شدند.');
     }
 }

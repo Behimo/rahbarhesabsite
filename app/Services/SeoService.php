@@ -159,6 +159,7 @@ class SeoService
         $urls = [
             ['loc' => route('home'), 'priority' => '1.0', 'changefreq' => 'daily'],
             ['loc' => route('courses.index'), 'priority' => '0.9', 'changefreq' => 'daily'],
+            ['loc' => route('cafe-soal.index'), 'priority' => '0.8', 'changefreq' => 'daily'],
             ['loc' => route('about'), 'priority' => '0.7', 'changefreq' => 'monthly'],
             ['loc' => route('contact'), 'priority' => '0.8', 'changefreq' => 'monthly'],
         ];

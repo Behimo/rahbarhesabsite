@@ -81,6 +81,7 @@ class AccessCatalog
             'taxonomies' => ['label' => 'دسته‌بندی و برچسب', 'actions' => $crud],
             'media' => ['label' => 'رسانه', 'actions' => [self::VIEW, self::CREATE, self::DELETE]],
             'messages' => ['label' => 'پیام‌های تماس', 'actions' => [self::VIEW, self::DELETE]],
+            'questions' => ['label' => 'کافه سوال', 'actions' => [self::VIEW, self::UPDATE, self::DELETE]],
             'settings' => ['label' => 'تنظیمات، درگاه و ریدایرکت', 'actions' => [self::VIEW, self::UPDATE]],
             'transfer' => [
                 'label' => 'درون‌ریزی و برون‌بری',
@@ -171,7 +172,7 @@ class AccessCatalog
         $groups = match ($role) {
             self::ROLE_ADMIN => array_keys(self::groups()),
             self::ROLE_SHOP_MANAGER => ['orders', 'courses'],
-            self::ROLE_EDITOR => ['posts', 'pages', 'popups', 'sidebars', 'media', 'menus', 'taxonomies', 'messages'],
+            self::ROLE_EDITOR => ['posts', 'pages', 'popups', 'sidebars', 'media', 'menus', 'taxonomies', 'messages', 'questions'],
             self::ROLE_INSTRUCTOR => ['courses', 'media'],
             default => [],
         };
@@ -214,6 +215,7 @@ class AccessCatalog
             'admin.categories' => 'taxonomies',
             'admin.media' => 'media',
             'admin.messages' => 'messages',
+            'admin.questions' => 'questions',
             'admin.export' => 'transfer',
             'admin.import' => 'transfer',
         ];
@@ -374,6 +376,8 @@ class AccessCatalog
             'admin.licenses.reissue' => self::UPDATE,
             'admin.posts.duplicate' => self::CREATE,
             'admin.posts.force-destroy' => self::DELETE,
+            'admin.questions.answer' => self::UPDATE,
+            'admin.questions.reject' => self::UPDATE,
             'admin.export' => self::VIEW,
             'admin.import' => self::CREATE,
             'admin.settings.gateways' => self::UPDATE,

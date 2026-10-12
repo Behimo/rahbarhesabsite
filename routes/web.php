@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\ImportExportController;
 use App\Http\Controllers\Admin\LicenseController as AdminLicenseController;
 use App\Http\Controllers\Admin\MediaController as AdminMediaController;
 use App\Http\Controllers\Admin\MenuController as AdminMenuController;
+use App\Http\Controllers\Admin\CafeQuestionController as AdminCafeQuestionController;
 use App\Http\Controllers\Admin\MessageController as AdminMessageController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\PageBuilderController;
@@ -28,6 +29,7 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Panel\DashboardController as PanelDashboardController;
 use App\Http\Controllers\Site\BlogController;
+use App\Http\Controllers\Site\CafeQuestionController;
 use App\Http\Controllers\Site\ContactController;
 use App\Http\Controllers\Site\CourseController;
 use App\Http\Controllers\Site\HomeController;
@@ -104,6 +106,15 @@ Route::get('/contact', [ContactController::class, 'index'])->name('contact');
 Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:contact')->name('contact.store');
 Route::get('/p/{slug}', [PageController::class, 'show'])->name('pages.show');
 
+// Cafe Soal (Q&A)
+Route::controller(CafeQuestionController::class)->prefix('cafe-soal')->name('cafe-soal.')->group(function () {
+    Route::get('/', 'index')->name('index');
+    Route::get('/ask', 'create')->middleware('auth')->name('ask');
+    Route::post('/', 'store')->middleware(['auth', 'throttle:10,1'])->name('store');
+    Route::get('/{slug}', 'show')->name('show');
+    Route::post('/{slug}/answers', 'storeAnswer')->middleware(['auth', 'throttle:20,1'])->name('answers.store');
+});
+
 /*
 |--------------------------------------------------------------------------
 | Shopping Cart & Checkout
@@ -152,6 +163,10 @@ Route::prefix('panel')->name('panel.')->middleware('auth')->controller(PanelDash
     Route::get('/', 'index')->name('dashboard');
     Route::get('/courses', 'courses')->name('courses');
     Route::get('/orders', 'orders')->name('orders');
+    Route::get('/questions', 'questions')->name('questions');
+    Route::get('/notifications', 'notifications')->name('notifications');
+    Route::post('/notifications/read-all', 'markAllNotificationsRead')->name('notifications.read-all');
+    Route::get('/notifications/{id}/read', 'markNotificationRead')->name('notifications.read');
     Route::get('/profile', 'profile')->name('profile');
     Route::put('/profile', 'updateProfile')->name('profile.update');
     Route::put('/profile/password', 'updatePassword')->name('profile.password');
@@ -305,6 +320,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/', 'index')->name('index');
             Route::get('/{message}', 'show')->name('show');
             Route::delete('/{message}', 'destroy')->name('destroy');
+        });
+
+        Route::controller(AdminCafeQuestionController::class)->prefix('questions')->name('questions.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/{question}', 'show')->name('show');
+            Route::post('/{question}/answer', 'answer')->name('answer');
+            Route::post('/{question}/reject', 'reject')->name('reject');
+            Route::delete('/{question}', 'destroy')->name('destroy');
         });
 
         Route::controller(ImportExportController::class)->group(function () {

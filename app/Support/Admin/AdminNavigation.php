@@ -57,6 +57,7 @@ class AdminNavigation
             'admin.orders.show' => 'admin.orders.index',
             'admin.licenses.show' => 'admin.licenses.index',
             'admin.messages.show' => 'admin.messages.index',
+            'admin.questions.show' => 'admin.questions.index',
         ];
 
         if (isset($toIndex[$name])) {
