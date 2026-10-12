@@ -3124,6 +3124,8 @@ body.mobile-menu-open {
 
   display: flex;
 
+  align-items: flex-start;
+
   justify-content: center;
 }
 
@@ -3149,7 +3151,9 @@ body.mobile-menu-open {
 
   max-width: 240px;
 
-  min-height: 240px;
+  height: calc(300px - 58px);
+
+  min-height: 0;
 
   padding: 42px 18px 25px;
 
@@ -3372,6 +3376,8 @@ body.mobile-menu-open {
 
   .benefit-panel {
     max-width: 330px;
+
+    height: auto;
 
     min-height: 240px;
   }
