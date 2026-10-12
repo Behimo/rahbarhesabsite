@@ -3054,13 +3054,7 @@ body.mobile-menu-open {
 
   position: relative;
 
-  background: linear-gradient(
-    to bottom,
-    #d7d7d7 0,
-    #d7d7d7 40px,
-    #ffffff 40px,
-    #ffffff 100%
-  );
+  background: #ffffff;
 
   direction: rtl;
 
@@ -3353,7 +3347,7 @@ body.mobile-menu-open {
   .rahbar-benefits {
     padding: 70px 0;
 
-    background: linear-gradient(to bottom, #d7d7d7 0, #d7d7d7 30px, #fff 30px);
+    background: #ffffff;
   }
 
   .benefits-grid {
