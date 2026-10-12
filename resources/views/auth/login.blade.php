@@ -117,8 +117,6 @@
                 >
                     <form method="POST" action="{{ route('login.password') }}" class="rh-auth__form" data-auth-form novalidate>
                         @csrf
-                        <p class="rh-auth__note">برای حساب‌هایی که از سایت قبلی منتقل شده‌اند.</p>
-
                         <div class="rh-auth__field">
                             <label for="auth-login">ایمیل یا موبایل</label>
                             <input

@@ -1428,6 +1428,21 @@ body.mobile-menu-open {
   align-items: center;
 
   position: relative;
+
+  padding: 18px;
+
+  background: transparent;
+
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+
+  border: 1px solid rgba(255, 255, 255, 0.72);
+
+  border-radius: 22px;
+
+  box-shadow:
+    0 0 0 1px rgba(54, 30, 80, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
 }
 
 .about-card {
@@ -1438,9 +1453,9 @@ body.mobile-menu-open {
 
   padding: 70px 50px 50px;
 
-  background: rgba(255, 255, 255, 0.08);
+  background: transparent;
 
-  border: 1px solid rgba(255, 255, 255, 0.62);
+  border: none;
 
   border-radius: 17px;
 
@@ -1743,80 +1758,129 @@ body.mobile-menu-open {
 
 @media (max-width: 600px) {
   .rahbar-about {
-    padding: 40px 0;
+    min-height: 0;
+
+    padding: 12px 0 8px;
+
+    display: block;
   }
 
   .about-container {
-    width: calc(100% - 30px);
+    width: calc(100% - 20px);
+    min-height: 0;
 
-    gap: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+
+    gap: 0;
+
+    padding: 8px 8px 4px;
+
+    border-radius: 26px;
+
+    background: rgba(255, 255, 255, 0.42);
+
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+
+    border: 1px solid rgba(255, 255, 255, 0.72);
+
+    box-shadow: 0 0 0 1px rgba(54, 30, 80, 0.04);
+
+    overflow: hidden;
+  }
+
+  .about-content {
+    flex: 0 0 auto;
+
+    padding: 0;
+
+    background: transparent;
+
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+
+    border: none;
+
+    border-radius: 0;
+
+    box-shadow: none;
   }
 
   .about-card {
+    width: 100%;
     min-height: auto;
 
-    padding: 85px 22px 40px;
+    padding: 52px 16px 8px;
 
-    border-radius: 18px;
+    border-radius: 0;
+  }
+
+  .about-text {
+    text-align: center;
   }
 
   .about-text h3 {
-    font-size: 18px;
+    font-size: 17px;
+    line-height: 1.7;
 
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
 
   .about-text h2 {
-    font-size: 20px;
+    font-size: 16px;
 
-    line-height: 1.8;
+    line-height: 1.75;
+
+    margin-bottom: 14px;
   }
 
   .about-text p {
-    font-size: 14px;
+    max-width: none;
 
-    line-height: 2;
+    font-size: 13px;
+
+    line-height: 1.85;
   }
 
   .about-icon {
-    width: 50px;
-    height: 50px;
+    width: 42px;
+    height: 42px;
+
+    top: 10px;
+    left: 10px;
+  }
+
+  .about-icon svg {
+    width: 20px;
+    height: 20px;
   }
 
   .about-visual {
-    height: 350px;
+    position: relative;
+
+    height: 390px;
+    flex: 0 0 auto;
+    min-height: 0;
   }
 
-  .main-pawn {
-    width: 140px;
-
-    left: 36%;
-  }
-
-  .ghost-pawn {
-    width: 175px;
-
-    left: 58%;
-
-    bottom: 52px;
-  }
-
-  .pawn-shadow {
-    width: 230px;
-
-    left: 17%;
+  .about-visual > img.about-banner-image {
+    width: min(86%, 320px);
+    max-height: 378px;
   }
 
   .about-dots {
-    width: 80px;
-    height: 160px;
-
-    background-size: 17px 17px;
+    display: none;
   }
 
   .corner-line {
-    width: 70px;
-    height: 75px;
+    width: 78px;
+    height: 64px;
+
+    right: 6px;
+    bottom: 0;
   }
 }
 
@@ -1979,6 +2043,21 @@ body.mobile-menu-open {
   align-items: center;
 
   position: relative;
+
+  padding: 18px;
+
+  background: transparent;
+
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+
+  border: 1px solid rgba(255, 255, 255, 0.72);
+
+  border-radius: 22px;
+
+  box-shadow:
+    0 0 0 1px rgba(54, 30, 80, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
 }
 
 .about-card {
@@ -1989,9 +2068,9 @@ body.mobile-menu-open {
 
   padding: 70px 50px 50px;
 
-  background: rgba(255, 255, 255, 0.08);
+  background: transparent;
 
-  border: 1px solid rgba(255, 255, 255, 0.62);
+  border: none;
 
   border-radius: 17px;
 
@@ -2289,80 +2368,129 @@ body.mobile-menu-open {
 
 @media (max-width: 600px) {
   .rahbar-about {
-    padding: 40px 0;
+    min-height: 0;
+
+    padding: 12px 0 8px;
+
+    display: block;
   }
 
   .about-container {
-    width: calc(100% - 30px);
+    width: calc(100% - 20px);
+    min-height: 0;
 
-    gap: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+
+    gap: 0;
+
+    padding: 8px 8px 4px;
+
+    border-radius: 26px;
+
+    background: rgba(255, 255, 255, 0.42);
+
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+
+    border: 1px solid rgba(255, 255, 255, 0.72);
+
+    box-shadow: 0 0 0 1px rgba(54, 30, 80, 0.04);
+
+    overflow: hidden;
+  }
+
+  .about-content {
+    flex: 0 0 auto;
+
+    padding: 0;
+
+    background: transparent;
+
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+
+    border: none;
+
+    border-radius: 0;
+
+    box-shadow: none;
   }
 
   .about-card {
+    width: 100%;
     min-height: auto;
 
-    padding: 85px 22px 40px;
+    padding: 52px 16px 8px;
 
-    border-radius: 18px;
+    border-radius: 0;
+  }
+
+  .about-text {
+    text-align: center;
   }
 
   .about-text h3 {
-    font-size: 18px;
+    font-size: 17px;
+    line-height: 1.7;
 
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
 
   .about-text h2 {
-    font-size: 20px;
+    font-size: 16px;
 
-    line-height: 1.8;
+    line-height: 1.75;
+
+    margin-bottom: 14px;
   }
 
   .about-text p {
-    font-size: 14px;
+    max-width: none;
 
-    line-height: 2;
+    font-size: 13px;
+
+    line-height: 1.85;
   }
 
   .about-icon {
-    width: 50px;
-    height: 50px;
+    width: 42px;
+    height: 42px;
+
+    top: 10px;
+    left: 10px;
+  }
+
+  .about-icon svg {
+    width: 20px;
+    height: 20px;
   }
 
   .about-visual {
-    height: 350px;
+    position: relative;
+
+    height: 390px;
+    flex: 0 0 auto;
+    min-height: 0;
   }
 
-  .main-pawn {
-    width: 140px;
-
-    left: 36%;
-  }
-
-  .ghost-pawn {
-    width: 175px;
-
-    left: 58%;
-
-    bottom: 52px;
-  }
-
-  .pawn-shadow {
-    width: 230px;
-
-    left: 17%;
+  .about-visual > img.about-banner-image {
+    width: min(86%, 320px);
+    max-height: 378px;
   }
 
   .about-dots {
-    width: 80px;
-    height: 160px;
-
-    background-size: 17px 17px;
+    display: none;
   }
 
   .corner-line {
-    width: 70px;
-    height: 75px;
+    width: 78px;
+    height: 64px;
+
+    right: 6px;
+    bottom: 0;
   }
 }
 
@@ -3347,10 +3475,14 @@ body.mobile-menu-open {
     background: #ffffff;
   }
 
+  .benefits-container {
+    padding-left: 36px;
+  }
+
   .benefits-grid {
     grid-template-columns: repeat(2, 1fr);
 
-    gap: 40px 25px;
+    gap: 48px 18px;
 
     align-items: stretch;
   }
@@ -3379,10 +3511,11 @@ body.mobile-menu-open {
     max-width: 330px;
   }
 
-  .benefit-cap {
+  .benefit-cap,
+  .benefit-card--down .benefit-cap {
     top: 0;
 
-    left: calc(50% - 165px);
+    left: max(0px, calc((100% - 330px) / 2));
   }
 }
 
@@ -3392,53 +3525,63 @@ body.mobile-menu-open {
 
 @media (max-width: 600px) {
   .rahbar-benefits {
-    padding: 60px 0;
+    padding: 56px 0 48px;
   }
 
   .benefits-container {
-    width: calc(100% - 34px);
+    width: min(420px, calc(100% - 24px));
+
+    padding-left: 46px;
+
+    padding-right: 4px;
   }
 
   .benefits-grid {
     grid-template-columns: 1fr;
 
-    gap: 38px;
+    gap: 46px;
   }
 
   .benefit-card:nth-child(5) {
     grid-column: auto;
   }
 
-  .benefit-panel {
+  .benefit-panel,
+  .benefit-card:nth-child(5) .benefit-panel {
     max-width: 100%;
 
     width: 100%;
 
-    min-height: auto;
+    min-height: 0;
 
-    padding: 50px 25px 30px;
-  }
+    height: auto;
 
-  .benefit-card:nth-child(5) .benefit-panel {
-    max-width: 100%;
+    padding: 32px 18px 24px;
+
+    border-radius: 18px;
+
+    box-shadow: 0 10px 28px rgba(54, 30, 80, 0.07);
   }
 
   .benefit-panel h3 {
+    margin-bottom: 12px;
+
     font-size: 16px;
   }
 
   .benefit-panel p {
-    font-size: 14px;
+    font-size: 13.5px;
 
     text-align: center;
 
-    line-height: 2;
+    line-height: 1.95;
   }
 
-  .benefit-cap {
-    width: 64px;
+  .benefit-cap,
+  .benefit-card--down .benefit-cap {
+    width: 58px;
 
-    height: 52px;
+    height: 48px;
 
     top: 0;
 

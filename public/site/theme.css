@@ -1488,17 +1488,6 @@ body.rh-theme select {
     gap: 1rem;
 }
 
-.rh-auth__note {
-    margin: 0;
-    font-size: 0.85rem;
-    line-height: 1.7;
-    color: var(--auth-muted);
-    padding: 0.7rem 0.85rem;
-    border-radius: 0.75rem;
-    background: #faf8fc;
-    border: 1px dashed var(--auth-rule);
-}
-
 .rh-auth__field {
     display: grid;
     gap: 0.4rem;
