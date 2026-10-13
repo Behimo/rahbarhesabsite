@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Site;
 
 use App\Http\Requests\Site\StoreCafeAnswerRequest;
 use App\Http\Requests\Site\StoreCafeQuestionRequest;
-use App\Models\CafeAnswer;
 use App\Models\CafeQuestion;
 use App\Support\PersianSlug;
 use Illuminate\Http\RedirectResponse;
@@ -122,15 +121,10 @@ class CafeQuestionController extends SiteController
     {
         $question = CafeQuestion::query()->published()->where('slug', $slug)->firstOrFail();
 
-        CafeAnswer::query()->create([
-            'cafe_question_id' => $question->id,
+        $question->answers()->create([
             'user_id' => $request->user()->id,
             'body' => $request->validated('body'),
             'is_official' => false,
-        ]);
-
-        $question->update([
-            'answers_count' => $question->answers()->count(),
         ]);
 
         return back()->with('success', 'پاسخ شما ثبت شد.');

@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AnswerCafeQuestionRequest;
 use App\Http\Requests\Admin\RejectCafeQuestionRequest;
-use App\Models\CafeAnswer;
 use App\Models\CafeQuestion;
 use App\Notifications\QuestionAnsweredNotification;
 use App\Notifications\QuestionRejectedNotification;
@@ -14,7 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
-class CafeQuestionController extends Controller
+final class CafeQuestionController extends Controller
 {
     public function index(Request $request): View
     {
@@ -54,26 +53,32 @@ class CafeQuestionController extends Controller
 
     public function answer(AnswerCafeQuestionRequest $request, CafeQuestion $question): RedirectResponse
     {
-        if (! $question->isPending()) {
-            return back()->with('error', 'فقط سوالات در انتظار قابل پاسخ‌دهی هستند.');
-        }
+        $answered = DB::transaction(function () use ($request, $question): bool {
+            $lockedQuestion = CafeQuestion::query()->lockForUpdate()->findOrFail($question->id);
 
-        DB::transaction(function () use ($request, $question) {
-            CafeAnswer::query()->create([
-                'cafe_question_id' => $question->id,
+            if (! $lockedQuestion->isPending()) {
+                return false;
+            }
+
+            $lockedQuestion->answers()->create([
                 'user_id' => $request->user()->id,
                 'body' => $request->validated('body'),
                 'is_official' => true,
             ]);
 
-            $question->update([
+            $lockedQuestion->update([
                 'status' => CafeQuestion::STATUS_ANSWERED,
                 'answered_at' => now(),
                 'rejection_reason' => null,
                 'rejected_at' => null,
-                'answers_count' => $question->answers()->count(),
             ]);
+
+            return true;
         });
+
+        if (! $answered) {
+            return back()->with('error', 'فقط سوالات در انتظار قابل پاسخ‌دهی هستند.');
+        }
 
         $question->refresh();
         $question->user?->notify(new QuestionAnsweredNotification($question));
@@ -85,16 +90,27 @@ class CafeQuestionController extends Controller
 
     public function reject(RejectCafeQuestionRequest $request, CafeQuestion $question): RedirectResponse
     {
-        if (! $question->isPending()) {
+        $rejected = DB::transaction(function () use ($request, $question): bool {
+            $lockedQuestion = CafeQuestion::query()->lockForUpdate()->findOrFail($question->id);
+
+            if (! $lockedQuestion->isPending()) {
+                return false;
+            }
+
+            $lockedQuestion->update([
+                'status' => CafeQuestion::STATUS_REJECTED,
+                'rejection_reason' => $request->validated('rejection_reason'),
+                'rejected_at' => now(),
+            ]);
+
+            return true;
+        });
+
+        if (! $rejected) {
             return back()->with('error', 'فقط سوالات در انتظار قابل رد هستند.');
         }
 
-        $question->update([
-            'status' => CafeQuestion::STATUS_REJECTED,
-            'rejection_reason' => $request->validated('rejection_reason'),
-            'rejected_at' => now(),
-        ]);
-
+        $question->refresh();
         $question->user?->notify(new QuestionRejectedNotification($question));
 
         return redirect()

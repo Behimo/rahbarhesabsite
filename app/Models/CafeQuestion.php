@@ -10,6 +10,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CafeQuestion extends Model
 {
+    /** @var array<string, string> */
+    private const STATUS_LABELS = [
+        self::STATUS_PENDING => 'در انتظار پاسخ',
+        self::STATUS_ANSWERED => 'پاسخ داده‌شده',
+        self::STATUS_REJECTED => 'رد شده',
+    ];
+
     use SoftDeletes;
 
     public const STATUS_PENDING = 'pending';
@@ -91,11 +98,7 @@ class CafeQuestion extends Model
      */
     public static function statusLabels(): array
     {
-        return [
-            self::STATUS_PENDING => 'در انتظار پاسخ',
-            self::STATUS_ANSWERED => 'پاسخ داده‌شده',
-            self::STATUS_REJECTED => 'رد شده',
-        ];
+        return self::STATUS_LABELS;
     }
 
     public function statusLabel(): string
