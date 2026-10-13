@@ -83,6 +83,9 @@
                 @if ($categoryId)
                     <input type="hidden" name="category" value="{{ $categoryId }}">
                 @endif
+                @if ($sort !== 'latest')
+                    <input type="hidden" name="sort" value="{{ $sort }}">
+                @endif
                 <div class="cafe-toolbar__search">
                     <label class="cafe-sr-only" for="cafe-q">جستجوی سوال</label>
                     <span class="cafe-toolbar__icon" aria-hidden="true">
@@ -94,19 +97,31 @@
                     <input type="search" name="q" id="cafe-q" value="{{ $q }}" placeholder="جستجو بین سوالات حسابداری و مالیات..." class="cafe-toolbar__input">
                     <button type="submit" class="cafe-toolbar__submit">جستجو</button>
                 </div>
-                <div class="cafe-toolbar__sorts" role="group" aria-label="مرتب‌سازی">
-                    @foreach ([
-                        'latest' => 'جدیدترین',
-                        'popular' => 'محبوب‌ترین',
-                        'most_answers' => 'بیشترین پاسخ',
-                    ] as $value => $label)
-                        <a href="{{ route('cafe-soal.index', array_filter(['q' => $q ?: null, 'sort' => $value, 'category' => $categoryId ?: null])) }}"
-                           class="cafe-sort{{ $sort === $value ? ' is-active' : '' }}">
-                            {{ $label }}
-                        </a>
-                    @endforeach
-                </div>
             </form>
+
+            <div class="cafe-list-head">
+                <p class="cafe-list-head__count">
+                    @if ($questions->total() > 0)
+                        {{ fa_digits($questions->total()) }} سوال
+                    @else
+                        بدون نتیجه
+                    @endif
+                </p>
+                <form method="GET" action="{{ route('cafe-soal.index') }}" class="cafe-list-head__sort">
+                    @if ($q !== '')
+                        <input type="hidden" name="q" value="{{ $q }}">
+                    @endif
+                    @if ($categoryId)
+                        <input type="hidden" name="category" value="{{ $categoryId }}">
+                    @endif
+                    <label for="cafe-sort">مرتب‌سازی</label>
+                    <select name="sort" id="cafe-sort" autocomplete="off" onchange="this.form.submit()">
+                        <option value="latest" @selected(($sort ?: 'latest') === 'latest')>جدیدترین</option>
+                        <option value="popular" @selected($sort === 'popular')>محبوب‌ترین</option>
+                        <option value="most_answers" @selected($sort === 'most_answers')>بیشترین پاسخ</option>
+                    </select>
+                </form>
+            </div>
 
             @if ($questions->isEmpty())
                 <div class="cafe-empty" role="status">
