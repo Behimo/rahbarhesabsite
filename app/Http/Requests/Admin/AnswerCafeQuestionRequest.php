@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\Category;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class AnswerCafeQuestionRequest extends FormRequest
 {
@@ -23,6 +25,14 @@ class AnswerCafeQuestionRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'category_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('categories', 'id')->where(fn ($query) => $query
+                    ->where('type', Category::TYPE_CAFE)
+                    ->where('is_active', true)
+                    ->whereNull('deleted_at')),
+            ],
             'body' => [
                 'required',
                 'string',
@@ -43,6 +53,7 @@ class AnswerCafeQuestionRequest extends FormRequest
     public function attributes(): array
     {
         return [
+            'category_id' => 'دسته سوال',
             'body' => 'پاسخ',
         ];
     }

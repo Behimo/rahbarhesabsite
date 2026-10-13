@@ -30,6 +30,13 @@ class SiteCategorySeeder extends Seeder
             ['sample-questions', 'نمونه سوالات', 'نمونه سوالات حسابداری و مالیات'],
         ]);
 
+        $this->seed(Category::TYPE_CAFE, [
+            ['accounting', 'حسابداری', 'سوال‌های عمومی حسابداری'],
+            ['tax', 'مالیات', 'سوال‌های مالیاتی و اظهارنامه'],
+            ['payroll', 'حقوق و دستمزد', 'سوال‌های حقوق، بیمه و دستمزد'],
+            ['vat', 'ارزش افزوده', 'سوال‌های مالیات بر ارزش افزوده'],
+        ]);
+
         app(CategoryService::class)->forget();
 
         $this->command?->info('Site categories synced with the primary menu.');

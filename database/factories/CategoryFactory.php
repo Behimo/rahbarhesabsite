@@ -42,6 +42,13 @@ class CategoryFactory extends Factory
         ]);
     }
 
+    public function cafe(): static
+    {
+        return $this->state(fn () => [
+            'type' => Category::TYPE_CAFE,
+        ]);
+    }
+
     public function childOf(Category $parent): static
     {
         return $this->state(fn () => [

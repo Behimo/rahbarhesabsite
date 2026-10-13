@@ -76,7 +76,7 @@ class AdminNavigation
             $category = $request->route('category');
             $type = $category instanceof Category
                 ? $category->type
-                : ($request->string('type')->toString() === Category::TYPE_PRODUCT ? Category::TYPE_PRODUCT : Category::TYPE_POST);
+                : Category::resolveType($request->string('type')->toString());
 
             return ['url' => route('admin.categories.index', ['type' => $type]), 'label' => 'بازگشت'];
         }

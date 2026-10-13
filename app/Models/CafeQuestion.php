@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasCategories;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,7 +19,7 @@ class CafeQuestion extends Model
         self::STATUS_REJECTED => 'رد شده',
     ];
 
-    use SoftDeletes;
+    use HasCategories, SoftDeletes;
 
     public const STATUS_PENDING = 'pending';
 

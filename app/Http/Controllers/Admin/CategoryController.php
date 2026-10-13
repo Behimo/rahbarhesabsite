@@ -116,9 +116,7 @@ class CategoryController extends Controller
 
     private function type(Request $request): string
     {
-        return $request->string('type')->toString() === Category::TYPE_PRODUCT
-            ? Category::TYPE_PRODUCT
-            : Category::TYPE_POST;
+        return Category::resolveType($request->string('type')->toString());
     }
 
     /** @return array<string, mixed> */

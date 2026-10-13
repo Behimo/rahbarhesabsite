@@ -52,93 +52,122 @@
 
 @section('page')
 <div class="cafe-page">
-    <div class="cafe-shell">
-        @if (session('success'))
-            <div class="cafe-flash cafe-flash--ok" role="status">{{ session('success') }}</div>
-        @endif
-
-        <form method="GET" action="{{ route('cafe-soal.index') }}" class="cafe-toolbar" role="search">
-            <div class="cafe-toolbar__search">
-                <label class="cafe-sr-only" for="cafe-q">جستجوی سوال</label>
-                <span class="cafe-toolbar__icon" aria-hidden="true">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8"/>
-                        <path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                    </svg>
-                </span>
-                <input type="search" name="q" id="cafe-q" value="{{ $q }}" placeholder="جستجو بین سوالات حسابداری و مالیات..." class="cafe-toolbar__input">
-                <button type="submit" class="cafe-toolbar__submit">جستجو</button>
-            </div>
-            <div class="cafe-toolbar__sorts" role="group" aria-label="مرتب‌سازی">
-                @foreach ([
-                    'latest' => 'جدیدترین',
-                    'popular' => 'محبوب‌ترین',
-                    'most_answers' => 'بیشترین پاسخ',
-                ] as $value => $label)
-                    <a href="{{ route('cafe-soal.index', array_filter(['q' => $q ?: null, 'sort' => $value])) }}"
-                       class="cafe-sort{{ $sort === $value ? ' is-active' : '' }}">
-                        {{ $label }}
-                    </a>
-                @endforeach
-            </div>
-        </form>
-
-        @if ($questions->isEmpty())
-            <div class="cafe-empty" role="status">
-                <div class="cafe-empty__icon" aria-hidden="true">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 3c-4.4 0-8 3.1-8 7 0 2.3 1.2 4.4 3.1 5.7L6 20l4.1-2.1c.6.1 1.2.2 1.9.2 4.4 0 8-3.1 8-7s-3.6-7-8-7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-                <h2 class="cafe-empty__title">هنوز سوالی در این فهرست نیست</h2>
-                <p class="cafe-empty__text">اولین نفر باشید؛ سوال حسابداری یا مالیاتی‌تان را بنویسید تا کارشناسان پاسخ دهند.</p>
-                @auth
-                    <button type="button" class="cafe-ask-btn cafe-ask-btn--solid" data-cafe-ask-open>
-                        <span class="cafe-ask-btn__label">سوال بپرسید</span>
-                    </button>
-                @else
-                    <a href="{{ $askLoginUrl }}" class="cafe-ask-btn cafe-ask-btn--solid">
-                        <span class="cafe-ask-btn__label">سوال بپرسید</span>
-                    </a>
-                @endauth
-            </div>
-        @else
-            <ul class="cafe-list">
-                @foreach ($questions as $index => $question)
-                    <li style="--cafe-i: {{ $index }}">
-                        <a href="{{ route('cafe-soal.show', $question->slug) }}" class="cafe-item">
-                            <div class="cafe-item__rail" aria-hidden="true"></div>
-                            <div class="cafe-item__body">
-                                <h2 class="cafe-item__title">{{ $question->title }}</h2>
-                                <p class="cafe-item__excerpt">{{ Str::limit(strip_tags($question->body), 140) }}</p>
-                                <div class="cafe-item__meta">
-                                    <span class="cafe-item__stat">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16v10H8l-4 4V6z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
-                                        {{ fa_digits($question->answers_count) }} پاسخ
-                                    </span>
-                                    <span class="cafe-item__stat">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.7"/></svg>
-                                        {{ fa_digits($question->views_count) }} بازدید
-                                    </span>
-                                    @if ($question->answered_at)
-                                        <time datetime="{{ $question->answered_at->toDateString() }}">{{ fa_date($question->answered_at) }}</time>
-                                    @endif
-                                </div>
-                            </div>
-                            <span class="cafe-item__arrow" aria-hidden="true">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                                    <path d="M14 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                            </span>
+    <div class="cafe-layout{{ $cafeCategories->isNotEmpty() ? ' cafe-layout--with-side' : '' }}">
+        @if ($cafeCategories->isNotEmpty())
+            <aside class="cafe-side" aria-label="دسته‌بندی سوال‌ها">
+                <div class="cafe-side__card">
+                    <h2 class="cafe-side__title">دسته‌بندی</h2>
+                    <nav class="cafe-side__nav">
+                        <a href="{{ route('cafe-soal.index', array_filter(['q' => $q ?: null, 'sort' => $sort !== 'latest' ? $sort : null])) }}"
+                           class="cafe-side__link{{ ! $categoryId ? ' is-active' : '' }}">
+                            همه سوال‌ها
                         </a>
-                    </li>
-                @endforeach
-            </ul>
-
-            <div class="cafe-pagination">
-                {{ $questions->links() }}
-            </div>
+                        @foreach ($cafeCategories as $cat)
+                            <a href="{{ route('cafe-soal.index', array_filter(['q' => $q ?: null, 'sort' => $sort !== 'latest' ? $sort : null, 'category' => $cat->id])) }}"
+                               class="cafe-side__link{{ $categoryId === $cat->id ? ' is-active' : '' }}"
+                               style="--cafe-depth: {{ $cat->treeDepth }}">
+                                {{ $cat->name }}
+                            </a>
+                        @endforeach
+                    </nav>
+                </div>
+            </aside>
         @endif
+
+        <div class="cafe-shell cafe-shell--main">
+            @if (session('success'))
+                <div class="cafe-flash cafe-flash--ok" role="status">{{ session('success') }}</div>
+            @endif
+
+            <form method="GET" action="{{ route('cafe-soal.index') }}" class="cafe-toolbar" role="search">
+                @if ($categoryId)
+                    <input type="hidden" name="category" value="{{ $categoryId }}">
+                @endif
+                <div class="cafe-toolbar__search">
+                    <label class="cafe-sr-only" for="cafe-q">جستجوی سوال</label>
+                    <span class="cafe-toolbar__icon" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                            <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8"/>
+                            <path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        </svg>
+                    </span>
+                    <input type="search" name="q" id="cafe-q" value="{{ $q }}" placeholder="جستجو بین سوالات حسابداری و مالیات..." class="cafe-toolbar__input">
+                    <button type="submit" class="cafe-toolbar__submit">جستجو</button>
+                </div>
+                <div class="cafe-toolbar__sorts" role="group" aria-label="مرتب‌سازی">
+                    @foreach ([
+                        'latest' => 'جدیدترین',
+                        'popular' => 'محبوب‌ترین',
+                        'most_answers' => 'بیشترین پاسخ',
+                    ] as $value => $label)
+                        <a href="{{ route('cafe-soal.index', array_filter(['q' => $q ?: null, 'sort' => $value, 'category' => $categoryId ?: null])) }}"
+                           class="cafe-sort{{ $sort === $value ? ' is-active' : '' }}">
+                            {{ $label }}
+                        </a>
+                    @endforeach
+                </div>
+            </form>
+
+            @if ($questions->isEmpty())
+                <div class="cafe-empty" role="status">
+                    <div class="cafe-empty__icon" aria-hidden="true">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 3c-4.4 0-8 3.1-8 7 0 2.3 1.2 4.4 3.1 5.7L6 20l4.1-2.1c.6.1 1.2.2 1.9.2 4.4 0 8-3.1 8-7s-3.6-7-8-7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h2 class="cafe-empty__title">هنوز سوالی در این فهرست نیست</h2>
+                    <p class="cafe-empty__text">اولین نفر باشید؛ سوال حسابداری یا مالیاتی‌تان را بنویسید تا کارشناسان پاسخ دهند.</p>
+                    @auth
+                        <button type="button" class="cafe-ask-btn cafe-ask-btn--solid" data-cafe-ask-open>
+                            <span class="cafe-ask-btn__label">سوال بپرسید</span>
+                        </button>
+                    @else
+                        <a href="{{ $askLoginUrl }}" class="cafe-ask-btn cafe-ask-btn--solid">
+                            <span class="cafe-ask-btn__label">سوال بپرسید</span>
+                        </a>
+                    @endauth
+                </div>
+            @else
+                <ul class="cafe-list">
+                    @foreach ($questions as $index => $question)
+                        <li style="--cafe-i: {{ $index }}">
+                            <a href="{{ route('cafe-soal.show', $question->slug) }}" class="cafe-item">
+                                <div class="cafe-item__rail" aria-hidden="true"></div>
+                                <div class="cafe-item__body">
+                                    <h2 class="cafe-item__title">{{ $question->title }}</h2>
+                                    <p class="cafe-item__excerpt">{{ Str::limit(strip_tags($question->body), 140) }}</p>
+                                    <div class="cafe-item__meta">
+                                        @if ($question->category)
+                                            <span class="cafe-item__cat">{{ $question->category->name }}</span>
+                                        @endif
+                                        <span class="cafe-item__stat">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16v10H8l-4 4V6z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+                                            {{ fa_digits($question->answers_count) }} پاسخ
+                                        </span>
+                                        <span class="cafe-item__stat">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.7"/></svg>
+                                            {{ fa_digits($question->views_count) }} بازدید
+                                        </span>
+                                        @if ($question->answered_at)
+                                            <time datetime="{{ $question->answered_at->toDateString() }}">{{ fa_date($question->answered_at) }}</time>
+                                        @endif
+                                    </div>
+                                </div>
+                                <span class="cafe-item__arrow" aria-hidden="true">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                                        <path d="M14 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </span>
+                            </a>
+                        </li>
+                    @endforeach
+                </ul>
+
+                <div class="cafe-pagination">
+                    {{ $questions->links() }}
+                </div>
+            @endif
+        </div>
     </div>
 </div>
 
@@ -169,6 +198,21 @@
             </div>
         @endif
         <div class="cafe-form__field">
+            <label class="cafe-form__label" for="cafe-ask-category">دسته سوال</label>
+            <select name="category_id" id="cafe-ask-category" class="cafe-form__input @error('category_id') is-invalid @enderror" required aria-invalid="{{ $errors->has('category_id') ? 'true' : 'false' }}">
+                <option value="" disabled @selected(! old('category_id'))>انتخاب کنید...</option>
+                @foreach ($cafeCategories as $cat)
+                    <option value="{{ $cat->id }}" @selected((string) old('category_id') === (string) $cat->id)>
+                        {{ str_repeat('— ', $cat->treeDepth) }}{{ $cat->name }}
+                    </option>
+                @endforeach
+            </select>
+            @error('category_id')<p class="cafe-form__error" role="alert">{{ $message }}</p>@enderror
+            @if ($cafeCategories->isEmpty())
+                <p class="cafe-form__error" role="alert">فعلاً دسته‌ای برای ثبت سوال تعریف نشده است.</p>
+            @endif
+        </div>
+        <div class="cafe-form__field">
             <label class="cafe-form__label" for="cafe-ask-title">عنوان سوال</label>
             <input type="text" name="title" id="cafe-ask-title" value="{{ old('title') }}" class="cafe-form__input @error('title') is-invalid @enderror" required maxlength="180" placeholder="مثلاً نحوه محاسبه مالیات حقوق" aria-invalid="{{ $errors->has('title') ? 'true' : 'false' }}">
             @error('title')<p class="cafe-form__error" role="alert">{{ $message }}</p>@enderror
@@ -180,7 +224,7 @@
         </div>
         <div class="cafe-ask-dialog__actions">
             <button type="button" class="cafe-ask-dialog__cancel" data-cafe-ask-close>انصراف</button>
-            <button type="submit" class="cafe-ask-dialog__submit">ثبت سوال</button>
+            <button type="submit" class="cafe-ask-dialog__submit" @disabled($cafeCategories->isEmpty())>ثبت سوال</button>
         </div>
     </form>
 </dialog>

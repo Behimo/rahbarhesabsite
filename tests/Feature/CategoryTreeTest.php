@@ -161,6 +161,11 @@ class CategoryTreeTest extends TestCase
             ->assertDontSee('Taxonomy');
 
         $this->actingAs($admin)
+            ->get(route('admin.categories.index', ['type' => 'cafe']))
+            ->assertOk()
+            ->assertSee('دسته‌های کافه سوال');
+
+        $this->actingAs($admin)
             ->get(route('admin.categories.create', ['type' => 'post', 'parent_id' => $parent->id]))
             ->assertOk()
             ->assertSee('دستهٔ جدید بلاگ')

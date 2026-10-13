@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Site;
 use App\Http\Requests\Site\StoreCafeAnswerRequest;
 use App\Http\Requests\Site\StoreCafeQuestionRequest;
 use App\Models\CafeQuestion;
+use App\Models\Category;
+use App\Services\CategoryService;
 use App\Support\PersianSlug;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,22 +14,33 @@ use Illuminate\View\View;
 
 class CafeQuestionController extends SiteController
 {
-    public function index(Request $request): View
+    public function index(Request $request, CategoryService $categories): View
     {
         $q = $request->string('q')->toString();
         $sort = $request->string('sort')->toString() ?: 'latest';
+        $categoryId = $request->integer('category') ?: null;
 
         if (! in_array($sort, ['latest', 'popular', 'most_answers'], true)) {
             $sort = 'latest';
         }
 
+        $cafeCategories = $categories->flat(Category::TYPE_CAFE, true);
+
+        if ($categoryId && ! $cafeCategories->contains(fn (Category $category) => $category->id === $categoryId)) {
+            $categoryId = null;
+        }
+
         $questions = CafeQuestion::query()
             ->published()
+            ->with('categories')
             ->when($q !== '', function ($query) use ($q) {
                 $query->where(function ($inner) use ($q) {
                     $inner->where('title', 'like', '%'.$q.'%')
                         ->orWhere('body', 'like', '%'.$q.'%');
                 });
+            })
+            ->when($categoryId, function ($query) use ($categoryId) {
+                $query->whereHas('categories', fn ($inner) => $inner->where('categories.id', $categoryId));
             })
             ->when($sort === 'popular', fn ($query) => $query->orderByDesc('views_count')->orderByDesc('answered_at'))
             ->when($sort === 'most_answers', fn ($query) => $query->orderByDesc('answers_count')->orderByDesc('answered_at'))
@@ -46,6 +59,8 @@ class CafeQuestionController extends SiteController
             'questions' => $questions,
             'q' => $q,
             'sort' => $sort,
+            'categoryId' => $categoryId,
+            'cafeCategories' => $cafeCategories,
             'structuredData' => [
                 $this->seo->breadcrumbSchema([
                     ['name' => 'خانه', 'url' => route('home')],
@@ -62,6 +77,7 @@ class CafeQuestionController extends SiteController
             ->where('slug', $slug)
             ->with([
                 'user',
+                'categories',
                 'officialAnswer.user',
                 'communityAnswers' => fn ($query) => $query->with('user')->orderBy('created_at'),
             ])
@@ -106,13 +122,17 @@ class CafeQuestionController extends SiteController
             'question'
         );
 
-        CafeQuestion::query()->create([
+        $categoryId = (int) $request->validated('category_id');
+
+        $question = CafeQuestion::query()->create([
             'user_id' => $request->user()->id,
             'title' => $title,
             'slug' => $slug,
             'body' => $request->validated('body'),
             'status' => CafeQuestion::STATUS_PENDING,
         ]);
+
+        $question->syncCategories([$categoryId], $categoryId);
 
         return redirect()
             ->route('cafe-soal.index')

@@ -5481,14 +5481,91 @@ a.rh-side-item:hover .rh-side-item__title {
     opacity: 0.9;
 }
 
+.cafe-layout {
+    width: min(1120px, calc(100% - 2rem));
+    margin: 0 auto;
+    padding: 2rem 0 3.5rem;
+}
+
+.cafe-layout--with-side {
+    display: grid;
+    grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+    gap: 1.35rem;
+    align-items: start;
+}
+
 .cafe-shell {
     max-width: 920px;
     margin: 0 auto;
     padding: 2rem 1.25rem 3.5rem;
 }
 
+.cafe-shell--main {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
 .cafe-shell--narrow {
     max-width: 760px;
+}
+
+.cafe-side {
+    position: sticky;
+    top: 5.5rem;
+}
+
+.cafe-side__card {
+    padding: 1rem 1.05rem 1.1rem;
+    border-radius: 1.15rem;
+    background: rgba(255, 252, 248, 0.95);
+    border: 1px solid rgba(100, 58, 188, 0.12);
+    box-shadow: 0 10px 28px rgba(54, 30, 80, 0.05);
+}
+
+.cafe-side__title {
+    margin: 0 0 0.85rem;
+    padding-bottom: 0.7rem;
+    border-bottom: 1px solid rgba(100, 58, 188, 0.12);
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--cafe-plum, #361e50);
+}
+
+.cafe-side__nav {
+    display: grid;
+    gap: 0.3rem;
+}
+
+.cafe-side__link {
+    display: block;
+    padding: 0.55rem 0.75rem;
+    padding-inline-start: calc(0.75rem + (var(--cafe-depth, 0) * 0.85rem));
+    border-radius: 0.7rem;
+    border: 1px solid transparent;
+    color: var(--cafe-muted, #6b6574);
+    text-decoration: none;
+    font-size: 0.92rem;
+    font-weight: 600;
+    line-height: 1.45;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.cafe-side__link:hover {
+    background: rgba(100, 58, 188, 0.08);
+    color: var(--cafe-plum, #361e50);
+}
+
+.cafe-side__link.is-active {
+    border-color: rgba(100, 58, 188, 0.28);
+    background: rgba(100, 58, 188, 0.12);
+    color: var(--cafe-plum, #361e50);
+}
+
+.cafe-side__link:focus-visible {
+    outline: 3px solid rgba(255, 185, 17, 0.75);
+    outline-offset: 2px;
 }
 
 .cafe-toolbar {
@@ -5683,6 +5760,16 @@ a.rh-side-item:hover .rh-side-item__title {
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
+}
+
+.cafe-item__cat {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.5rem;
+    background: rgba(100, 58, 188, 0.1);
+    color: var(--cafe-plum, #361e50);
+    font-weight: 600;
 }
 
 .cafe-item__arrow {
@@ -6018,6 +6105,28 @@ a.rh-side-item:hover .rh-side-item__title {
 @keyframes cafeItemIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 991px) {
+    .cafe-layout--with-side {
+        grid-template-columns: 1fr;
+        width: min(920px, calc(100% - 2rem));
+    }
+
+    .cafe-side {
+        position: static;
+        order: -1;
+    }
+
+    .cafe-side__nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+    }
+
+    .cafe-side__link {
+        padding-inline-start: 0.75rem;
+    }
 }
 
 @media (max-width: 640px) {

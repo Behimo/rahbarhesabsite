@@ -1,10 +1,21 @@
 @extends('layouts.admin')
 
-@section('title', $type === 'post' ? 'دسته‌های بلاگ' : 'دسته‌های محصول و دوره')
+@php
+    $typeLabel = App\Models\Category::typeLabel($type);
+    $itemLabel = match ($type) {
+        App\Models\Category::TYPE_POST => 'مطلب',
+        App\Models\Category::TYPE_CAFE => 'سوال',
+        default => 'محصول',
+    };
+@endphp
 
-@section('lede', $type === 'post'
-    ? 'هر مطلب یک دستهٔ اصلی دارد. زیردسته در فیلتر بلاگ، مطالب فرزند را هم نشان می‌دهد.'
-    : 'هر دوره می‌تواند در چند دسته باشد. یکی را به‌عنوان دستهٔ اصلی برای مسیر صفحه انتخاب کنید.')
+@section('title', 'دسته‌های '.$typeLabel)
+
+@section('lede', match ($type) {
+    App\Models\Category::TYPE_POST => 'هر مطلب یک دستهٔ اصلی دارد. زیردسته در فیلتر بلاگ، مطالب فرزند را هم نشان می‌دهد.',
+    App\Models\Category::TYPE_CAFE => 'کاربر هنگام ثبت سوال دسته را انتخاب می‌کند؛ ادمین می‌تواند دستهٔ اشتباه را اصلاح کند.',
+    default => 'هر دوره می‌تواند در چند دسته باشد. یکی را به‌عنوان دستهٔ اصلی برای مسیر صفحه انتخاب کنید.',
+})
 
 @section('actions')
     @if (admin_can('taxonomies', 'create'))
@@ -42,7 +53,7 @@
                                 @unless ($category->is_active)
                                     <span class="badge bg-label-secondary">غیرفعال</span>
                                 @endunless
-                                <span class="badge bg-label-primary">{{ $category->categoryables_count }} {{ $type === 'post' ? 'مطلب' : 'محصول' }}</span>
+                                <span class="badge bg-label-primary">{{ $category->categoryables_count }} {{ $itemLabel }}</span>
                                 @if (admin_can('taxonomies', 'update'))
                                     <a href="{{ route('admin.categories.edit', ['category' => $category, 'type' => $type]) }}" class="btn btn-sm btn-label-primary">ویرایش</a>
                                 @endif

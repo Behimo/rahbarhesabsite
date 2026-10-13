@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\CafeAnswer;
 use App\Models\CafeQuestion;
+use App\Models\Category;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -16,16 +17,49 @@ class CafeQuestionTest extends TestCase
     public function test_authenticated_user_can_submit_question_for_review(): void
     {
         $user = User::factory()->create();
+        $category = Category::factory()->cafe()->create(['name' => 'مالیات']);
 
         $this->actingAs($user)->post(route('cafe-soal.store'), [
             'title' => 'چگونه مالیات محاسبه می‌شود؟',
             'body' => 'برای محاسبه مالیات سالانه چه مواردی را باید در نظر بگیرم؟',
+            'category_id' => $category->id,
         ])->assertRedirect(route('cafe-soal.index'));
 
         $this->assertDatabaseHas('cafe_questions', [
             'user_id' => $user->id,
             'status' => CafeQuestion::STATUS_PENDING,
         ]);
+
+        $question = CafeQuestion::query()->where('user_id', $user->id)->first();
+        $this->assertNotNull($question);
+        $this->assertSame($category->id, $question->category?->id);
+    }
+
+    public function test_question_requires_cafe_category(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->from(route('cafe-soal.index'))->post(route('cafe-soal.store'), [
+            'title' => 'چگونه مالیات محاسبه می‌شود؟',
+            'body' => 'برای محاسبه مالیات سالانه چه مواردی را باید در نظر بگیرم؟',
+        ])->assertRedirect(route('cafe-soal.index'))
+            ->assertSessionHasErrors('category_id');
+    }
+
+    public function test_admin_can_change_question_category(): void
+    {
+        $admin = $this->makeAdmin();
+        $first = Category::factory()->cafe()->create(['name' => 'حسابداری']);
+        $second = Category::factory()->cafe()->create(['name' => 'مالیات']);
+        $question = $this->answeredQuestion(User::factory()->create(), $admin, $first);
+
+        $this->actingAs($admin)->put(route('admin.questions.update', $question), [
+            'category_id' => $second->id,
+            'status' => CafeQuestion::STATUS_ANSWERED,
+            'body' => 'پاسخ رسمی اولیه برای سوال آزمایشی.',
+        ])->assertRedirect(route('admin.questions.show', $question));
+
+        $this->assertSame($second->id, $question->fresh()->category?->id);
     }
 
     public function test_admin_answer_publishes_question_and_notifies_owner(): void
@@ -158,9 +192,12 @@ class CafeQuestionTest extends TestCase
     public function test_admin_can_update_official_answer_after_publishing(): void
     {
         $admin = $this->makeAdmin();
-        $question = $this->answeredQuestion(User::factory()->create(), $admin);
+        $category = Category::factory()->cafe()->create();
+        $question = $this->answeredQuestion(User::factory()->create(), $admin, $category);
 
-        $this->actingAs($admin)->put(route('admin.questions.update-answer', $question), [
+        $this->actingAs($admin)->put(route('admin.questions.update', $question), [
+            'category_id' => $category->id,
+            'status' => CafeQuestion::STATUS_ANSWERED,
             'body' => 'پاسخ رسمی ویرایش‌شده با جزئیات بیشتر برای کاربر.',
         ])->assertRedirect(route('admin.questions.show', $question));
 
@@ -174,19 +211,24 @@ class CafeQuestionTest extends TestCase
     public function test_admin_can_change_question_status_after_answer(): void
     {
         $admin = $this->makeAdmin();
-        $question = $this->answeredQuestion(User::factory()->create(), $admin);
+        $category = Category::factory()->cafe()->create();
+        $question = $this->answeredQuestion(User::factory()->create(), $admin, $category);
 
-        $this->actingAs($admin)->patch(route('admin.questions.update-status', $question), [
+        $this->actingAs($admin)->put(route('admin.questions.update', $question), [
+            'category_id' => $category->id,
             'status' => CafeQuestion::STATUS_PENDING,
+            'body' => 'پاسخ رسمی اولیه برای سوال آزمایشی.',
         ])->assertRedirect(route('admin.questions.show', $question));
 
         $question->refresh();
         $this->assertSame(CafeQuestion::STATUS_PENDING, $question->status);
         $this->assertNull($question->answered_at);
 
-        $this->actingAs($admin)->patch(route('admin.questions.update-status', $question), [
+        $this->actingAs($admin)->put(route('admin.questions.update', $question), [
+            'category_id' => $category->id,
             'status' => CafeQuestion::STATUS_REJECTED,
             'rejection_reason' => 'پس از بررسی بیشتر، این پرسش رد شد.',
+            'body' => 'پاسخ رسمی اولیه برای سوال آزمایشی.',
         ])->assertRedirect(route('admin.questions.show', $question));
 
         $question->refresh();
@@ -230,20 +272,26 @@ class CafeQuestionTest extends TestCase
         ]);
     }
 
-    private function pendingQuestion(User $owner): CafeQuestion
+    private function pendingQuestion(User $owner, ?Category $category = null): CafeQuestion
     {
-        return CafeQuestion::query()->create([
+        $category ??= Category::factory()->cafe()->create();
+
+        $question = CafeQuestion::query()->create([
             'user_id' => $owner->id,
             'title' => 'پرسش آزمایشی درباره حسابداری',
             'slug' => 'question-'.$owner->id.'-'.uniqid(),
             'body' => 'متن کافی برای یک پرسش آزمایشی در کافه سوال.',
             'status' => CafeQuestion::STATUS_PENDING,
         ]);
+
+        $question->syncCategories([$category->id], $category->id);
+
+        return $question;
     }
 
-    private function answeredQuestion(User $owner, User $admin): CafeQuestion
+    private function answeredQuestion(User $owner, User $admin, ?Category $category = null): CafeQuestion
     {
-        $question = $this->pendingQuestion($owner);
+        $question = $this->pendingQuestion($owner, $category);
 
         $question->answers()->create([
             'user_id' => $admin->id,
@@ -256,6 +304,6 @@ class CafeQuestionTest extends TestCase
             'answered_at' => now(),
         ]);
 
-        return $question->fresh();
+        return $question->fresh(['categories']);
     }
 }

@@ -1,9 +1,12 @@
 @extends('layouts.admin')
 
 @php
-    $isPost = $type === 'post';
-    $typeLabel = $isPost ? 'بلاگ' : 'محصول و دوره';
-    $publicBase = $isPost ? route('blog.index', [], false) : route('courses.index', [], false);
+    $typeLabel = App\Models\Category::typeLabel($type);
+    $publicBase = match ($type) {
+        App\Models\Category::TYPE_POST => route('blog.index', [], false),
+        App\Models\Category::TYPE_CAFE => route('cafe-soal.index', [], false),
+        default => route('courses.index', [], false),
+    };
     $selectedParent = (string) old('parent_id', $category->parent_id);
     $active = (string) old('is_active', ($category->is_active ?? true) ? '1' : '0') === '1';
 @endphp
@@ -12,9 +15,11 @@
 
 @section('heading', $category->exists ? 'ویرایش: '.$category->name : 'دستهٔ جدید '.$typeLabel)
 
-@section('lede', $isPost
-    ? 'این دسته در فیلتر مقالات دیده می‌شود. انتخاب دستهٔ والد، مطالب زیردسته را هم در فیلتر والد نشان می‌دهد.'
-    : 'این دسته در فیلتر دوره‌ها و محصولات دیده می‌شود. یک محصول می‌تواند در چند دسته باشد.')
+@section('lede', match ($type) {
+    App\Models\Category::TYPE_POST => 'این دسته در فیلتر مقالات دیده می‌شود. انتخاب دستهٔ والد، مطالب زیردسته را هم در فیلتر والد نشان می‌دهد.',
+    App\Models\Category::TYPE_CAFE => 'این دسته هنگام ثبت سوال در کافه سوال به کاربر نشان داده می‌شود.',
+    default => 'این دسته در فیلتر دوره‌ها و محصولات دیده می‌شود. یک محصول می‌تواند در چند دسته باشد.',
+})
 
 @section('actions')
     @if ($category->exists && admin_can('taxonomies', 'create'))

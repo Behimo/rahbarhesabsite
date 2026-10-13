@@ -19,7 +19,31 @@ class Category extends Model
 
     public const TYPE_POST = 'post';
 
+    public const TYPE_CAFE = 'cafe';
+
     public int $treeDepth = 0;
+
+    /**
+     * @return array<string, string>
+     */
+    public static function types(): array
+    {
+        return [
+            self::TYPE_POST => 'بلاگ',
+            self::TYPE_PRODUCT => 'محصول و دوره',
+            self::TYPE_CAFE => 'کافه سوال',
+        ];
+    }
+
+    public static function typeLabel(string $type): string
+    {
+        return self::types()[$type] ?? $type;
+    }
+
+    public static function resolveType(string $type): string
+    {
+        return array_key_exists($type, self::types()) ? $type : self::TYPE_POST;
+    }
 
     protected $fillable = [
         'parent_id', 'type', 'name', 'slug', 'full_slug', 'description', 'image',
@@ -42,6 +66,11 @@ class Category extends Model
     public function shopProducts(): MorphToMany
     {
         return $this->morphedByMany(ShopProduct::class, 'categoryable')->withPivot('is_primary')->withTimestamps();
+    }
+
+    public function cafeQuestions(): MorphToMany
+    {
+        return $this->morphedByMany(CafeQuestion::class, 'categoryable')->withPivot('is_primary')->withTimestamps();
     }
 
     public function categoryables(): HasMany

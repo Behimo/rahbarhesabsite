@@ -13,6 +13,9 @@
         </p>
         <h1 id="cafeDetailTitle" class="cafe-hero__title cafe-hero__title--sm">{{ $question->title }}</h1>
         <p class="cafe-hero__lead cafe-hero__lead--meta">
+            @if ($question->category)
+                <span>{{ $question->category->name }}</span>
+            @endif
             <span>{{ fa_digits($question->answers_count) }} پاسخ</span>
             <span>{{ fa_digits($question->views_count) }} بازدید</span>
             @if ($question->answered_at)

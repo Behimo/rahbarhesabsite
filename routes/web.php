@@ -325,9 +325,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::controller(AdminCafeQuestionController::class)->prefix('questions')->name('questions.')->group(function () {
             Route::get('/', 'index')->name('index');
             Route::get('/{question}', 'show')->name('show');
+            Route::put('/{question}', 'update')->name('update');
             Route::post('/{question}/answer', 'answer')->name('answer');
-            Route::put('/{question}/answer', 'updateAnswer')->name('update-answer');
-            Route::patch('/{question}/status', 'updateStatus')->name('update-status');
             Route::post('/{question}/reject', 'reject')->name('reject');
             Route::delete('/{question}/answers/{answer}', 'destroyAnswer')->name('answers.destroy');
             Route::delete('/{question}', 'destroy')->name('destroy');

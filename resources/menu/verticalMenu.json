@@ -17,6 +17,7 @@
       "submenu": [
         { "url": "admin/categories?type=post", "name": "دسته‌های بلاگ", "slug": "admin.categories.index" },
         { "url": "admin/categories?type=product", "name": "دسته‌های محصول", "slug": "admin.categories.index" },
+        { "url": "admin/categories?type=cafe", "name": "دسته‌های کافه سوال", "slug": "admin.categories.index" },
         { "url": "admin/tags", "name": "برچسب‌ها", "slug": "admin.tags" }
       ]
     },

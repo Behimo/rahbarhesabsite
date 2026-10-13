@@ -29,7 +29,7 @@ class CategoryService
 
     public function forget(?string $type = null): void
     {
-        $types = $type ? [$type] : [Category::TYPE_PRODUCT, Category::TYPE_POST];
+        $types = $type ? [$type] : array_keys(Category::types());
 
         foreach ($types as $item) {
             Cache::forget($this->key($item, true));
