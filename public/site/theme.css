@@ -6136,6 +6136,13 @@ a.rh-side-item:hover .rh-side-item__title {
     background: transparent;
     max-width: min(34rem, calc(100vw - 1.5rem));
     width: 100%;
+    /* * { margin: 0 } kills UA dialog centering — restore it */
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    height: fit-content;
+    max-height: calc(100dvh - 2rem);
+    overflow: auto;
 }
 
 .cafe-ask-dialog::backdrop {
