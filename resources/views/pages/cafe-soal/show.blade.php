@@ -1,19 +1,25 @@
 @extends('layouts.site')
 
 @section('page-banner')
-<div class="cafe-page cafe-page--masthead cafe-page--detail">
-    <header class="cafe-masthead cafe-masthead--compact">
-        <div class="cafe-masthead__inner">
-            <p class="cafe-masthead__brand"><a href="{{ route('cafe-soal.index') }}">کافه سوال</a></p>
-            <h1 class="cafe-masthead__title">{{ $question->title }}</h1>
-            <p class="cafe-masthead__lead">
-                {{ fa_digits($question->answers_count) }} پاسخ · {{ fa_digits($question->views_count) }} بازدید
-                @if ($question->answered_at)
-                    · {{ fa_date($question->answered_at) }}
-                @endif
-            </p>
-        </div>
-    </header>
+<div class="cafe-hero cafe-hero--compact" aria-labelledby="cafeDetailTitle">
+    <div class="cafe-hero__atmosphere" aria-hidden="true">
+        <span class="cafe-hero__glow"></span>
+        <span class="cafe-hero__steam cafe-hero__steam--a"></span>
+        <span class="cafe-hero__steam cafe-hero__steam--b"></span>
+    </div>
+    <div class="cafe-hero__inner cafe-hero__inner--start">
+        <p class="cafe-hero__brand">
+            <a href="{{ route('cafe-soal.index') }}">کافه سوال</a>
+        </p>
+        <h1 id="cafeDetailTitle" class="cafe-hero__title cafe-hero__title--sm">{{ $question->title }}</h1>
+        <p class="cafe-hero__lead cafe-hero__lead--meta">
+            <span>{{ fa_digits($question->answers_count) }} پاسخ</span>
+            <span>{{ fa_digits($question->views_count) }} بازدید</span>
+            @if ($question->answered_at)
+                <time datetime="{{ $question->answered_at->toDateString() }}">{{ fa_date($question->answered_at) }}</time>
+            @endif
+        </p>
+    </div>
 </div>
 @endsection
 
@@ -24,8 +30,24 @@
             <div class="cafe-flash cafe-flash--ok" role="status">{{ session('success') }}</div>
         @endif
 
+        @php
+            $askerName = $question->user?->displayName() ?? 'کاربر';
+            if ($askerName === 'مدیر سایت') {
+                $askerName = 'راهبرحساب';
+            }
+        @endphp
         <article class="cafe-question">
-            <p class="cafe-question__author">پرسش از {{ $question->user?->displayName() ?? 'کاربر' }}</p>
+            <header class="cafe-question__head">
+                <span class="cafe-question__avatar" aria-hidden="true">
+                    {{ mb_substr($askerName, 0, 1) }}
+                </span>
+                <div>
+                    <p class="cafe-question__author">پرسش از {{ $askerName }}</p>
+                    @if ($question->answered_at)
+                        <time class="cafe-question__date" datetime="{{ $question->answered_at->toDateString() }}">{{ fa_date($question->answered_at) }}</time>
+                    @endif
+                </div>
+            </header>
             <div class="cafe-question__body">{{ $question->body }}</div>
         </article>
 
@@ -34,6 +56,11 @@
 
             @if ($official)
                 <article class="cafe-answer cafe-answer--official">
+                    <div class="cafe-answer__seal" aria-hidden="true">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 3l2.2 4.5 5 .7-3.6 3.5.9 5L12 14.8 7.5 16.7l.9-5L4.8 8.2l5-.7L12 3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
                     <div class="cafe-answer__badge">پاسخ کارشناس راهبر حساب</div>
                     <div class="cafe-answer__head">
                         <strong>{{ $official->user?->displayName() ?? 'کارشناس' }}</strong>
@@ -46,14 +73,19 @@
             @forelse ($community as $answer)
                 <article class="cafe-answer">
                     <div class="cafe-answer__head">
-                        <strong>{{ $answer->user?->displayName() ?? 'کاربر' }}</strong>
+                        <div class="cafe-answer__who">
+                            <span class="cafe-answer__avatar" aria-hidden="true">{{ mb_substr($answer->user?->displayName() ?? 'ک', 0, 1) }}</span>
+                            <strong>{{ $answer->user?->displayName() ?? 'کاربر' }}</strong>
+                        </div>
                         <time datetime="{{ $answer->created_at->toDateString() }}">{{ fa_date($answer->created_at) }}</time>
                     </div>
                     <div class="cafe-answer__body">{{ $answer->body }}</div>
                 </article>
             @empty
                 @unless ($official)
-                    <p class="cafe-empty">هنوز پاسخی ثبت نشده است.</p>
+                    <div class="cafe-empty cafe-empty--inline" role="status">
+                        <p class="cafe-empty__text">هنوز پاسخی ثبت نشده است. اگر پاسخی دارید، پایین بنویسید.</p>
+                    </div>
                 @endunless
             @endforelse
         </section>
@@ -61,18 +93,25 @@
         <section class="cafe-reply" aria-label="ثبت پاسخ">
             <h2 class="cafe-section-title">پاسخ شما</h2>
             @auth
-                <form method="POST" action="{{ route('cafe-soal.answers.store', $question->slug) }}" class="cafe-form">
+                <form method="POST" action="{{ route('cafe-soal.answers.store', $question->slug) }}" class="cafe-form cafe-form--card">
                     @csrf
+                    @if ($errors->any())
+                        <div class="cafe-form__alert" role="alert" tabindex="-1">
+                            <p class="cafe-form__alert-title">لطفاً متن پاسخ را بررسی کنید</p>
+                        </div>
+                    @endif
                     <label class="cafe-form__label" for="answer-body">متن پاسخ</label>
-                    <textarea name="body" id="answer-body" rows="5" class="cafe-form__input @error('body') is-invalid @enderror" required>{{ old('body') }}</textarea>
-                    @error('body')<p class="cafe-form__error">{{ $message }}</p>@enderror
+                    <textarea name="body" id="answer-body" rows="5" class="cafe-form__input @error('body') is-invalid @enderror" required aria-invalid="{{ $errors->has('body') ? 'true' : 'false' }}">{{ old('body') }}</textarea>
+                    @error('body')<p class="cafe-form__error" role="alert">{{ $message }}</p>@enderror
                     <button type="submit" class="cafe-form__submit">ارسال پاسخ</button>
                 </form>
             @else
-                <p class="cafe-empty">
-                    برای ثبت پاسخ باید
-                    <a href="{{ route('login') }}">وارد شوید</a>.
-                </p>
+                <div class="cafe-empty cafe-empty--inline">
+                    <p class="cafe-empty__text">
+                        برای ثبت پاسخ باید
+                        <a href="{{ route('login', ['redirect' => url()->current()]) }}">وارد شوید</a>.
+                    </p>
+                </div>
             @endauth
         </section>
     </div>

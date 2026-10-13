@@ -5,37 +5,48 @@
 @endphp
 
 @section('page-banner')
-<div class="cafe-page cafe-page--masthead">
-    <header class="cafe-masthead">
-        <div class="cafe-masthead__inner">
-            <p class="cafe-masthead__brand">راهبر حساب</p>
-            <h1 class="cafe-masthead__title">کافه سوال</h1>
-            <p class="cafe-masthead__lead">پرسش و پاسخ تخصصی حسابداری، مالیات و امور مالی</p>
-            @auth
-                <button type="button" class="cafe-ask-btn" data-cafe-ask-open>
-                    <span class="cafe-ask-btn__glow" aria-hidden="true"></span>
-                    <span class="cafe-ask-btn__icon" aria-hidden="true">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                            <path d="M12 3c-4.4 0-8 3.1-8 7 0 2.3 1.2 4.4 3.1 5.7L6 20l4.1-2.1c.6.1 1.2.2 1.9.2 4.4 0 8-3.1 8-7s-3.6-7-8-7z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                            <path d="M9.5 10.5h5M12 8v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                        </svg>
-                    </span>
-                    <span class="cafe-ask-btn__label">سوال شما</span>
-                </button>
-            @else
-                <a href="{{ $askLoginUrl }}" class="cafe-ask-btn">
-                    <span class="cafe-ask-btn__glow" aria-hidden="true"></span>
-                    <span class="cafe-ask-btn__icon" aria-hidden="true">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                            <path d="M12 3c-4.4 0-8 3.1-8 7 0 2.3 1.2 4.4 3.1 5.7L6 20l4.1-2.1c.6.1 1.2.2 1.9.2 4.4 0 8-3.1 8-7s-3.6-7-8-7z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                            <path d="M9.5 10.5h5M12 8v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                        </svg>
-                    </span>
-                    <span class="cafe-ask-btn__label">سوال شما</span>
-                </a>
-            @endauth
-        </div>
-    </header>
+<div class="cafe-hero" aria-labelledby="cafeHeroTitle">
+    <div class="cafe-hero__atmosphere" aria-hidden="true">
+        <span class="cafe-hero__glow"></span>
+        <span class="cafe-hero__steam cafe-hero__steam--a"></span>
+        <span class="cafe-hero__steam cafe-hero__steam--b"></span>
+        <span class="cafe-hero__steam cafe-hero__steam--c"></span>
+        <svg class="cafe-hero__cup" viewBox="0 0 120 88" fill="none">
+            <path d="M18 28h68c4 0 7 3 7 7v18c0 14-12 26-26 26H37C23 79 11 67 11 53V35c0-4 3-7 7-7z" stroke="currentColor" stroke-width="2.2"/>
+            <path d="M93 34h8c7 0 12 5 12 12s-5 12-12 12h-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M8 84h90" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" opacity=".45"/>
+        </svg>
+    </div>
+
+    <div class="cafe-hero__inner">
+        <p class="cafe-hero__brand">راهبر حساب</p>
+        <h1 id="cafeHeroTitle" class="cafe-hero__title">کافه سوال</h1>
+        <p class="cafe-hero__lead">پاسخ دقیق به سوال‌های حسابداری، مالیات و امور مالی — از کارشناسان راهبر حساب</p>
+
+        @auth
+            <button type="button" class="cafe-ask-btn" data-cafe-ask-open>
+                <span class="cafe-ask-btn__glow" aria-hidden="true"></span>
+                <span class="cafe-ask-btn__icon" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 3c-4.4 0-8 3.1-8 7 0 2.3 1.2 4.4 3.1 5.7L6 20l4.1-2.1c.6.1 1.2.2 1.9.2 4.4 0 8-3.1 8-7s-3.6-7-8-7z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                        <path d="M9.5 10.5h5M12 8v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    </svg>
+                </span>
+                <span class="cafe-ask-btn__label">سوال بپرسید</span>
+            </button>
+        @else
+            <a href="{{ $askLoginUrl }}" class="cafe-ask-btn">
+                <span class="cafe-ask-btn__glow" aria-hidden="true"></span>
+                <span class="cafe-ask-btn__icon" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 3c-4.4 0-8 3.1-8 7 0 2.3 1.2 4.4 3.1 5.7L6 20l4.1-2.1c.6.1 1.2.2 1.9.2 4.4 0 8-3.1 8-7s-3.6-7-8-7z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                        <path d="M9.5 10.5h5M12 8v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    </svg>
+                </span>
+                <span class="cafe-ask-btn__label">سوال بپرسید</span>
+            </a>
+        @endauth
+    </div>
 </div>
 @endsection
 
@@ -49,7 +60,13 @@
         <form method="GET" action="{{ route('cafe-soal.index') }}" class="cafe-toolbar" role="search">
             <div class="cafe-toolbar__search">
                 <label class="cafe-sr-only" for="cafe-q">جستجوی سوال</label>
-                <input type="search" name="q" id="cafe-q" value="{{ $q }}" placeholder="جستجو بین سوالات..." class="cafe-toolbar__input">
+                <span class="cafe-toolbar__icon" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8"/>
+                        <path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    </svg>
+                </span>
+                <input type="search" name="q" id="cafe-q" value="{{ $q }}" placeholder="جستجو بین سوالات حسابداری و مالیات..." class="cafe-toolbar__input">
                 <button type="submit" class="cafe-toolbar__submit">جستجو</button>
             </div>
             <div class="cafe-toolbar__sorts" role="group" aria-label="مرتب‌سازی">
@@ -68,33 +85,51 @@
 
         @if ($questions->isEmpty())
             <div class="cafe-empty" role="status">
-                <p>سوالی یافت نشد.</p>
+                <div class="cafe-empty__icon" aria-hidden="true">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 3c-4.4 0-8 3.1-8 7 0 2.3 1.2 4.4 3.1 5.7L6 20l4.1-2.1c.6.1 1.2.2 1.9.2 4.4 0 8-3.1 8-7s-3.6-7-8-7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h2 class="cafe-empty__title">هنوز سوالی در این فهرست نیست</h2>
+                <p class="cafe-empty__text">اولین نفر باشید؛ سوال حسابداری یا مالیاتی‌تان را بنویسید تا کارشناسان پاسخ دهند.</p>
                 @auth
                     <button type="button" class="cafe-ask-btn cafe-ask-btn--solid" data-cafe-ask-open>
-                        <span class="cafe-ask-btn__label">سوال شما</span>
+                        <span class="cafe-ask-btn__label">سوال بپرسید</span>
                     </button>
                 @else
                     <a href="{{ $askLoginUrl }}" class="cafe-ask-btn cafe-ask-btn--solid">
-                        <span class="cafe-ask-btn__label">سوال شما</span>
+                        <span class="cafe-ask-btn__label">سوال بپرسید</span>
                     </a>
                 @endauth
             </div>
         @else
             <ul class="cafe-list">
-                @foreach ($questions as $question)
-                    <li>
+                @foreach ($questions as $index => $question)
+                    <li style="--cafe-i: {{ $index }}">
                         <a href="{{ route('cafe-soal.show', $question->slug) }}" class="cafe-item">
+                            <div class="cafe-item__rail" aria-hidden="true"></div>
                             <div class="cafe-item__body">
                                 <h2 class="cafe-item__title">{{ $question->title }}</h2>
                                 <p class="cafe-item__excerpt">{{ Str::limit(strip_tags($question->body), 140) }}</p>
+                                <div class="cafe-item__meta">
+                                    <span class="cafe-item__stat">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16v10H8l-4 4V6z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+                                        {{ fa_digits($question->answers_count) }} پاسخ
+                                    </span>
+                                    <span class="cafe-item__stat">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.7"/></svg>
+                                        {{ fa_digits($question->views_count) }} بازدید
+                                    </span>
+                                    @if ($question->answered_at)
+                                        <time datetime="{{ $question->answered_at->toDateString() }}">{{ fa_date($question->answered_at) }}</time>
+                                    @endif
+                                </div>
                             </div>
-                            <div class="cafe-item__meta">
-                                <span>{{ fa_digits($question->answers_count) }} پاسخ</span>
-                                <span>{{ fa_digits($question->views_count) }} بازدید</span>
-                                @if ($question->answered_at)
-                                    <time datetime="{{ $question->answered_at->toDateString() }}">{{ fa_date($question->answered_at) }}</time>
-                                @endif
-                            </div>
+                            <span class="cafe-item__arrow" aria-hidden="true">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                                    <path d="M14 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </span>
                         </a>
                     </li>
                 @endforeach
@@ -123,15 +158,25 @@
             </button>
         </div>
         <p class="cafe-ask-dialog__lead">سوال حسابداری یا مالیاتی‌تان را بنویسید؛ کارشناسان پس از بررسی پاسخ می‌دهند.</p>
+        @if ($errors->any())
+            <div class="cafe-form__alert" role="alert" tabindex="-1" id="cafeAskErrors">
+                <p class="cafe-form__alert-title">لطفاً موارد زیر را اصلاح کنید</p>
+                <ul>
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
         <div class="cafe-form__field">
             <label class="cafe-form__label" for="cafe-ask-title">عنوان سوال</label>
-            <input type="text" name="title" id="cafe-ask-title" value="{{ old('title') }}" class="cafe-form__input @error('title') is-invalid @enderror" required maxlength="180" placeholder="مثلاً نحوه محاسبه مالیات حقوق">
-            @error('title')<p class="cafe-form__error">{{ $message }}</p>@enderror
+            <input type="text" name="title" id="cafe-ask-title" value="{{ old('title') }}" class="cafe-form__input @error('title') is-invalid @enderror" required maxlength="180" placeholder="مثلاً نحوه محاسبه مالیات حقوق" aria-invalid="{{ $errors->has('title') ? 'true' : 'false' }}">
+            @error('title')<p class="cafe-form__error" role="alert">{{ $message }}</p>@enderror
         </div>
         <div class="cafe-form__field">
             <label class="cafe-form__label" for="cafe-ask-body">متن سوال</label>
-            <textarea name="body" id="cafe-ask-body" rows="6" class="cafe-form__input @error('body') is-invalid @enderror" required placeholder="جزئیات سوال را کامل بنویسید...">{{ old('body') }}</textarea>
-            @error('body')<p class="cafe-form__error">{{ $message }}</p>@enderror
+            <textarea name="body" id="cafe-ask-body" rows="6" class="cafe-form__input @error('body') is-invalid @enderror" required placeholder="جزئیات سوال را کامل بنویسید..." aria-invalid="{{ $errors->has('body') ? 'true' : 'false' }}">{{ old('body') }}</textarea>
+            @error('body')<p class="cafe-form__error" role="alert">{{ $message }}</p>@enderror
         </div>
         <div class="cafe-ask-dialog__actions">
             <button type="button" class="cafe-ask-dialog__cancel" data-cafe-ask-close>انصراف</button>
@@ -151,6 +196,8 @@
 
   const open = () => {
     if (!dialog.open) dialog.showModal();
+    const alertBox = document.getElementById('cafeAskErrors');
+    if (alertBox) alertBox.focus();
   };
 
   document.querySelectorAll('[data-cafe-ask-open]').forEach((btn) => {
@@ -165,7 +212,6 @@
     if (event.target === dialog) dialog.close();
   });
 
-  const params = new URLSearchParams(window.location.search);
   @if ($errors->any())
   open();
   @elseif (request()->boolean('ask'))

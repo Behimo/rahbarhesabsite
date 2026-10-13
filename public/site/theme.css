@@ -5344,77 +5344,141 @@ a.rh-side-item:hover .rh-side-item__title {
 
 /* ---- Cafe Soal (Q&A) ---- */
 .cafe-page {
-    background: transparent;
-}
-
-.cafe-masthead {
+    --cafe-ink: #160c28;
+    --cafe-plum: #361e50;
+    --cafe-violet: #643abc;
+    --cafe-lamp: #ffb911;
+    --cafe-mist: #f3eef9;
+    --cafe-paper: #fffcf8;
+    --cafe-muted: #6b6574;
     background:
-        linear-gradient(135deg, rgba(54, 30, 80, 0.92), rgba(100, 58, 188, 0.88)),
-        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.12), transparent 45%);
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(100, 58, 188, 0.08), transparent 55%),
+        linear-gradient(180deg, var(--cafe-mist) 0%, #faf8fc 40%, #f7f5fa 100%);
+    min-height: 40vh;
+}
+
+.cafe-hero {
+    position: relative;
+    overflow: hidden;
     color: #fff;
-    padding: 3.5rem 1.25rem 3rem;
+    padding: clamp(3.25rem, 8vw, 5.5rem) 1.25rem 3.25rem;
+    background:
+        radial-gradient(ellipse 55% 70% at 85% 15%, rgba(255, 185, 17, 0.28), transparent 50%),
+        radial-gradient(ellipse 40% 55% at 10% 80%, rgba(100, 58, 188, 0.45), transparent 55%),
+        linear-gradient(155deg, #12091f 0%, #2a1640 42%, #4a2a8a 100%);
 }
 
-.cafe-masthead--compact {
-    padding: 2.5rem 1.25rem 2rem;
+.cafe-hero--compact {
+    padding: clamp(2.25rem, 5vw, 3.25rem) 1.25rem 2.25rem;
 }
 
-.cafe-masthead__inner {
+.cafe-hero__atmosphere {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.cafe-hero__glow {
+    position: absolute;
+    top: -20%;
+    left: 50%;
+    width: min(28rem, 70vw);
+    height: min(28rem, 70vw);
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 185, 17, 0.22), transparent 68%);
+    animation: cafeLampPulse 4.5s ease-in-out infinite;
+}
+
+.cafe-hero__steam {
+    position: absolute;
+    bottom: 18%;
+    width: 2.5rem;
+    height: 5.5rem;
+    border-radius: 999px;
+    background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+    filter: blur(6px);
+    opacity: 0.55;
+    animation: cafeSteam 5.5s ease-in-out infinite;
+}
+
+.cafe-hero__steam--a { right: 14%; animation-delay: 0s; }
+.cafe-hero__steam--b { right: 18%; height: 4rem; animation-delay: 1.2s; opacity: 0.35; }
+.cafe-hero__steam--c { right: 22%; height: 6rem; animation-delay: 2.1s; opacity: 0.25; }
+
+.cafe-hero__cup {
+    position: absolute;
+    right: clamp(1rem, 6vw, 4rem);
+    bottom: 1.25rem;
+    width: clamp(4.5rem, 12vw, 7rem);
+    color: rgba(255, 255, 255, 0.22);
+}
+
+.cafe-hero__inner {
+    position: relative;
+    z-index: 1;
     max-width: 920px;
     margin: 0 auto;
     text-align: center;
 }
 
-.cafe-masthead__brand {
-    margin: 0 0 0.5rem;
-    font-size: 0.95rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    opacity: 0.9;
+.cafe-hero__inner--start {
+    text-align: right;
 }
 
-.cafe-masthead__brand a {
+.cafe-hero__brand {
+    margin: 0 0 0.65rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: rgba(255, 245, 210, 0.92);
+}
+
+.cafe-hero__brand a {
     color: inherit;
     text-decoration: none;
 }
 
-.cafe-masthead__title {
-    margin: 0 0 0.75rem;
-    font-size: clamp(1.7rem, 4vw, 2.4rem);
-    font-weight: 800;
-    line-height: 1.35;
+.cafe-hero__brand a:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.cafe-hero__title {
+    margin: 0 0 0.85rem;
+    font-size: clamp(2.35rem, 7vw, 3.6rem);
+    font-weight: 900;
+    line-height: 1.2;
     color: #fff;
+    text-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
+    animation: cafeHeroIn 0.7s ease both;
 }
 
-.cafe-masthead__lead {
-    margin: 0 auto 1.25rem;
-    max-width: 40rem;
-    font-size: 1rem;
-    line-height: 1.8;
-    opacity: 0.92;
+.cafe-hero__title--sm {
+    font-size: clamp(1.45rem, 4vw, 2.1rem);
+    font-weight: 800;
+    line-height: 1.45;
 }
 
-.cafe-masthead__cta,
-.cafe-form__submit,
-.cafe-toolbar__submit {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 2.75rem;
-    padding: 0.7rem 1.25rem;
-    border: 0;
-    border-radius: 0.9rem;
-    background: #fff;
-    color: var(--primary, #643abc);
-    font-weight: 700;
-    text-decoration: none;
-    cursor: pointer;
+.cafe-hero__lead {
+    margin: 0 auto 1.5rem;
+    max-width: 36rem;
+    font-size: 1.05rem;
+    line-height: 1.85;
+    color: rgba(255, 255, 255, 0.88);
+    animation: cafeHeroIn 0.7s ease 0.08s both;
 }
 
-.cafe-masthead__cta:hover,
-.cafe-form__submit:hover,
-.cafe-toolbar__submit:hover {
-    background: #f4f0ff;
+.cafe-hero__inner--start .cafe-hero__lead {
+    margin-right: 0;
+    margin-left: 0;
+}
+
+.cafe-hero__lead--meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem 1.1rem;
+    font-size: 0.95rem;
+    opacity: 0.9;
 }
 
 .cafe-shell {
@@ -5431,28 +5495,89 @@ a.rh-side-item:hover .rh-side-item__title {
     display: grid;
     gap: 1rem;
     margin-bottom: 1.5rem;
+    padding: 1rem 1.1rem;
+    border-radius: 1.15rem;
+    background: rgba(255, 252, 248, 0.92);
+    border: 1px solid rgba(100, 58, 188, 0.1);
+    box-shadow: 0 10px 28px rgba(54, 30, 80, 0.05);
 }
 
 .cafe-toolbar__search {
+    position: relative;
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
+    align-items: stretch;
+}
+
+.cafe-toolbar__icon {
+    position: absolute;
+    right: 0.95rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--cafe-muted, #6b6574);
+    pointer-events: none;
+    display: inline-flex;
 }
 
 .cafe-toolbar__input,
 .cafe-form__input {
     width: 100%;
-    min-height: 2.75rem;
-    padding: 0.7rem 0.95rem;
-    border: 1px solid var(--border, #eae7ec);
-    border-radius: 0.9rem;
+    min-height: 2.85rem;
+    padding: 0.75rem 0.95rem;
+    border: 1px solid rgba(100, 58, 188, 0.16);
+    border-radius: 0.85rem;
     background: #fff;
     color: var(--text, #242027);
     font: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .cafe-toolbar__search .cafe-toolbar__input {
     flex: 1 1 14rem;
+    padding-right: 2.6rem;
+}
+
+.cafe-toolbar__input:focus,
+.cafe-form__input:focus {
+    outline: none;
+    border-color: rgba(100, 58, 188, 0.45);
+    box-shadow: 0 0 0 3px rgba(100, 58, 188, 0.15);
+}
+
+.cafe-toolbar__submit,
+.cafe-form__submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.85rem;
+    padding: 0.7rem 1.3rem;
+    border: 0;
+    border-radius: 0.85rem;
+    background: linear-gradient(135deg, #643abc, #4a2d9c);
+    color: #fff;
+    font: inherit;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.cafe-toolbar__submit:hover,
+.cafe-form__submit:hover {
+    filter: brightness(1.06);
+    transform: translateY(-1px);
+}
+
+.cafe-toolbar__submit:focus-visible,
+.cafe-form__submit:focus-visible,
+.cafe-sort:focus-visible,
+.cafe-item:focus-visible,
+.cafe-ask-dialog__close:focus-visible,
+.cafe-ask-dialog__cancel:focus-visible,
+.cafe-ask-dialog__submit:focus-visible {
+    outline: 3px solid rgba(255, 185, 17, 0.75);
+    outline-offset: 2px;
 }
 
 .cafe-toolbar__sorts {
@@ -5465,20 +5590,23 @@ a.rh-side-item:hover .rh-side-item__title {
     display: inline-flex;
     align-items: center;
     min-height: 2.4rem;
-    padding: 0.45rem 0.9rem;
-    border-radius: 999px;
-    border: 1px solid var(--border, #eae7ec);
+    padding: 0.45rem 0.95rem;
+    border-radius: 0.7rem;
+    border: 1px solid rgba(100, 58, 188, 0.14);
     background: #fff;
-    color: var(--text, #242027);
+    color: var(--cafe-muted, #6b6574);
     text-decoration: none;
     font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
 .cafe-sort.is-active,
 .cafe-sort:hover {
     border-color: rgba(100, 58, 188, 0.35);
     background: rgba(100, 58, 188, 0.1);
-    color: var(--primary, #643abc);
+    color: var(--cafe-plum, #361e50);
 }
 
 .cafe-list {
@@ -5486,55 +5614,133 @@ a.rh-side-item:hover .rh-side-item__title {
     margin: 0;
     padding: 0;
     display: grid;
-    gap: 0.85rem;
+    gap: 0.9rem;
+}
+
+.cafe-list > li {
+    animation: cafeItemIn 0.45s ease both;
+    animation-delay: calc(var(--cafe-i, 0) * 0.05s);
 }
 
 .cafe-item {
+    position: relative;
     display: grid;
-    gap: 0.75rem;
-    padding: 1.15rem 1.2rem;
-    border: 1px solid var(--border, #eae7ec);
+    grid-template-columns: 5px minmax(0, 1fr) auto;
+    gap: 0;
+    align-items: stretch;
+    min-height: 44px;
+    border: 1px solid rgba(100, 58, 188, 0.1);
     border-radius: 1rem;
-    background: #fff;
+    background: var(--cafe-paper, #fffcf8);
     text-decoration: none;
     color: inherit;
-    box-shadow: 0 8px 24px rgba(54, 30, 80, 0.04);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 6px 20px rgba(54, 30, 80, 0.04);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
 }
 
 .cafe-item:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 14px 28px rgba(54, 30, 80, 0.08);
+    transform: translateY(-3px);
+    border-color: rgba(100, 58, 188, 0.22);
+    box-shadow: 0 16px 36px rgba(54, 30, 80, 0.1);
+}
+
+.cafe-item__rail {
+    background: linear-gradient(180deg, #ffb911, #f59e0b);
+}
+
+.cafe-item__body {
+    padding: 1.15rem 1.15rem 1.1rem 0.85rem;
+    display: grid;
+    gap: 0.55rem;
 }
 
 .cafe-item__title {
-    margin: 0 0 0.4rem;
-    font-size: 1.1rem;
+    margin: 0;
+    font-size: 1.08rem;
     font-weight: 800;
-    color: var(--primary-dark, #361e50);
-    line-height: 1.5;
+    color: var(--cafe-plum, #361e50);
+    line-height: 1.55;
 }
 
 .cafe-item__excerpt {
     margin: 0;
-    color: var(--text-light, #8a858b);
-    line-height: 1.7;
-    font-size: 0.95rem;
+    color: var(--cafe-muted, #6b6574);
+    line-height: 1.75;
+    font-size: 0.94rem;
 }
 
 .cafe-item__meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.75rem 1rem;
-    font-size: 0.85rem;
-    color: var(--text-light, #8a858b);
+    gap: 0.65rem 1rem;
+    font-size: 0.82rem;
+    color: var(--cafe-muted, #6b6574);
+}
+
+.cafe-item__stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.cafe-item__arrow {
+    display: flex;
+    align-items: center;
+    padding: 0 0.85rem 0 0.5rem;
+    color: rgba(100, 58, 188, 0.45);
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.cafe-item:hover .cafe-item__arrow {
+    color: var(--cafe-violet, #643abc);
+    transform: translateX(-3px);
 }
 
 .cafe-empty {
     text-align: center;
-    color: var(--text-light, #8a858b);
-    padding: 2rem 1rem;
+    color: var(--cafe-muted, #6b6574);
+    padding: 2.75rem 1.25rem;
+    border-radius: 1.15rem;
+    background: rgba(255, 252, 248, 0.9);
+    border: 1px dashed rgba(100, 58, 188, 0.22);
     line-height: 1.8;
+}
+
+.cafe-empty--inline {
+    padding: 1.25rem 1.1rem;
+    text-align: right;
+}
+
+.cafe-empty__icon {
+    display: inline-flex;
+    margin-bottom: 0.75rem;
+    color: var(--cafe-violet, #643abc);
+    opacity: 0.75;
+}
+
+.cafe-empty__title {
+    margin: 0 0 0.45rem;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--cafe-plum, #361e50);
+}
+
+.cafe-empty__text {
+    margin: 0 0 1.15rem;
+    max-width: 28rem;
+    margin-inline: auto;
+}
+
+.cafe-empty--inline .cafe-empty__text {
+    margin: 0;
+    max-width: none;
+}
+
+.cafe-empty a {
+    color: var(--cafe-violet, #643abc);
+    font-weight: 700;
 }
 
 .cafe-pagination {
@@ -5544,27 +5750,58 @@ a.rh-side-item:hover .rh-side-item__title {
 .cafe-question,
 .cafe-answer,
 .cafe-form--card {
-    background: #fff;
-    border: 1px solid var(--border, #eae7ec);
-    border-radius: 1rem;
-    padding: 1.25rem 1.3rem;
-    box-shadow: 0 8px 24px rgba(54, 30, 80, 0.04);
+    background: var(--cafe-paper, #fffcf8);
+    border: 1px solid rgba(100, 58, 188, 0.1);
+    border-radius: 1.1rem;
+    padding: 1.3rem 1.35rem;
+    box-shadow: 0 8px 24px rgba(54, 30, 80, 0.045);
 }
 
 .cafe-question {
+    position: relative;
     margin-bottom: 1.75rem;
 }
 
+.cafe-question__head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.cafe-question__avatar,
+.cafe-answer__avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #7a52d4, #361e50);
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+
 .cafe-question__author {
-    margin: 0 0 0.75rem;
-    font-size: 0.9rem;
-    color: var(--text-light, #8a858b);
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--cafe-plum, #361e50);
+}
+
+.cafe-question__date {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.82rem;
+    color: var(--cafe-muted, #6b6574);
 }
 
 .cafe-question__body,
 .cafe-answer__body {
     white-space: pre-wrap;
-    line-height: 1.9;
+    line-height: 1.95;
     color: var(--text, #242027);
 }
 
@@ -5572,7 +5809,7 @@ a.rh-side-item:hover .rh-side-item__title {
     margin: 0 0 1rem;
     font-size: 1.2rem;
     font-weight: 800;
-    color: var(--primary-dark, #361e50);
+    color: var(--cafe-plum, #361e50);
 }
 
 .cafe-answers {
@@ -5581,20 +5818,34 @@ a.rh-side-item:hover .rh-side-item__title {
     margin-bottom: 2rem;
 }
 
+.cafe-answer {
+    position: relative;
+}
+
 .cafe-answer--official {
-    border-color: rgba(100, 58, 188, 0.35);
+    border-color: rgba(255, 185, 17, 0.45);
     background:
-        linear-gradient(180deg, rgba(100, 58, 188, 0.08), rgba(255, 255, 255, 0.96)),
-        #fff;
-    box-shadow: 0 12px 28px rgba(100, 58, 188, 0.1);
+        linear-gradient(135deg, rgba(255, 185, 17, 0.12), transparent 42%),
+        linear-gradient(180deg, rgba(100, 58, 188, 0.06), rgba(255, 252, 248, 0.98));
+    box-shadow: 0 14px 32px rgba(100, 58, 188, 0.1);
+}
+
+.cafe-answer__seal {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    display: inline-flex;
+    color: #b8860b;
+    opacity: 0.85;
 }
 
 .cafe-answer__badge {
     display: inline-flex;
-    margin-bottom: 0.75rem;
-    padding: 0.35rem 0.75rem;
-    border-radius: 999px;
-    background: var(--primary, #643abc);
+    align-items: center;
+    margin-bottom: 0.85rem;
+    padding: 0.35rem 0.8rem;
+    border-radius: 0.55rem;
+    background: linear-gradient(135deg, #643abc, #4a2d9c);
     color: #fff;
     font-size: 0.8rem;
     font-weight: 700;
@@ -5603,14 +5854,27 @@ a.rh-side-item:hover .rh-side-item__title {
 .cafe-answer__head {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    margin-bottom: 0.65rem;
+    margin-bottom: 0.7rem;
     font-size: 0.9rem;
 }
 
+.cafe-answer__who {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.cafe-answer__avatar {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.8rem;
+}
+
 .cafe-answer__head time {
-    color: var(--text-light, #8a858b);
+    color: var(--cafe-muted, #6b6574);
 }
 
 .cafe-reply {
@@ -5629,29 +5893,50 @@ a.rh-side-item:hover .rh-side-item__title {
 
 .cafe-form__label {
     font-weight: 700;
-    color: var(--primary-dark, #361e50);
+    color: var(--cafe-plum, #361e50);
 }
 
-.cafe-form__error,
 .cafe-form__input.is-invalid {
-    color: #b42318;
+    border-color: #d92d20;
+    color: inherit;
 }
 
 .cafe-form__error {
     margin: 0;
     font-size: 0.85rem;
+    color: #b42318;
+}
+
+.cafe-form__alert {
+    padding: 0.85rem 1rem;
+    border-radius: 0.85rem;
+    background: #fef3f2;
+    border: 1px solid #fecdca;
+    color: #912018;
+}
+
+.cafe-form__alert-title {
+    margin: 0 0 0.35rem;
+    font-weight: 800;
+}
+
+.cafe-form__alert ul {
+    margin: 0;
+    padding-right: 1.1rem;
+    line-height: 1.7;
 }
 
 .cafe-flash {
     margin-bottom: 1rem;
     border-radius: 0.85rem;
-    padding: 0.8rem 1rem;
-    font-size: 0.9rem;
+    padding: 0.85rem 1.05rem;
+    font-size: 0.92rem;
 }
 
 .cafe-flash--ok {
     background: #ecfdf3;
     color: #067647;
+    border: 1px solid #abefc6;
 }
 
 .cafe-sr-only {
@@ -5664,6 +5949,57 @@ a.rh-side-item:hover .rh-side-item__title {
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
+}
+
+@keyframes cafeLampPulse {
+    0%, 100% { opacity: 0.7; transform: translateX(-50%) scale(0.96); }
+    50% { opacity: 1; transform: translateX(-50%) scale(1.04); }
+}
+
+@keyframes cafeSteam {
+    0%, 100% { transform: translateY(0) scaleY(1); opacity: 0.25; }
+    50% { transform: translateY(-12px) scaleY(1.08); opacity: 0.55; }
+}
+
+@keyframes cafeHeroIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cafeItemIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 640px) {
+    .cafe-hero__cup {
+        opacity: 0.55;
+        width: 5.5rem;
+        bottom: 0.75rem;
+        right: 0.75rem;
+    }
+    .cafe-item {
+        grid-template-columns: 4px minmax(0, 1fr);
+    }
+    .cafe-item__arrow { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cafe-hero__glow,
+    .cafe-hero__steam,
+    .cafe-ask-btn__glow,
+    .cafe-hero__title,
+    .cafe-hero__lead,
+    .cafe-ask-btn,
+    .cafe-list > li {
+        animation: none !important;
+    }
+    .cafe-item,
+    .cafe-ask-btn,
+    .cafe-toolbar__submit,
+    .cafe-form__submit {
+        transition: none;
+    }
 }
 
 .panel-nav__badge {
@@ -5728,43 +6064,46 @@ a.rh-side-item:hover .rh-side-item__title {
     align-items: center;
     justify-content: center;
     gap: 0.65rem;
-    min-height: 3.1rem;
-    padding: 0.85rem 1.55rem;
+    min-height: 3.15rem;
+    padding: 0.9rem 1.65rem;
     border: 0;
     border-radius: 999px;
-    background: linear-gradient(135deg, #fff7e8 0%, #ffffff 55%, #f3ecff 100%);
-    color: var(--primary-dark, #361e50);
+    background: linear-gradient(135deg, #fff4d6 0%, #ffffff 48%, #efe6ff 100%);
+    color: var(--cafe-plum, #361e50);
     font: inherit;
     font-weight: 800;
     font-size: 1.05rem;
     text-decoration: none;
     cursor: pointer;
     box-shadow:
-        0 10px 28px rgba(54, 30, 80, 0.18),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        0 12px 32px rgba(0, 0, 0, 0.22),
+        0 0 0 1px rgba(255, 185, 17, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
     overflow: hidden;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+    animation: cafeHeroIn 0.7s ease 0.12s both;
 }
 
 .cafe-ask-btn:hover {
     transform: translateY(-2px) scale(1.02);
     box-shadow:
-        0 16px 34px rgba(54, 30, 80, 0.22),
+        0 18px 40px rgba(0, 0, 0, 0.28),
+        0 0 0 1px rgba(255, 185, 17, 0.5),
         inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 
 .cafe-ask-btn:focus-visible {
-    outline: 3px solid rgba(255, 185, 17, 0.7);
+    outline: 3px solid rgba(255, 185, 17, 0.85);
     outline-offset: 3px;
 }
 
 .cafe-ask-btn__glow {
     position: absolute;
-    inset: -40% auto auto 20%;
+    inset: -40% auto auto 18%;
     width: 8rem;
     height: 8rem;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(255, 185, 17, 0.45), transparent 70%);
+    background: radial-gradient(circle, rgba(255, 185, 17, 0.5), transparent 70%);
     pointer-events: none;
     animation: cafeAskPulse 2.8s ease-in-out infinite;
 }
@@ -5772,7 +6111,7 @@ a.rh-side-item:hover .rh-side-item__title {
 .cafe-ask-btn__icon {
     position: relative;
     display: inline-flex;
-    color: var(--primary, #643abc);
+    color: var(--cafe-violet, #643abc);
 }
 
 .cafe-ask-btn__label {
@@ -5781,7 +6120,9 @@ a.rh-side-item:hover .rh-side-item__title {
 
 .cafe-ask-btn--solid {
     background: #fff;
-    color: var(--primary, #643abc);
+    color: var(--cafe-violet, #643abc);
+    box-shadow: 0 8px 22px rgba(54, 30, 80, 0.12);
+    animation: none;
 }
 
 @keyframes cafeAskPulse {
@@ -5798,20 +6139,21 @@ a.rh-side-item:hover .rh-side-item__title {
 }
 
 .cafe-ask-dialog::backdrop {
-    background: rgba(24, 12, 40, 0.55);
-    backdrop-filter: blur(4px);
+    background: rgba(16, 8, 28, 0.62);
+    backdrop-filter: blur(5px);
 }
 
 .cafe-ask-dialog__panel {
     display: grid;
     gap: 0.95rem;
-    padding: 1.35rem 1.35rem 1.25rem;
+    padding: 1.4rem 1.4rem 1.3rem;
     border-radius: 1.25rem;
     background:
-        linear-gradient(180deg, rgba(100, 58, 188, 0.08), transparent 28%),
-        #fff;
+        radial-gradient(ellipse 60% 40% at 100% 0%, rgba(255, 185, 17, 0.14), transparent 50%),
+        linear-gradient(180deg, rgba(100, 58, 188, 0.07), transparent 30%),
+        #fffcf8;
     border: 1px solid rgba(100, 58, 188, 0.14);
-    box-shadow: 0 24px 60px rgba(54, 30, 80, 0.28);
+    box-shadow: 0 28px 70px rgba(22, 12, 40, 0.35);
 }
 
 .cafe-ask-dialog__head {
@@ -5823,39 +6165,40 @@ a.rh-side-item:hover .rh-side-item__title {
 
 .cafe-ask-dialog__eyebrow {
     margin: 0 0 0.25rem;
-    font-size: 0.82rem;
+    font-size: 0.88rem;
     font-weight: 700;
-    color: var(--primary, #643abc);
+    color: var(--cafe-violet, #643abc);
 }
 
 .cafe-ask-dialog__title {
     margin: 0;
-    font-size: 1.35rem;
+    font-size: 1.4rem;
     font-weight: 800;
-    color: var(--primary-dark, #361e50);
+    color: var(--cafe-plum, #361e50);
 }
 
 .cafe-ask-dialog__close {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2.4rem;
-    height: 2.4rem;
+    width: 2.5rem;
+    height: 2.5rem;
     border: 0;
     border-radius: 999px;
     background: rgba(100, 58, 188, 0.08);
-    color: var(--primary-dark, #361e50);
+    color: var(--cafe-plum, #361e50);
     cursor: pointer;
+    transition: background 0.2s ease;
 }
 
 .cafe-ask-dialog__close:hover {
-    background: rgba(100, 58, 188, 0.14);
+    background: rgba(100, 58, 188, 0.16);
 }
 
 .cafe-ask-dialog__lead {
     margin: 0;
-    color: var(--text-light, #8a858b);
-    line-height: 1.7;
+    color: var(--cafe-muted, #6b6574);
+    line-height: 1.75;
     font-size: 0.95rem;
 }
 
@@ -5869,27 +6212,32 @@ a.rh-side-item:hover .rh-side-item__title {
 
 .cafe-ask-dialog__cancel,
 .cafe-ask-dialog__submit {
-    min-height: 2.7rem;
-    padding: 0.65rem 1.15rem;
-    border-radius: 0.9rem;
+    min-height: 2.75rem;
+    padding: 0.65rem 1.2rem;
+    border-radius: 0.85rem;
     font: inherit;
     font-weight: 700;
     cursor: pointer;
+    transition: filter 0.2s ease, background 0.2s ease;
 }
 
 .cafe-ask-dialog__cancel {
-    border: 1px solid var(--border, #eae7ec);
+    border: 1px solid rgba(100, 58, 188, 0.16);
     background: #fff;
     color: var(--text, #242027);
 }
 
+.cafe-ask-dialog__cancel:hover {
+    background: #f7f3ff;
+}
+
 .cafe-ask-dialog__submit {
     border: 0;
-    background: linear-gradient(135deg, #643abc, #4d2d99);
+    background: linear-gradient(135deg, #643abc, #4a2d9c);
     color: #fff;
     box-shadow: 0 10px 22px rgba(100, 58, 188, 0.28);
 }
 
 .cafe-ask-dialog__submit:hover {
-    filter: brightness(1.05);
+    filter: brightness(1.06);
 }
