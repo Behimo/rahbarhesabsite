@@ -60,15 +60,17 @@ class CafeQuestionController extends SiteController
         $question = CafeQuestion::query()
             ->published()
             ->where('slug', $slug)
-            ->with(['user', 'answers' => function ($query) {
-                $query->with('user')->orderByDesc('is_official')->orderBy('created_at');
-            }])
+            ->with([
+                'user',
+                'officialAnswer.user',
+                'communityAnswers' => fn ($query) => $query->with('user')->orderBy('created_at'),
+            ])
             ->firstOrFail();
 
         $question->increment('views_count');
 
-        $official = $question->answers->firstWhere('is_official', true);
-        $community = $question->answers->where('is_official', false)->values();
+        $official = $question->officialAnswer;
+        $community = $question->communityAnswers;
 
         $seo = $this->seo->meta([
             'title' => $question->title.' | کافه سوال',

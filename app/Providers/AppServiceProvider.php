@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Helpers\Helpers;
+use App\Models\CafeAnswer;
 use App\Models\Category;
 use App\Models\User;
+use App\Observers\CafeAnswerObserver;
 use App\Observers\CategoryObserver;
 use App\Services\BlockRegistry;
 use App\Services\BlockRenderer;
@@ -46,6 +48,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Schema::defaultStringLength(191);
         Category::observe(CategoryObserver::class);
+        CafeAnswer::observe(CafeAnswerObserver::class);
 
         Gate::before(function ($user, string $ability) {
             if (! $user instanceof User) {

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CafeQuestion extends Model
@@ -34,8 +35,6 @@ class CafeQuestion extends Model
         'rejection_reason',
         'answered_at',
         'rejected_at',
-        'views_count',
-        'answers_count',
     ];
 
     protected function casts(): array
@@ -58,9 +57,14 @@ class CafeQuestion extends Model
         return $this->hasMany(CafeAnswer::class);
     }
 
-    public function officialAnswer(): HasMany
+    public function officialAnswer(): HasOne
     {
-        return $this->answers()->where('is_official', true);
+        return $this->hasOne(CafeAnswer::class)->where('is_official', true);
+    }
+
+    public function communityAnswers(): HasMany
+    {
+        return $this->hasMany(CafeAnswer::class)->where('is_official', false);
     }
 
     public function scopePublished(Builder $query): Builder
