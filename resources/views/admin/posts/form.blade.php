@@ -63,13 +63,16 @@
                         <textarea name="excerpt" rows="2" class="form-control" maxlength="500">{{ old('excerpt', $post->excerpt) }}</textarea>
                     </div>
 
-                    <div class="mb-0">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <label class="form-label mb-0">متن مقاله</label>
-                            <button type="button" class="btn btn-sm btn-outline-primary" id="ckeditor-media-btn">درج از رسانه</button>
-                        </div>
-                        <textarea name="body" id="post-body" rows="18" class="form-control">{{ old('body', $post->body) }}</textarea>
-                    </div>
+                    <x-admin.ckeditor
+                        name="body"
+                        id="post-body"
+                        label="متن مقاله"
+                        :value="old('body', $post->body)"
+                        :rows="18"
+                        toolbar="full"
+                        :media-button="true"
+                        class="mb-0"
+                    />
                 </div>
             </div>
 
@@ -196,7 +199,6 @@
 @endsection
 
 @section('page-script')
-<script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
 <script>
 window.RahbarMediaPicker = (function () {
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content || @json(csrf_token());
@@ -373,92 +375,6 @@ document.addEventListener('DOMContentLoaded', () => {
     titleInput?.addEventListener('input', () => {
         if (!slugTouched || !slugInput.value) {
             slugInput.value = slugify(titleInput.value);
-        }
-    });
-
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.content || @json(csrf_token());
-    const mediaStoreUrl = @json(route('admin.media.store'));
-    let postEditor = null;
-
-    class MediaUploadAdapter {
-        constructor(loader) {
-            this.loader = loader;
-        }
-
-        upload() {
-            return this.loader.file.then((file) => {
-                const data = new FormData();
-                data.append('file', file);
-
-                return fetch(mediaStoreUrl, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': csrf,
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                    body: data,
-                }).then(async (res) => {
-                    const json = await res.json();
-                    if (!res.ok || !json.url) {
-                        throw new Error(json.message || 'آپلود ناموفق بود');
-                    }
-                    return { default: json.url };
-                });
-            });
-        }
-
-        abort() {}
-    }
-
-    function MediaUploadAdapterPlugin(editor) {
-        editor.plugins.get('FileRepository').createUploadAdapter = (loader) => new MediaUploadAdapter(loader);
-    }
-
-    function insertImage(editor, url) {
-        editor.model.change((writer) => {
-            const imageElement = writer.createElement('imageBlock', { src: url });
-            editor.model.insertContent(imageElement, editor.model.document.selection);
-        });
-    }
-
-    ClassicEditor.create(document.querySelector('#post-body'), {
-        extraPlugins: [MediaUploadAdapterPlugin],
-        toolbar: {
-            items: [
-                'heading', '|',
-                'bold', 'italic', 'link', '|',
-                'bulletedList', 'numberedList', '|',
-                'uploadImage', 'blockQuote', 'insertTable', '|',
-                'undo', 'redo'
-            ],
-            shouldNotGroupWhenFull: true,
-        },
-        image: {
-            toolbar: ['imageTextAlternative', '|', 'imageStyle:inline', 'imageStyle:block', 'imageStyle:side'],
-        },
-        table: {
-            contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells'],
-        },
-    }).then((editor) => {
-        postEditor = editor;
-        editor.editing.view.change((writer) => {
-            writer.setAttribute('dir', 'rtl', editor.editing.view.document.getRoot());
-        });
-
-        const mediaBtn = document.getElementById('ckeditor-media-btn');
-        mediaBtn?.addEventListener('click', () => {
-            window.RahbarMediaPicker.open({
-                onSelect(url) {
-                    insertImage(editor, url);
-                }
-            });
-        });
-    }).catch((err) => console.error(err));
-
-    document.getElementById('post-form')?.addEventListener('submit', () => {
-        if (postEditor) {
-            document.querySelector('#post-body').value = postEditor.getData();
         }
     });
 

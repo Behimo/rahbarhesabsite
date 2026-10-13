@@ -155,6 +155,81 @@ class CafeQuestionTest extends TestCase
         $this->assertSame(0, $question->fresh()->answers_count);
     }
 
+    public function test_admin_can_update_official_answer_after_publishing(): void
+    {
+        $admin = $this->makeAdmin();
+        $question = $this->answeredQuestion(User::factory()->create(), $admin);
+
+        $this->actingAs($admin)->put(route('admin.questions.update-answer', $question), [
+            'body' => 'پاسخ رسمی ویرایش‌شده با جزئیات بیشتر برای کاربر.',
+        ])->assertRedirect(route('admin.questions.show', $question));
+
+        $this->assertDatabaseHas('cafe_answers', [
+            'cafe_question_id' => $question->id,
+            'is_official' => true,
+            'body' => 'پاسخ رسمی ویرایش‌شده با جزئیات بیشتر برای کاربر.',
+        ]);
+    }
+
+    public function test_admin_can_change_question_status_after_answer(): void
+    {
+        $admin = $this->makeAdmin();
+        $question = $this->answeredQuestion(User::factory()->create(), $admin);
+
+        $this->actingAs($admin)->patch(route('admin.questions.update-status', $question), [
+            'status' => CafeQuestion::STATUS_PENDING,
+        ])->assertRedirect(route('admin.questions.show', $question));
+
+        $question->refresh();
+        $this->assertSame(CafeQuestion::STATUS_PENDING, $question->status);
+        $this->assertNull($question->answered_at);
+
+        $this->actingAs($admin)->patch(route('admin.questions.update-status', $question), [
+            'status' => CafeQuestion::STATUS_REJECTED,
+            'rejection_reason' => 'پس از بررسی بیشتر، این پرسش رد شد.',
+        ])->assertRedirect(route('admin.questions.show', $question));
+
+        $question->refresh();
+        $this->assertSame(CafeQuestion::STATUS_REJECTED, $question->status);
+        $this->assertSame('پس از بررسی بیشتر، این پرسش رد شد.', $question->rejection_reason);
+    }
+
+    public function test_admin_can_delete_community_answers(): void
+    {
+        $admin = $this->makeAdmin();
+        $communityUser = User::factory()->create();
+        $question = $this->answeredQuestion(User::factory()->create(), $admin);
+
+        $communityAnswer = $question->answers()->create([
+            'user_id' => $communityUser->id,
+            'body' => 'پاسخ کاربر جامعه که باید توسط ادمین حذف شود.',
+            'is_official' => false,
+        ]);
+
+        $this->assertSame(2, $question->fresh()->answers_count);
+
+        $this->actingAs($admin)->delete(route('admin.questions.answers.destroy', [$question, $communityAnswer]))
+            ->assertRedirect(route('admin.questions.show', $question));
+
+        $this->assertDatabaseMissing('cafe_answers', ['id' => $communityAnswer->id]);
+        $this->assertSame(1, $question->fresh()->answers_count);
+    }
+
+    public function test_admin_cannot_delete_official_answer_via_community_route(): void
+    {
+        $admin = $this->makeAdmin();
+        $question = $this->answeredQuestion(User::factory()->create(), $admin);
+        $official = $question->officialAnswer;
+
+        $this->actingAs($admin)->delete(route('admin.questions.answers.destroy', [$question, $official]))
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('cafe_answers', [
+            'id' => $official->id,
+            'is_official' => true,
+        ]);
+    }
+
     private function pendingQuestion(User $owner): CafeQuestion
     {
         return CafeQuestion::query()->create([

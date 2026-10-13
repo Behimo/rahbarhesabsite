@@ -21,6 +21,7 @@ export default defineConfig({
 
         'resources/css/admin-auth.scss',
         'resources/js/admin-auth.js',
+        'resources/js/admin-ckeditor.js',
 
         // Vuexy admin — core theme
         'resources/css/admin-font.css',

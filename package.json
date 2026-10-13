@@ -175,6 +175,7 @@
     "pdfmake": "~0.2.9",
     "perfect-scrollbar": "~1.5.5",
     "plyr": "^3.7.8",
+    "@ckeditor/ckeditor5-build-classic": "41.4.2",
     "quill": "~1.3.7",
     "rateyo": "~2.3.5",
     "select2": "~4.0.13",

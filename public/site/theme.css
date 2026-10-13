@@ -5805,6 +5805,55 @@ a.rh-side-item:hover .rh-side-item__title {
     color: var(--text, #242027);
 }
 
+.cafe-answer__body--rich {
+    white-space: normal;
+}
+
+.cafe-answer__body--rich > *:first-child {
+    margin-top: 0;
+}
+
+.cafe-answer__body--rich > *:last-child {
+    margin-bottom: 0;
+}
+
+.cafe-answer__body--rich p {
+    margin: 0 0 0.85em;
+}
+
+.cafe-answer__body--rich ul,
+.cafe-answer__body--rich ol {
+    margin: 0 0 0.85em;
+    padding-inline-start: 1.4rem;
+}
+
+.cafe-answer__body--rich blockquote {
+    margin: 0 0 0.85em;
+    padding: 0.55rem 0.9rem;
+    border-inline-start: 3px solid rgba(100, 58, 188, 0.35);
+    background: rgba(100, 58, 188, 0.05);
+    color: var(--cafe-muted, #6b6574);
+}
+
+.cafe-answer__body--rich table {
+    width: 100%;
+    margin: 0 0 0.85em;
+    border-collapse: collapse;
+}
+
+.cafe-answer__body--rich th,
+.cafe-answer__body--rich td {
+    border: 1px solid rgba(100, 58, 188, 0.16);
+    padding: 0.45rem 0.6rem;
+    text-align: start;
+}
+
+.cafe-answer__body--rich a {
+    color: var(--cafe-violet, #643abc);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
 .cafe-section-title {
     margin: 0 0 1rem;
     font-size: 1.2rem;

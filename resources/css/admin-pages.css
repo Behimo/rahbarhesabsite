@@ -111,6 +111,28 @@
   white-space: pre-wrap;
 }
 
+.admin-prose--rich {
+  white-space: normal;
+}
+
+.admin-prose--rich > *:first-child {
+  margin-top: 0;
+}
+
+.admin-prose--rich > *:last-child {
+  margin-bottom: 0;
+}
+
+.admin-prose--rich p {
+  margin: 0 0 0.75em;
+}
+
+.admin-prose--rich ul,
+.admin-prose--rich ol {
+  margin: 0 0 0.75em;
+  padding-inline-start: 1.35rem;
+}
+
 @media (min-width: 1200px) {
   .admin-form-side {
     position: sticky;

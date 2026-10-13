@@ -66,7 +66,7 @@
                         <strong>{{ $official->user?->displayName() ?? 'کارشناس' }}</strong>
                         <time datetime="{{ $official->created_at->toDateString() }}">{{ fa_date($official->created_at) }}</time>
                     </div>
-                    <div class="cafe-answer__body">{{ $official->body }}</div>
+                    <div class="cafe-answer__body cafe-answer__body--rich">{!! clean_html($official->body) !!}</div>
                 </article>
             @endif
 

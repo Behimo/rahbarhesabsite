@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AnswerCafeQuestionRequest;
 use App\Http\Requests\Admin\RejectCafeQuestionRequest;
+use App\Http\Requests\Admin\UpdateCafeQuestionStatusRequest;
+use App\Models\CafeAnswer;
 use App\Models\CafeQuestion;
 use App\Notifications\QuestionAnsweredNotification;
 use App\Notifications\QuestionRejectedNotification;
@@ -116,6 +118,78 @@ final class CafeQuestionController extends Controller
         return redirect()
             ->route('admin.questions.show', $question)
             ->with('success', 'سوال رد شد و به کاربر اطلاع داده شد.');
+    }
+
+    public function updateAnswer(AnswerCafeQuestionRequest $request, CafeQuestion $question): RedirectResponse
+    {
+        $official = $question->officialAnswer;
+
+        if (! $official) {
+            return back()->with('error', 'پاسخ رسمی برای این سوال ثبت نشده است.');
+        }
+
+        $official->update([
+            'body' => $request->validated('body'),
+        ]);
+
+        return redirect()
+            ->route('admin.questions.show', $question)
+            ->with('success', 'پاسخ رسمی به‌روزرسانی شد.');
+    }
+
+    public function updateStatus(UpdateCafeQuestionStatusRequest $request, CafeQuestion $question): RedirectResponse
+    {
+        $status = $request->validated('status');
+
+        if ($status === CafeQuestion::STATUS_ANSWERED && ! $question->officialAnswer()->exists()) {
+            return back()
+                ->withInput()
+                ->with('error', 'برای وضعیت «پاسخ داده‌شده» ابتدا باید پاسخ رسمی ثبت شود.');
+        }
+
+        $payload = match ($status) {
+            CafeQuestion::STATUS_ANSWERED => [
+                'status' => CafeQuestion::STATUS_ANSWERED,
+                'answered_at' => $question->answered_at ?? now(),
+                'rejection_reason' => null,
+                'rejected_at' => null,
+            ],
+            CafeQuestion::STATUS_REJECTED => [
+                'status' => CafeQuestion::STATUS_REJECTED,
+                'rejection_reason' => $request->validated('rejection_reason'),
+                'rejected_at' => now(),
+                'answered_at' => null,
+            ],
+            default => [
+                'status' => CafeQuestion::STATUS_PENDING,
+                'rejection_reason' => null,
+                'rejected_at' => null,
+                'answered_at' => null,
+            ],
+        };
+
+        $question->update($payload);
+
+        return redirect()
+            ->route('admin.questions.show', $question)
+            ->with('success', 'وضعیت سوال به‌روزرسانی شد.');
+    }
+
+    public function destroyAnswer(CafeQuestion $question, CafeAnswer $answer): RedirectResponse
+    {
+        if ($answer->cafe_question_id !== $question->id) {
+            abort(404);
+        }
+
+        if ($answer->is_official) {
+            return back()->with('error', 'پاسخ رسمی را نمی‌توان حذف کرد؛ متن آن را ویرایش کنید.');
+        }
+
+        $answer->delete();
+
+        return redirect()
+            ->route('admin.questions.show', $question)
+            ->with('success', 'پاسخ کاربر حذف شد.');
     }
 
     public function destroy(CafeQuestion $question): RedirectResponse
