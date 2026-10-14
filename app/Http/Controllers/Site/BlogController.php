@@ -100,12 +100,14 @@ class BlogController extends SiteController
 
     private function articleSchema(CmsPost $post): array
     {
-        return [
+        return array_filter([
             '@context' => 'https://schema.org',
             '@type' => 'Article',
             'headline' => $post->title,
-            'description' => $post->excerpt,
+            'description' => $post->excerpt ?: null,
             'datePublished' => $post->published_at?->toIso8601String(),
+            'dateModified' => $post->updated_at?->toIso8601String(),
+            'image' => $post->featured_image ? $this->seo->meta(['og_image' => $post->featured_image])['og_image'] : null,
             'author' => [
                 '@type' => 'Person',
                 'name' => $post->author ?: config('cms.site_name_fa'),
@@ -114,6 +116,6 @@ class BlogController extends SiteController
                 '@type' => 'Organization',
                 'name' => config('cms.site_name'),
             ],
-        ];
+        ], fn ($value) => $value !== null && $value !== '');
     }
 }

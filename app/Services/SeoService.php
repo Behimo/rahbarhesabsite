@@ -14,11 +14,20 @@ class SeoService
             'keywords' => 'راهبر حساب, آموزش حسابداری, مالیات, rahbarhesab',
             'og_title' => config('cms.site_name_fa').' — خالق رهبران حسابداری',
             'og_image' => $this->absoluteUrl(config('cms.default_og_image')),
-            'robots' => 'index, follow',
-            'canonical' => url()->current(),
+            'robots' => $this->defaultRobots(),
+            'canonical' => $this->canonicalUrl(),
         ];
+        $meta = array_merge($defaults, array_filter($overrides, fn ($value) => $value !== null && $value !== ''));
 
-        return array_merge($defaults, array_filter($overrides));
+        if (! app()->environment('production')) {
+            $meta['robots'] = 'noindex, nofollow';
+        }
+
+        if (! empty($meta['og_image'])) {
+            $meta['og_image'] = $this->absoluteUrl($meta['og_image']);
+        }
+
+        return $meta;
     }
 
     public function forPage(string $slug, array $extra = []): array
@@ -129,11 +138,10 @@ class SeoService
     public function sitemapIndex(): array
     {
         return [
-            ['loc' => url('/post-sitemap.xml'), 'lastmod' => now()->toAtomString()],
-            ['loc' => url('/page-sitemap.xml'), 'lastmod' => now()->toAtomString()],
-            ['loc' => url('/course-sitemap.xml'), 'lastmod' => now()->toAtomString()],
-            ['loc' => url('/product-sitemap.xml'), 'lastmod' => now()->toAtomString()],
-            ['loc' => url('/law-sitemap.xml'), 'lastmod' => now()->toAtomString()],
+            ['loc' => $this->absoluteUrl('/post-sitemap.xml')],
+            ['loc' => $this->absoluteUrl('/page-sitemap.xml')],
+            ['loc' => $this->absoluteUrl('/course-sitemap.xml')],
+            ['loc' => $this->absoluteUrl('/law-sitemap.xml')],
         ];
     }
 
@@ -172,8 +180,7 @@ class SeoService
                 'home' => route('home'),
                 'about' => route('about'),
                 'contact' => route('contact'),
-                'services' => route('services'),
-                'why-bisan' => route('why-bisan'),
+                'services', 'why-bisan' => null,
                 default => $page->is_system ? null : route('pages.show', $page->slug),
             };
 
@@ -208,19 +215,8 @@ class SeoService
 
     public function productSitemapUrls(): array
     {
-        $urls = [
-            ['loc' => route('products.index'), 'priority' => '0.8', 'changefreq' => 'weekly'],
-        ];
-
-        foreach ($this->siteData->products() as $product) {
-            $urls[] = [
-                'loc' => route('products.show', $product['slug']),
-                'priority' => '0.8',
-                'changefreq' => 'weekly',
-            ];
-        }
-
-        return $urls;
+        // Legacy marketing-product routes redirect to the course listing; do not advertise them.
+        return [];
     }
 
     public function lawSitemapUrls(): array
@@ -257,7 +253,7 @@ class SeoService
             ],
             'offers' => [
                 '@type' => 'Offer',
-                'price' => $product->effectivePrice(),
+                'price' => $product->effectivePrice() * 10,
                 'priceCurrency' => 'IRR',
                 'availability' => 'https://schema.org/InStock',
             ],
@@ -269,19 +265,32 @@ class SeoService
         ];
     }
 
-    public function faqSchema(array $faqs): array
+    public function faqSchema(array $faqs): ?array
     {
+        $questions = collect($faqs)
+            ->map(fn ($faq) => [
+                'question' => trim((string) ($faq['q'] ?? $faq['question'] ?? '')),
+                'answer' => trim((string) ($faq['a'] ?? $faq['answer'] ?? '')),
+            ])
+            ->filter(fn ($faq) => $faq['question'] !== '' && $faq['answer'] !== '')
+            ->map(fn ($faq) => [
+                '@type' => 'Question',
+                'name' => $faq['question'],
+                'acceptedAnswer' => [
+                    '@type' => 'Answer',
+                    'text' => $faq['answer'],
+                ],
+            ])
+            ->values();
+
+        if ($questions->isEmpty()) {
+            return null;
+        }
+
         return [
             '@context' => 'https://schema.org',
             '@type' => 'FAQPage',
-            'mainEntity' => collect($faqs)->map(fn ($faq) => [
-                '@type' => 'Question',
-                'name' => $faq['q'] ?? $faq['question'] ?? '',
-                'acceptedAnswer' => [
-                    '@type' => 'Answer',
-                    'text' => $faq['a'] ?? $faq['answer'] ?? '',
-                ],
-            ])->all(),
+            'mainEntity' => $questions->all(),
         ];
     }
 
@@ -325,16 +334,47 @@ class SeoService
         return $urls;
     }
 
+    private function defaultRobots(): string
+    {
+        if (request()->routeIs(['search', 'cart.*', 'checkout.*', 'login', 'login.verify', 'panel.*'])) {
+            return 'noindex, follow';
+        }
+
+        if (request()->hasAny(['s', 'replytocom'])) {
+            return 'noindex, follow';
+        }
+
+        foreach (array_keys(request()->query()) as $parameter) {
+            if (str_starts_with($parameter, 'utm_') || in_array($parameter, ['utm', 'ref', 'add-to-cart'], true)) {
+                return 'noindex, follow';
+            }
+        }
+
+        return 'index, follow';
+    }
+
+    private function canonicalUrl(): string
+    {
+        $base = rtrim((string) config('app.url'), '/');
+        $path = trim((string) request()->path(), '/');
+
+        return $base.($path === '' ? '/' : '/'.$path);
+    }
+
     private function absoluteUrl(?string $path): ?string
     {
         if (! $path) {
             return null;
         }
 
-        if (str_starts_with($path, 'http')) {
+        if (str_starts_with($path, '//')) {
+            return 'https:'.$path;
+        }
+
+        if (filter_var($path, FILTER_VALIDATE_URL)) {
             return $path;
         }
 
-        return url($path);
+        return rtrim((string) config('app.url'), '/').'/'.ltrim($path, '/');
     }
 }

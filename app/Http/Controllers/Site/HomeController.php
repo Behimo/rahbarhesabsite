@@ -31,6 +31,15 @@ class HomeController extends SiteController
             'og_title' => 'راهبر حساب — خالق رهبران حسابداری',
         ]);
 
+        $structuredData = [
+            $this->seo->organizationSchema(),
+            $this->seo->websiteSchema(),
+        ];
+        $faqSchema = $this->seo->faqSchema($content['faqs']);
+        if ($faqSchema) {
+            $structuredData[] = $faqSchema;
+        }
+
         return $this->renderSystemPage('home', 'pages.home', [
             'heading_small' => $about['heading_small'],
             'heading' => $about['heading'],
@@ -46,11 +55,7 @@ class HomeController extends SiteController
             'courses' => $this->publishedCourses(12),
             'freeCourses' => $this->publishedCourses(6, freeOnly: true),
             'seo' => $seo,
-            'structuredData' => [
-                $this->seo->organizationSchema(),
-                $this->seo->websiteSchema(),
-                $this->seo->faqSchema($content['faqs']),
-            ],
+            'structuredData' => $structuredData,
         ]);
     }
 

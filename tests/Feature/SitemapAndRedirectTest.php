@@ -7,6 +7,7 @@ use App\Models\CmsPost;
 use App\Models\CmsProduct;
 use App\Models\CmsRedirect;
 use App\Models\ShopProduct;
+use App\Services\SeoService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -112,7 +113,75 @@ class SitemapAndRedirectTest extends TestCase
 
         $this->get(route('sitemap.products'))
             ->assertOk()
-            ->assertSee(route('products.show', 'live-sitemap-product'), false)
-            ->assertDontSee('draft-sitemap-product', false);
+            ->assertDontSee(route('products.show', 'live-sitemap-product'), false)
+            ->assertDontSee(route('products.index'), false);
+    }
+
+    public function test_robots_and_non_production_responses_block_indexing(): void
+    {
+        $this->get(route('robots'))
+            ->assertOk()
+            ->assertSee('Disallow: /', false)
+            ->assertDontSee('127.0.0.1', false)
+            ->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+    }
+
+    public function test_search_is_noindex_and_canonical_omits_query_parameters(): void
+    {
+        $this->get('/search?q=tax&utm_source=campaign')
+            ->assertOk()
+            ->assertSee('<meta name="robots" content="noindex, nofollow">', false)
+            ->assertSee('<link rel="canonical" href="'.rtrim(config('app.url'), '/').'/search">', false);
+    }
+
+    public function test_sitemap_does_not_fabricate_lastmod_dates(): void
+    {
+        $response = $this->get(route('sitemap.products'))->assertOk();
+
+        $this->assertStringNotContainsString('<lastmod>', $response->getContent());
+
+        $this->get(route('sitemap.index'))
+            ->assertOk()
+            ->assertDontSee('<lastmod>', false);
+    }
+
+    public function test_course_schema_converts_toman_amount_to_rials(): void
+    {
+        $product = ShopProduct::factory()->course()->create([
+            'price' => 125000,
+            'sale_price' => 99000,
+        ]);
+
+        $schema = app(SeoService::class)->courseSchema($product);
+
+        $this->assertSame(990000, $schema['offers']['price']);
+        $this->assertSame('IRR', $schema['offers']['priceCurrency']);
+    }
+
+    public function test_faq_schema_omits_empty_or_incomplete_faqs(): void
+    {
+        $seo = app(SeoService::class);
+
+        $this->assertNull($seo->faqSchema([['q' => 'بدون پاسخ', 'a' => '']]));
+        $schema = $seo->faqSchema([
+            ['q' => 'پرسش معتبر', 'a' => 'پاسخ معتبر'],
+            ['q' => '', 'a' => 'پاسخ بدون پرسش'],
+        ]);
+
+        $this->assertCount(1, $schema['mainEntity']);
+        $this->assertSame('پرسش معتبر', $schema['mainEntity'][0]['name']);
+    }
+
+    public function test_article_schema_contains_real_modification_date_and_image_when_available(): void
+    {
+        $post = CmsPost::factory()->published()->create([
+            'slug' => 'schema-article',
+            'featured_image' => '/storage/articles/cover.webp',
+        ]);
+
+        $this->get(route('blog.show', $post->slug))
+            ->assertOk()
+            ->assertSee('"dateModified":"'.$post->updated_at->toIso8601String().'"', false)
+            ->assertSee('twitter:image', false);
     }
 }

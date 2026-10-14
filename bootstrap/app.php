@@ -6,6 +6,7 @@ use App\Http\Middleware\EnsureApiToken;
 use App\Http\Middleware\EnsureCmsAdmin;
 use App\Http\Middleware\EnsureUser;
 use App\Http\Middleware\HandleCmsRedirects;
+use App\Http\Middleware\PreventIndexingNonProduction;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -26,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->append(HandleCmsRedirects::class);
+        $middleware->append(PreventIndexingNonProduction::class);
 
         $proxies = env('TRUSTED_PROXIES');
 

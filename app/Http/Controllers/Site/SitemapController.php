@@ -51,14 +51,23 @@ class SitemapController extends Controller
 
     public function robots(): Response
     {
-        $sitemap = url('/sitemap_index.xml');
-        $content = "User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /panel/\n\nSitemap: {$sitemap}";
+        $baseUrl = rtrim((string) config('app.url'), '/');
+        $content = app()->environment('production')
+            ? "User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /panel/\n\nSitemap: {$baseUrl}/sitemap_index.xml"
+            : "User-agent: *\nDisallow: /";
 
         return response($content, 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
     }
 
     private function renderSitemap(array $urls): Response
     {
+        $baseUrl = rtrim((string) config('app.url'), '/');
+        $urls = array_map(function (array $item) use ($baseUrl): array {
+            $path = parse_url($item['loc'], PHP_URL_PATH) ?: '/';
+            $item['loc'] = $baseUrl.'/'.ltrim($path, '/');
+
+            return $item;
+        }, $urls);
         $xml = view('sitemap', compact('urls'))->render();
 
         return response($xml, 200, ['Content-Type' => 'application/xml; charset=UTF-8']);

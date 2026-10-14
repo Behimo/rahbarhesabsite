@@ -57,6 +57,20 @@
                 </div>
             </div>
 
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">تنظیمات سئو</h5></div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label" for="course-meta-title">عنوان سئو</label>
+                        <input id="course-meta-title" type="text" name="meta_title" value="{{ old('meta_title', $product->meta_title) }}" class="form-control" maxlength="200">
+                    </div>
+                    <div>
+                        <label class="form-label" for="course-meta-description">توضیحات متا</label>
+                        <textarea id="course-meta-description" name="meta_description" rows="3" class="form-control" maxlength="500">{{ old('meta_description', $product->meta_description) }}</textarea>
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-header"><h5 class="mb-0">جایگاه در درخت محصول</h5></div>
                 <div class="card-body">

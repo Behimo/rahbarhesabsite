@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    @php $seoMeta = $seo ?? []; @endphp
+    @php $seoMeta = $seo ?? app(\App\Services\SeoService::class)->meta(); @endphp
 
     <title>{{ $seoMeta['title'] ?? config('cms.site_name_fa') }}</title>
     <meta name="description" content="{{ $seoMeta['description'] ?? '' }}">
@@ -28,9 +28,12 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ $seoMeta['og_title'] ?? $seoMeta['title'] ?? '' }}">
     <meta name="twitter:description" content="{{ $seoMeta['description'] ?? '' }}">
+    @if (!empty($seoMeta['og_image']))
+        <meta name="twitter:image" content="{{ $seoMeta['og_image'] }}">
+    @endif
 
     <link rel="icon" href="{{ asset('site/images/logorahbarhesab.webp') }}">
-    <link rel="alternate" hreflang="fa-IR" href="{{ url()->current() }}">
+    <link rel="alternate" hreflang="fa-IR" href="{{ $seoMeta['canonical'] ?? url()->current() }}">
     @php
         $sitePublic = public_path('site');
         $siteVer = fn (string $file) => file_exists($sitePublic . '/' . $file) ? filemtime($sitePublic . '/' . $file) : time();
