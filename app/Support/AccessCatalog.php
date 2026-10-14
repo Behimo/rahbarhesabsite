@@ -74,6 +74,7 @@ class AccessCatalog
             'courses' => ['label' => 'دوره‌ها', 'actions' => $crud],
             'orders' => ['label' => 'سفارش، لایسنس و تخفیف', 'actions' => $crud],
             'posts' => ['label' => 'بلاگ و محصولات', 'actions' => $crud],
+            'laws' => ['label' => 'مواد قانونی', 'actions' => $crud],
             'pages' => ['label' => 'صفحات', 'actions' => $crud],
             'popups' => ['label' => 'پاپ‌آپ‌ها', 'actions' => $crud],
             'sidebars' => ['label' => 'سایدبارها', 'actions' => $crud],
@@ -172,7 +173,7 @@ class AccessCatalog
         $groups = match ($role) {
             self::ROLE_ADMIN => array_keys(self::groups()),
             self::ROLE_SHOP_MANAGER => ['orders', 'courses'],
-            self::ROLE_EDITOR => ['posts', 'pages', 'popups', 'sidebars', 'media', 'menus', 'taxonomies', 'messages', 'questions'],
+            self::ROLE_EDITOR => ['posts', 'laws', 'pages', 'popups', 'sidebars', 'media', 'menus', 'taxonomies', 'messages', 'questions'],
             self::ROLE_INSTRUCTOR => ['courses', 'media'],
             default => [],
         };
@@ -203,6 +204,7 @@ class AccessCatalog
             'admin.coupons' => 'orders',
             'admin.posts' => 'posts',
             'admin.products' => 'posts',
+            'admin.laws' => 'laws',
             'admin.pages' => 'pages',
             'admin.popups' => 'popups',
             'admin.sidebars' => 'sidebars',
@@ -364,7 +366,7 @@ class AccessCatalog
 
     private static function actionForRoute(string $routeName): string
     {
-        if (str_contains($routeName, '.sections.') || str_contains($routeName, '.lessons.')) {
+        if (str_contains($routeName, '.sections.') || str_contains($routeName, '.lessons.') || str_contains($routeName, '.evolutions.')) {
             return self::UPDATE;
         }
 
@@ -376,6 +378,7 @@ class AccessCatalog
             'admin.licenses.reissue' => self::UPDATE,
             'admin.posts.duplicate' => self::CREATE,
             'admin.posts.force-destroy' => self::DELETE,
+            'admin.laws.force-destroy' => self::DELETE,
             'admin.questions.answer' => self::UPDATE,
             'admin.questions.update' => self::UPDATE,
             'admin.questions.reject' => self::UPDATE,

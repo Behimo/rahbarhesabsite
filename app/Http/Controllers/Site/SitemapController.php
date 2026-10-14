@@ -44,6 +44,11 @@ class SitemapController extends Controller
         return $this->renderSitemap($this->seo->productSitemapUrls());
     }
 
+    public function laws(): Response
+    {
+        return $this->renderSitemap($this->seo->lawSitemapUrls());
+    }
+
     public function robots(): Response
     {
         $sitemap = url('/sitemap_index.xml');

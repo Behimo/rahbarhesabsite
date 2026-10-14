@@ -21,6 +21,8 @@ class Category extends Model
 
     public const TYPE_CAFE = 'cafe';
 
+    public const TYPE_LAW = 'law';
+
     public int $treeDepth = 0;
 
     /**
@@ -32,6 +34,7 @@ class Category extends Model
             self::TYPE_POST => 'بلاگ',
             self::TYPE_PRODUCT => 'محصول و دوره',
             self::TYPE_CAFE => 'کافه سوال',
+            self::TYPE_LAW => 'مواد قانونی',
         ];
     }
 
@@ -71,6 +74,11 @@ class Category extends Model
     public function cafeQuestions(): MorphToMany
     {
         return $this->morphedByMany(CafeQuestion::class, 'categoryable')->withPivot('is_primary')->withTimestamps();
+    }
+
+    public function accountingLaws(): MorphToMany
+    {
+        return $this->morphedByMany(AccountingLaw::class, 'categoryable')->withPivot('is_primary')->withTimestamps();
     }
 
     public function categoryables(): HasMany

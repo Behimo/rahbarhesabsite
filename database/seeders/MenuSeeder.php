@@ -61,6 +61,11 @@ class MenuSeeder extends Seeder
                     $this->blogCategory('مقالات آموزش حسابداری', 'blogs'),
                     $this->blogCategory('اخبار حسابداری', 'news'),
                     $this->blogCategory('نمونه سوالات', 'sample-questions'),
+                    [
+                        'label' => 'مواد قانونی',
+                        'type' => 'route',
+                        'route_name' => 'laws.index',
+                    ],
                     $this->page('فرم قیمت گذاری پروژه توسط راهبرحساب', 'lan-pricingoffancialprojects'),
                     $this->page('محاسبه عیدی و سنوات پایان سال', 'calculation-of-eid-and-year-end-annuities'),
                 ],

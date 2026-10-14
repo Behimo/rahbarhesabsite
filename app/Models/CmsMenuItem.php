@@ -52,6 +52,9 @@ class CmsMenuItem extends Model
                 'course' => isset($this->meta['slug'])
                     ? route('courses.show', $this->meta['slug'])
                     : '#',
+                'law' => isset($this->meta['slug'])
+                    ? route('laws.show', $this->meta['slug'])
+                    : '#',
                 default => $this->url ?: '#',
             };
         } catch (\Throwable) {

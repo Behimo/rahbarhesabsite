@@ -10,6 +10,7 @@
     { "url": "admin/popups", "name": "پاپ‌آپ‌ها", "icon": "menu-icon tf-icons ti ti-app-window", "slug": "admin.popups" },
     { "url": "admin/sidebars", "name": "سایدبارها", "icon": "menu-icon tf-icons ti ti-layout-sidebar", "slug": "admin.sidebars" },
     { "url": "admin/posts", "name": "بلاگ", "icon": "menu-icon tf-icons ti ti-article", "slug": "admin.posts" },
+    { "url": "admin/laws", "name": "مواد قانونی", "icon": "menu-icon tf-icons ti ti-gavel", "slug": "admin.laws" },
     {
       "name": "دسته‌بندی",
       "icon": "menu-icon tf-icons ti ti-category",
@@ -18,6 +19,7 @@
         { "url": "admin/categories?type=post", "name": "دسته‌های بلاگ", "slug": "admin.categories.index" },
         { "url": "admin/categories?type=product", "name": "دسته‌های محصول", "slug": "admin.categories.index" },
         { "url": "admin/categories?type=cafe", "name": "دسته‌های کافه سوال", "slug": "admin.categories.index" },
+        { "url": "admin/categories?type=law", "name": "دسته‌های مواد قانونی", "slug": "admin.categories.index" },
         { "url": "admin/tags", "name": "برچسب‌ها", "slug": "admin.tags" }
       ]
     },

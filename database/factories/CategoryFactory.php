@@ -49,6 +49,13 @@ class CategoryFactory extends Factory
         ]);
     }
 
+    public function law(): static
+    {
+        return $this->state(fn () => [
+            'type' => Category::TYPE_LAW,
+        ]);
+    }
+
     public function childOf(Category $parent): static
     {
         return $this->state(fn () => [

@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\GatewayController as AdminGatewayController;
 use App\Http\Controllers\Admin\HomeController as AdminHomeController;
 use App\Http\Controllers\Admin\ImportExportController;
+use App\Http\Controllers\Admin\LawController as AdminLawController;
 use App\Http\Controllers\Admin\LicenseController as AdminLicenseController;
 use App\Http\Controllers\Admin\MediaController as AdminMediaController;
 use App\Http\Controllers\Admin\MenuController as AdminMenuController;
@@ -33,6 +34,7 @@ use App\Http\Controllers\Site\CafeQuestionController;
 use App\Http\Controllers\Site\ContactController;
 use App\Http\Controllers\Site\CourseController;
 use App\Http\Controllers\Site\HomeController;
+use App\Http\Controllers\Site\LawController;
 use App\Http\Controllers\Site\PageController;
 use App\Http\Controllers\Site\SearchController;
 use App\Http\Controllers\Site\ShopController;
@@ -58,6 +60,7 @@ Route::controller(SitemapController::class)->group(function () {
     Route::get('/page-sitemap.xml', 'pages')->name('sitemap.pages');
     Route::get('/course-sitemap.xml', 'courses')->name('sitemap.courses');
     Route::get('/product-sitemap.xml', 'products')->name('sitemap.products');
+    Route::get('/law-sitemap.xml', 'laws')->name('sitemap.laws');
     Route::get('/robots.txt', 'robots')->name('robots');
 });
 
@@ -94,6 +97,12 @@ Route::get('/products/{slug}', fn () => redirect()->route('courses.index', [], 3
 
 // Blog
 Route::controller(BlogController::class)->prefix('blog')->name('blog.')->group(function () {
+    Route::get('/', 'index')->name('index');
+    Route::get('/{slug}', 'show')->name('show');
+});
+
+// Accounting Laws (مواد قانونی)
+Route::controller(LawController::class)->prefix('laws')->name('laws.')->group(function () {
     Route::get('/', 'index')->name('index');
     Route::get('/{slug}', 'show')->name('show');
 });
@@ -232,6 +241,23 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::put('/{post}', 'update')->name('update');
             Route::delete('/{post}', 'destroy')->name('destroy');
         });
+
+        Route::controller(AdminLawController::class)->prefix('laws')->name('laws.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/create', 'create')->name('create');
+            Route::post('/', 'store')->name('store');
+            Route::get('/{law}/preview', 'preview')->name('preview');
+            Route::post('/{id}/restore', 'restore')->name('restore');
+            Route::delete('/{id}/force', 'forceDestroy')->name('force-destroy');
+            Route::get('/{law}/edit', 'edit')->name('edit');
+            Route::put('/{law}', 'update')->name('update');
+            Route::delete('/{law}', 'destroy')->name('destroy');
+
+            Route::post('/{law}/evolutions', 'storeEvolution')->name('evolutions.store');
+            Route::put('/{law}/evolutions/{evolution}', 'updateEvolution')->name('evolutions.update');
+            Route::delete('/{law}/evolutions/{evolution}', 'destroyEvolution')->name('evolutions.destroy');
+        });
+
         Route::resource('categories', AdminCategoryController::class)->except(['show']);
         Route::resource('tags', AdminTagController::class)->except(['create', 'edit', 'show']);
 

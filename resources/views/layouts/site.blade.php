@@ -51,7 +51,7 @@
     @include('components.navbar', ['navLinks' => $navLinks ?? []])
 
     @php $pageSidebars = app(\App\Services\SidebarService::class)->current(); @endphp
-    <main @class(['rh-inner-page' => ! request()->routeIs(['home', 'about', 'contact', 'courses.index', 'courses.show', 'blog.*', 'cafe-soal.*', 'panel.*', 'login', 'login.verify', 'cart.index', 'checkout.index', 'checkout.success', 'checkout.failed', 'search'])])>
+    <main @class(['rh-inner-page' => ! request()->routeIs(['home', 'about', 'contact', 'courses.index', 'courses.show', 'blog.*', 'cafe-soal.*', 'laws.*', 'panel.*', 'login', 'login.verify', 'cart.index', 'checkout.index', 'checkout.success', 'checkout.failed', 'search'])])>
         @yield('page-banner')
         @if ($pageSidebars->isNotEmpty())
             <div @class([

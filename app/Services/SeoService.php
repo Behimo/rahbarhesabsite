@@ -133,6 +133,7 @@ class SeoService
             ['loc' => url('/page-sitemap.xml'), 'lastmod' => now()->toAtomString()],
             ['loc' => url('/course-sitemap.xml'), 'lastmod' => now()->toAtomString()],
             ['loc' => url('/product-sitemap.xml'), 'lastmod' => now()->toAtomString()],
+            ['loc' => url('/law-sitemap.xml'), 'lastmod' => now()->toAtomString()],
         ];
     }
 
@@ -160,6 +161,7 @@ class SeoService
             ['loc' => route('home'), 'priority' => '1.0', 'changefreq' => 'daily'],
             ['loc' => route('courses.index'), 'priority' => '0.9', 'changefreq' => 'daily'],
             ['loc' => route('cafe-soal.index'), 'priority' => '0.8', 'changefreq' => 'daily'],
+            ['loc' => route('laws.index'), 'priority' => '0.8', 'changefreq' => 'weekly'],
             ['loc' => route('about'), 'priority' => '0.7', 'changefreq' => 'monthly'],
             ['loc' => route('contact'), 'priority' => '0.8', 'changefreq' => 'monthly'],
         ];
@@ -215,6 +217,24 @@ class SeoService
                 'loc' => route('products.show', $product['slug']),
                 'priority' => '0.8',
                 'changefreq' => 'weekly',
+            ];
+        }
+
+        return $urls;
+    }
+
+    public function lawSitemapUrls(): array
+    {
+        $urls = [
+            ['loc' => route('laws.index'), 'priority' => '0.8', 'changefreq' => 'weekly'],
+        ];
+
+        foreach (\App\Models\AccountingLaw::query()->published()->get() as $law) {
+            $urls[] = [
+                'loc' => route('laws.show', $law->slug),
+                'priority' => '0.7',
+                'changefreq' => 'monthly',
+                'lastmod' => $law->updated_at?->toAtomString(),
             ];
         }
 

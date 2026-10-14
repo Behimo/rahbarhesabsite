@@ -32,6 +32,10 @@ class AdminNavigation
             return ['url' => route('admin.posts.index'), 'label' => 'بازگشت'];
         }
 
+        if ($name === 'admin.laws.index' && $request->boolean('trashed')) {
+            return ['url' => route('admin.laws.index'), 'label' => 'بازگشت'];
+        }
+
         $toIndex = [
             'admin.pages.create' => 'admin.pages.index',
             'admin.pages.edit' => 'admin.pages.index',
@@ -42,6 +46,8 @@ class AdminNavigation
             'admin.pages.builder' => 'admin.pages.index',
             'admin.posts.create' => 'admin.posts.index',
             'admin.posts.edit' => 'admin.posts.index',
+            'admin.laws.create' => 'admin.laws.index',
+            'admin.laws.edit' => 'admin.laws.index',
             'admin.courses.create' => 'admin.courses.index',
             'admin.courses.edit' => 'admin.courses.index',
             'admin.products.create' => 'admin.products.index',
