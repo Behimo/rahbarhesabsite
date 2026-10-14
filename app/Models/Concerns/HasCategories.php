@@ -3,6 +3,7 @@
 namespace App\Models\Concerns;
 
 use App\Models\Category;
+use App\Services\CategoryService;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 trait HasCategories
@@ -33,8 +34,14 @@ trait HasCategories
             $ids[] = $primaryId;
         }
 
+        $types = $this->categories()->pluck('categories.type')->all();
+        if ($ids !== []) {
+            $types = array_merge($types, Category::query()->whereIn('id', $ids)->pluck('type')->all());
+        }
+
         if ($ids === []) {
             $this->categories()->detach();
+            $this->forgetCategoryCaches($types);
 
             return;
         }
@@ -47,5 +54,16 @@ trait HasCategories
         }
 
         $this->categories()->sync($sync);
+        $this->forgetCategoryCaches($types);
+    }
+
+    /** @param  array<int, string>  $types */
+    private function forgetCategoryCaches(array $types): void
+    {
+        $service = app(CategoryService::class);
+
+        foreach (array_unique($types) as $type) {
+            $service->forget($type);
+        }
     }
 }

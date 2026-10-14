@@ -8,8 +8,10 @@ use App\Models\CourseEnrollment;
 use App\Models\ShopProduct;
 use App\Models\SpotplayerLicense;
 use App\Models\User;
+use App\Services\OrderService;
 use App\Services\SpotPlayerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -36,6 +38,29 @@ class SpotplayerLicenseTest extends TestCase
                 && $job->courseId === $product->course->id
                 && $job->orderId === null;
         });
+    }
+
+    public function test_license_job_is_not_dispatched_when_enrollment_transaction_rolls_back(): void
+    {
+        Queue::fake();
+
+        $user = User::factory()->create();
+        $product = $this->freeCourse('sp-course-rollback');
+
+        try {
+            DB::transaction(function () use ($user, $product): void {
+                app(OrderService::class)->enrollUser($user, $product->course, null, CourseEnrollment::SOURCE_FREE);
+                throw new \RuntimeException('rollback test');
+            });
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('rollback test', $exception->getMessage());
+        }
+
+        $this->assertDatabaseMissing('course_enrollments', [
+            'user_id' => $user->id,
+            'course_id' => $product->course->id,
+        ]);
+        Queue::assertNotPushed(IssueSpotplayerLicenseJob::class);
     }
 
     public function test_free_enrollment_without_spotplayer_does_not_queue_a_license(): void

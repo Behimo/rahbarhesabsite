@@ -206,6 +206,31 @@ class AdminContentRegressionTest extends TestCase
             ->assertDontSee('<img src=x onerror=', false, 'Raw script from a non-admin role reached the page unescaped.');
     }
 
+    public function test_builder_editor_passes_normalized_content_to_external_script(): void
+    {
+        $admin = $this->makeAdmin();
+        $page = CmsPage::query()->create([
+            'slug' => 'legacy-columns',
+            'title' => 'Legacy columns',
+            'is_published' => true,
+            'status' => 'published',
+            'is_system' => false,
+            'builder_content' => [
+                'blocks' => [[
+                    'type' => 'columns',
+                    'settings' => ['columns' => [['content' => 'legacy column text']]],
+                ]],
+            ],
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.pages.builder', $page))
+            ->assertOk()
+            ->assertSee('window.pageBuilderConfig')
+            ->assertSee('legacy column text')
+            ->assertDontSee('function renderCanvas');
+    }
+
     public function test_malformed_builder_blocks_are_rejected_and_editor_stays_usable(): void
     {
         $admin = $this->makeAdmin();
@@ -226,6 +251,9 @@ class AdminContentRegressionTest extends TestCase
 
         $this->actingAs($admin)
             ->get(route('admin.pages.builder', $page))
-            ->assertOk();
+            ->assertOk()
+            ->assertSee('window.pageBuilderConfig')
+            ->assertSee('previewUrl')
+            ->assertDontSee('function renderCanvas');
     }
 }

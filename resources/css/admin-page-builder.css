@@ -1,0 +1,25 @@
+.builder-block { border: 1px solid var(--bs-border-color); border-radius: .5rem; margin-bottom: .75rem; background: var(--bs-body-bg); }
+.builder-block-header { display: flex; align-items: center; gap: .5rem; padding: .75rem 1rem; cursor: pointer; user-select: none; }
+.builder-block-header:hover { background: rgba(0,0,0,.03); }
+.builder-block-body { padding: 0 1rem 1rem; border-top: 1px solid var(--bs-border-color); }
+.builder-block.collapsed .builder-block-body { display: none; }
+.builder-field { margin-bottom: .75rem; }
+.builder-field label { font-size: .8125rem; font-weight: 600; margin-bottom: .25rem; display: block; }
+.builder-repeater-item { border: 1px dashed var(--bs-border-color); border-radius: .375rem; padding: .75rem; margin-bottom: .5rem; position: relative; }
+.builder-repeater-item .btn-remove-item { position: absolute; top: .5rem; left: .5rem; }
+.builder-image-preview { max-height: 80px; max-width: 100%; margin-top: .5rem; border-radius: .375rem; }
+.builder-empty { text-align: center; padding: 2rem; color: var(--bs-secondary-color); border: 2px dashed var(--bs-border-color); border-radius: .5rem; }
+#builder-preview { max-height: 70vh; overflow: auto; }
+#builder-preview .cms-block { font-size: .875rem; }
+.layout-column { border: 1px solid var(--bs-border-color); border-radius: .5rem; padding: .75rem; margin-bottom: .75rem; background: rgba(0,0,0,.015); }
+.layout-column-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .75rem; font-weight: 600; }
+.layout-section { border: 1px dashed var(--bs-border-color); border-radius: .375rem; padding: .75rem; margin-bottom: .5rem; background: var(--bs-body-bg); }
+.layout-section-title { font-size: .75rem; font-weight: 700; text-transform: uppercase; color: var(--bs-secondary-color); margin-bottom: .5rem; }
+.layout-nested-block { border: 1px solid var(--bs-border-color); border-radius: .375rem; margin-bottom: .5rem; }
+.layout-nested-header { display: flex; align-items: center; gap: .5rem; padding: .5rem .75rem; background: rgba(0,0,0,.03); cursor: pointer; }
+.layout-nested-body { padding: .75rem; border-top: 1px solid var(--bs-border-color); }
+.layout-nested-block.collapsed .layout-nested-body { display: none; }
+.layout-add-block { display: flex; gap: .5rem; align-items: center; margin-top: .5rem; }
+/* Keep icon controls steady while the icon font loads. */
+#builder-form .ti { width: 1.25rem; height: 1.25rem; flex: 0 0 1.25rem; overflow: hidden; line-height: 1; text-align: center; }
+#builder-form .btn { transform: none; transition: color .15s ease, background-color .15s ease, border-color .15s ease, box-shadow .15s ease; }

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\CourseLessonRequest;
+use App\Http\Requests\Admin\CourseSectionRequest;
 use App\Models\Category;
 use App\Models\Course;
 use App\Models\CourseLesson;
@@ -11,15 +13,20 @@ use App\Models\ShopProduct;
 use App\Models\User;
 use App\Rules\EnglishSlug;
 use App\Services\CategoryService;
+use App\Services\CourseCurriculumService;
 use App\Support\AccessCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class CourseController extends Controller
 {
-    public function __construct(private CategoryService $categories) {}
+    public function __construct(
+        private CategoryService $categories,
+        private CourseCurriculumService $curriculum,
+    ) {}
 
     public function index(): View
     {
@@ -50,9 +57,13 @@ class CourseController extends Controller
     {
         $validated = $this->validateCourse($request);
 
-        $product = ShopProduct::query()->create($validated['product']);
-        $product->course()->create($validated['course']);
-        $product->syncCategories($validated['category_ids'], $validated['primary_category_id']);
+        $product = DB::transaction(function () use ($validated) {
+            $product = ShopProduct::query()->create($validated['product']);
+            $product->course()->create($validated['course']);
+            $product->syncCategories($validated['category_ids'], $validated['primary_category_id']);
+
+            return $product;
+        });
 
         return redirect()->route('admin.courses.edit', $product)->with('success', 'دوره ایجاد شد.');
     }
@@ -81,9 +92,11 @@ class CourseController extends Controller
         abort_unless($course->type === ShopProduct::TYPE_COURSE, 404);
 
         $validated = $this->validateCourse($request, $course);
-        $course->update($validated['product']);
-        $course->course->update($validated['course']);
-        $course->syncCategories($validated['category_ids'], $validated['primary_category_id']);
+        DB::transaction(function () use ($course, $validated): void {
+            $course->update($validated['product']);
+            $course->course->update($validated['course']);
+            $course->syncCategories($validated['category_ids'], $validated['primary_category_id']);
+        });
 
         return back()->with('success', 'دوره به‌روزرسانی شد.');
     }
@@ -96,30 +109,20 @@ class CourseController extends Controller
         return redirect()->route('admin.courses.index')->with('success', 'دوره حذف شد.');
     }
 
-    public function storeSection(Request $request, ShopProduct $course): RedirectResponse
+    public function storeSection(CourseSectionRequest $request, ShopProduct $course): RedirectResponse
     {
         abort_unless($course->type === ShopProduct::TYPE_COURSE, 404);
 
-        $validated = $request->validate([
-            'title' => ['required', 'string', 'max:200'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
-        ]);
-
-        $course->course->sections()->create($validated);
+        $this->curriculum->createSection($course->course, $request->validated());
 
         return back()->with('success', 'فصل اضافه شد.');
     }
 
-    public function updateSection(Request $request, ShopProduct $course, CourseSection $section): RedirectResponse
+    public function updateSection(CourseSectionRequest $request, ShopProduct $course, CourseSection $section): RedirectResponse
     {
         abort_if($section->course_id !== $course->course->id, 404);
 
-        $validated = $request->validate([
-            'title' => ['required', 'string', 'max:200'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
-        ]);
-
-        $section->update($validated);
+        $this->curriculum->updateSection($section, $request->validated());
 
         return back()->with('success', 'فصل به‌روزرسانی شد.');
     }
@@ -127,55 +130,29 @@ class CourseController extends Controller
     public function destroySection(ShopProduct $course, CourseSection $section): RedirectResponse
     {
         abort_if($section->course_id !== $course->course->id, 404);
-        $section->delete();
+        $this->curriculum->deleteSection($section);
 
         return back()->with('success', 'فصل حذف شد.');
     }
 
-    public function storeLesson(Request $request, ShopProduct $course, CourseSection $section): RedirectResponse
+    public function storeLesson(CourseLessonRequest $request, ShopProduct $course, CourseSection $section): RedirectResponse
     {
         abort_if($section->course_id !== $course->course->id, 404);
 
-        $validated = $request->validate([
-            'title' => ['required', 'string', 'max:200'],
-            'slug' => ['required', 'string', 'max:100', 'alpha_dash'],
-            'content' => ['nullable', 'string'],
-            'video_url' => ['nullable', 'string', 'max:500'],
-            'video_provider' => ['nullable', 'in:aparat,youtube,vimeo,upload,spotplayer,download'],
-            'download_url' => ['nullable', 'string', 'max:500'],
-            'spotplayer_course_id' => ['nullable', 'string', 'max:100'],
-            'spotplayer_item_id' => ['nullable', 'string', 'max:100'],
-            'duration_seconds' => ['nullable', 'integer', 'min:0'],
-            'is_free_preview' => ['nullable', 'boolean'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
-        ]);
-
+        $validated = $request->validated();
         $validated['is_free_preview'] = $request->boolean('is_free_preview');
-        $section->lessons()->create($validated);
+        $this->curriculum->createLesson($section, $validated);
 
         return back()->with('success', 'درس اضافه شد.');
     }
 
-    public function updateLesson(Request $request, ShopProduct $course, CourseLesson $lesson): RedirectResponse
+    public function updateLesson(CourseLessonRequest $request, ShopProduct $course, CourseLesson $lesson): RedirectResponse
     {
         abort_if($lesson->section->course_id !== $course->course->id, 404);
 
-        $validated = $request->validate([
-            'title' => ['required', 'string', 'max:200'],
-            'slug' => ['required', 'string', 'max:100', 'alpha_dash'],
-            'content' => ['nullable', 'string'],
-            'video_url' => ['nullable', 'string', 'max:500'],
-            'download_url' => ['nullable', 'string', 'max:500'],
-            'video_provider' => ['nullable', 'in:aparat,youtube,vimeo,upload,spotplayer,download'],
-            'spotplayer_course_id' => ['nullable', 'string', 'max:100'],
-            'spotplayer_item_id' => ['nullable', 'string', 'max:100'],
-            'duration_seconds' => ['nullable', 'integer', 'min:0'],
-            'is_free_preview' => ['nullable', 'boolean'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
-        ]);
-
+        $validated = $request->validated();
         $validated['is_free_preview'] = $request->boolean('is_free_preview');
-        $lesson->update($validated);
+        $this->curriculum->updateLesson($lesson, $validated);
 
         return back()->with('success', 'درس به‌روزرسانی شد.');
     }
@@ -183,7 +160,7 @@ class CourseController extends Controller
     public function destroyLesson(ShopProduct $course, CourseLesson $lesson): RedirectResponse
     {
         abort_if($lesson->section->course_id !== $course->course->id, 404);
-        $lesson->delete();
+        $this->curriculum->deleteLesson($lesson);
 
         return back()->with('success', 'درس حذف شد.');
     }

@@ -110,6 +110,30 @@ class CategoryTreeTest extends TestCase
             ->assertSee('راهنمای مالیات');
     }
 
+    public function test_category_count_cache_is_invalidated_when_content_is_synced(): void
+    {
+        $category = Category::query()->create([
+            'type' => Category::TYPE_PRODUCT,
+            'name' => 'حسابداری',
+            'slug' => 'accounting-cache',
+            'is_active' => true,
+        ]);
+
+        $categories = app(\App\Services\CategoryService::class);
+        $this->assertSame(0, $categories->flat(Category::TYPE_PRODUCT)->firstWhere('id', $category->id)->categoryables_count);
+
+        $product = ShopProduct::query()->create([
+            'slug' => 'course-cache-count',
+            'title' => 'دوره آزمایشی',
+            'price' => 1000,
+            'type' => ShopProduct::TYPE_COURSE,
+            'is_published' => true,
+        ]);
+        $product->syncCategories([$category->id], $category->id);
+
+        $this->assertSame(1, $categories->flat(Category::TYPE_PRODUCT)->firstWhere('id', $category->id)->categoryables_count);
+    }
+
     public function test_course_can_belong_to_several_categories_with_one_primary(): void
     {
         $first = Category::query()->create([

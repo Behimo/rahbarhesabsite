@@ -70,7 +70,6 @@ final class CafeQuestionController extends Controller
     {
         $categoryId = (int) $request->validated('category_id');
         $status = $request->validated('status');
-        $question->syncCategories([$categoryId], $categoryId);
 
         if ($status === CafeQuestion::STATUS_ANSWERED && ! $question->officialAnswer()->exists()) {
             return back()
@@ -99,14 +98,17 @@ final class CafeQuestionController extends Controller
             ],
         };
 
-        $question->update($payload);
+        DB::transaction(function () use ($question, $categoryId, $payload, $request): void {
+            $question->syncCategories([$categoryId], $categoryId);
+            $question->update($payload);
 
-        $official = $question->officialAnswer;
-        if ($official && $request->filled('body')) {
-            $official->update([
-                'body' => $request->validated('body'),
-            ]);
-        }
+            $official = $question->officialAnswer;
+            if ($official && $request->filled('body')) {
+                $official->update([
+                    'body' => $request->validated('body'),
+                ]);
+            }
+        });
 
         return redirect()
             ->route('admin.questions.show', $question)

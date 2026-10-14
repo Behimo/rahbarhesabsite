@@ -8,7 +8,7 @@ use App\Models\CmsPage;
 use App\Models\CmsPageRevision;
 use App\Services\BlockRegistry;
 use App\Services\BlockRenderer;
-use App\Services\BuilderCanvasRenderer;
+use App\Services\BuilderCanvasNormalizer;
 use App\Services\CacheService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -20,7 +20,7 @@ class PageBuilderController extends Controller
     public function __construct(
         private BlockRegistry $registry,
         private BlockRenderer $renderer,
-        private BuilderCanvasRenderer $canvas,
+        private BuilderCanvasNormalizer $canvas,
         private CacheService $cache,
     ) {}
 
@@ -33,7 +33,6 @@ class PageBuilderController extends Controller
             'page' => $page,
             'blocks' => $blocks,
             'builderContent' => $builderContent,
-            'canvasHtml' => $this->canvas->render($builderContent, $blocks),
         ]);
     }
 

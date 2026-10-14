@@ -2,12 +2,9 @@
 
 namespace App\Services;
 
-use App\Jobs\IssueSpotplayerLicenseJob;
 use App\Models\Coupon;
 use App\Models\Course;
 use App\Models\CourseEnrollment;
-use App\Models\CourseLesson;
-use App\Models\LessonProgress;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
@@ -22,6 +19,8 @@ class OrderService
     public function __construct(
         private CartService $cart,
         private CouponService $coupons,
+        private CourseEnrollmentService $enrollments,
+        private CourseProgressService $progress,
     ) {}
 
     public function createFromCart(User $user, ?string $ip = null, ?string $userAgent = null): Order
@@ -234,7 +233,7 @@ class OrderService
             }
 
             foreach ($product->relatedCourses() as $course) {
-                $this->enrollUser($order->user, $course, $order, CourseEnrollment::SOURCE_PURCHASE);
+                $this->enrollments->enroll($order->user, $course, $order, CourseEnrollment::SOURCE_PURCHASE);
             }
         }
     }
@@ -245,93 +244,22 @@ class OrderService
         ?Order $order = null,
         string $source = CourseEnrollment::SOURCE_PURCHASE,
     ): CourseEnrollment {
-        $months = (int) config('cms.enrollment_months', 12);
-
-        $enrollment = CourseEnrollment::query()->firstOrCreate(
-            ['user_id' => $user->id, 'course_id' => $course->id],
-            [
-                'order_id' => $order?->id,
-                'enrolled_at' => now(),
-                'expires_at' => $months > 0 ? now()->addMonths($months) : null,
-                'status' => CourseEnrollment::STATUS_ACTIVE,
-                'source' => $source,
-            ]
-        );
-
-        if (! $enrollment->wasRecentlyCreated && ! $enrollment->isActive()) {
-            $enrollment->update([
-                'status' => CourseEnrollment::STATUS_ACTIVE,
-                'order_id' => $order?->id ?? $enrollment->order_id,
-                'expires_at' => $months > 0 ? now()->addMonths($months) : null,
-                'source' => $source,
-            ]);
-        }
-
-        if ($course->spotplayer_course_id) {
-            IssueSpotplayerLicenseJob::dispatch($user->id, $course->id, $order?->id);
-        }
-
-        return $enrollment;
+        return $this->enrollments->enroll($user, $course, $order, $source);
     }
 
     public function revokeEnrollment(CourseEnrollment $enrollment): void
     {
-        $enrollment->update([
-            'status' => CourseEnrollment::STATUS_REVOKED,
-            'expires_at' => now(),
-        ]);
-
-        app(SpotPlayerService::class)->revokeForCourse((int) $enrollment->user_id, (int) $enrollment->course_id);
+        $this->enrollments->revoke($enrollment);
     }
 
     public function retryLicenses(Order $order): void
     {
-        foreach ($order->items as $item) {
-            $product = $item->product;
-
-            if (! $product) {
-                continue;
-            }
-
-            foreach ($product->relatedCourses() as $course) {
-                if ($course->spotplayer_course_id) {
-                    IssueSpotplayerLicenseJob::dispatch($order->user_id, $course->id, $order->id);
-                }
-            }
-        }
+        $this->enrollments->retryLicenses($order);
     }
 
     public function updateCourseProgress(User $user, Course $course): void
     {
-        $lessonIds = CourseLesson::query()
-            ->whereIn('section_id', $course->sections()->pluck('id'))
-            ->pluck('id');
-
-        if ($lessonIds->isEmpty()) {
-            return;
-        }
-
-        $completed = LessonProgress::query()
-            ->where('user_id', $user->id)
-            ->whereIn('lesson_id', $lessonIds)
-            ->whereNotNull('completed_at')
-            ->count();
-
-        $percent = (int) round(($completed / $lessonIds->count()) * 100);
-
-        $enrollment = CourseEnrollment::query()
-            ->where('user_id', $user->id)
-            ->where('course_id', $course->id)
-            ->first();
-
-        if (! $enrollment) {
-            return;
-        }
-
-        $enrollment->update([
-            'progress_percent' => $percent,
-            'completed_at' => $percent >= 100 ? now() : null,
-        ]);
+        $this->progress->update($user, $course);
     }
 
     private function reusablePendingOrder(User $user, Collection $items, ?Coupon $coupon): ?Order

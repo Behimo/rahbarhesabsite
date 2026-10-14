@@ -175,7 +175,7 @@
 | فایل | برای کی |
 |------|---------|
 | `docs/HANDBOOK-DEVELOPER.md` | **برنامه‌نویس** — راهنمای کامل فنی |
-| `docs/SHOP-PAYMENTS-AND-MIGRATION.md` | **برنامه‌نویس** — خرید، کوپن، اسپات، مهاجرت وردپرس |
+| `docs/seo/SHOP-PAYMENTS-AND-MIGRATION.md` | **برنامه‌نویس** — خرید، کوپن، اسپات، مهاجرت وردپرس |
 | `docs/GUIDE-FOR-OWNER.md` | **تو** — همین فایل |
 | `docs/CMS-PLATFORM.md` | خلاصه امکانات |
 | `docs/DEVELOPER-GUIDE.md` | راهنمای کوتاه توسعه (بلوک، قالب) |

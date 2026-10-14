@@ -87,7 +87,7 @@ themes/my-theme/
 | `/admin/coupons` | کد تخفیف |
 | `/admin/redirects` | ریدایرکت ۳۰۱ |
 
-جزئیات خرید و مهاجرت وردپرس: `docs/SHOP-PAYMENTS-AND-MIGRATION.md`  
+جزئیات خرید و مهاجرت وردپرس: `docs/seo/SHOP-PAYMENTS-AND-MIGRATION.md`  
 راهنمای برنامه‌نویس: `docs/HANDBOOK-DEVELOPER.md`
 
 ## حساب‌های نمونه (بعد از seed)

@@ -18,6 +18,7 @@ export default defineConfig({
               'resources/css/app.css',
               'resources/css/frontend.css',
               'resources/js/app.js',
+              'resources/js/admin-page-builder.js',
 
         'resources/css/admin-auth.scss',
         'resources/js/admin-auth.js',
@@ -29,6 +30,7 @@ export default defineConfig({
         'resources/assets/css/demo.css',
         'resources/css/admin-menu.css',
         'resources/css/admin-pages.css',
+        'resources/css/admin-page-builder.css',
         'resources/assets/vendor/fonts/tabler-icons.scss',
         'resources/assets/vendor/fonts/fontawesome.scss',
         'resources/assets/vendor/fonts/flag-icons.scss',

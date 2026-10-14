@@ -18,12 +18,4 @@ class CourseSectionRequest extends FormRequest
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ];
     }
-
-    public function attributes(): array
-    {
-        return [
-            'title' => 'عنوان فصل',
-            'sort_order' => 'ترتیب',
-        ];
-    }
 }

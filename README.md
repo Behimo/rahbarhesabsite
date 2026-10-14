@@ -2,7 +2,7 @@
 
 پلتفرم آموزشی حسابداری و مالیات با CMS اختصاصی، فروش دوره، پرداخت آنلاین و پنل هنرجو.
 
-**Stack:** Laravel 12 · PHP 8.2+ · Blade · Alpine.js · Vite · تم `themes/rahbarhesab`
+**Stack:** Laravel 12 · PHP 8.3+ · Blade · Alpine.js · Vite · تم `themes/rahbarhesab`
 
 ## راه‌اندازی سریع
 
@@ -22,34 +22,16 @@ php artisan serve
 
 جزئیات بیشتر: [`docs/HANDBOOK-DEVELOPER.md`](docs/HANDBOOK-DEVELOPER.md) · [`docs/CMS-PLATFORM.md`](docs/CMS-PLATFORM.md)
 
-## حساب‌های تستی (بعد از `migrate --seed`)
+## حساب ادمین و کاربران نمونه
 
-این اکانت‌ها در سیدرها ساخته می‌شوند. فقط برای محیط local/dev استفاده کنید.
+احراز هویت پنل مدیریت و سایت از guard `web` و مدل `User` استفاده می‌کند؛ ادمین CMS جدول یا guard جداگانه ندارد. Seeder اصلی `DefaultUsersSeeder` است و نقش‌ها را از روی Role/Permission تنظیم می‌کند.
 
-### پنل ادمین CMS (`/admin/login`)
+- ایمیل ادمین از `CMS_ADMIN_EMAIL` می‌آید (پیش‌فرض: `admin@rahbarhesab.ir`).
+- رمز ادمین از `CMS_ADMIN_PASSWORD` می‌آید. در محیط production باید رمز حداقل ۱۲ کاراکتر باشد؛ در توسعهٔ محلی در صورت خالی‌بودن، Seeder مقدار پیش‌فرض توسعه‌ای `password` می‌گذارد.
+- حساب‌های نمونه با رمزهای شناخته‌شده فقط برای local/dev هستند و در production ساخته نمی‌شوند.
+- ورود کاربر سایت از OTP موبایل یا مسیر ورود با رمز کاربران منتقل‌شده انجام می‌شود؛ برای جزئیات و حساب‌های نمونهٔ فعلی، Seederها را مرجع قرار دهید.
 
-جدول `cms_admins` — از `CmsSeeder` و متغیرهای `.env`:
-
-| نقش | ایمیل | رمز |
-|---|---|---|
-| سوپرادمین CMS | `admin@rahbarhesab.ir` | مقدار `CMS_ADMIN_PASSWORD` در `.env` (در `.env.example`: `secret`) |
-
-اگر `CMS_ADMIN_EMAIL` / `CMS_ADMIN_PASSWORD` را در `.env` عوض کنید، همان‌ها برای ورود ادمین معتبرند.
-
-### کاربران سایت و پنل هنرجو (`/login`)
-
-جدول `users` — از `PlatformSeeder` و `RahbarHesabSeeder`:
-
-| نقش | نام | ایمیل | موبایل | رمز |
-|---|---|---|---|---|
-| ادمین سایت | مدیر اصلی | `admin@rahbarhesab.ir` | `09120000000` | `secret123` |
-| هنرجو نمونه | کاربر نمونه | `demo@example.com` | `09121111111` | `password` |
-| مدرس نمونه | مدرس نمونه | `instructor@example.com` | — | `password` |
-| مدرس محتوا | مرتضی رهبر | `instructor@rahbarhesab.com` | `09120000001` | `password` |
-
-ورود سایت با **OTP موبایل** یا تب **ورود با رمز عبور** (ایمیل/موبایل + رمز بالا) ممکن است.
-
-> توجه: ایمیل `admin@rahbarhesab.ir` هم در `cms_admins` و هم در `users` وجود دارد؛ رمزها فرق دارند. برای `/admin` رمز CMS، برای سایت رمز `secret123`.
+**هشدار:** پس از اجرای seed در production، رمز قوی و منحصربه‌فرد تنظیم کنید و هرگز رمزهای نمونهٔ توسعه را در production استفاده نکنید.
 
 ### دادهٔ کمکی تست
 

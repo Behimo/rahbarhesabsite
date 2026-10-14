@@ -189,6 +189,23 @@ class CafeQuestionTest extends TestCase
         $this->assertSame(0, $question->fresh()->answers_count);
     }
 
+    public function test_invalid_answered_status_does_not_change_question_category(): void
+    {
+        $admin = $this->makeAdmin();
+        $owner = User::factory()->create();
+        $original = Category::factory()->cafe()->create(['name' => 'حسابداری']);
+        $replacement = Category::factory()->cafe()->create(['name' => 'مالیات']);
+        $question = $this->pendingQuestion($owner, $original);
+
+        $this->actingAs($admin)->put(route('admin.questions.update', $question), [
+            'category_id' => $replacement->id,
+            'status' => CafeQuestion::STATUS_ANSWERED,
+        ])->assertSessionHas('error');
+
+        $this->assertSame($original->id, $question->fresh()->category?->id);
+        $this->assertSame(CafeQuestion::STATUS_PENDING, $question->fresh()->status);
+    }
+
     public function test_admin_can_update_official_answer_after_publishing(): void
     {
         $admin = $this->makeAdmin();

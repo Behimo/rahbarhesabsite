@@ -2,7 +2,7 @@
 
 > آخرین به‌روزرسانی: ۲۱ سپتامبر ۲۰۲۶  
 > مخاطب: کسی که قراره روی کد کار کنه، نه کسی که فقط پنل رو می‌بینه.  
-> جریان خرید/کوپن/اسپات/مهاجرت وردپرس با جزئیات: `docs/SHOP-PAYMENTS-AND-MIGRATION.md`
+> جریان خرید/کوپن/اسپات/مهاجرت وردپرس با جزئیات: `docs/seo/SHOP-PAYMENTS-AND-MIGRATION.md`
 
 ---
 
@@ -13,7 +13,7 @@
 اگه از وردپرس کار کرده باشی، ذهنیتش آشناست: قالب و صفحه‌ساز. فقط به‌جای PHP خام وردپرس، Laravel 12 داریم.
 
 **استک اصلی:**
-- PHP 8.2+، Laravel 12
+- PHP 8.3+ (مطابق محدودیت Composer)، Laravel 12
 - دیتابیس: SQLite برای dev (MySQL برای production منطقی‌تره)
 - پنل ادمین: Vuexy (Bootstrap 5) — `resources/views/layouts/vuexy/`
 - سایت عمومی: Blade + Tailwind + Alpine — قالب فعال `themes/rahbarhesab/`
@@ -61,19 +61,19 @@ routes/web.php      ← همه routeهای وب
 
 ---
 
-## دو دنیا: ادمین CMS vs کاربر سایت
+## احراز هویت مدیریت و کاربر سایت
 
-این رو قاطی نکن — گیر می‌کنی.
+پنل مدیریت و سایت از guard پیش‌فرض `web` و مدل `User` استفاده می‌کنند؛ role/permission سطح دسترسی را مشخص می‌کند.
 
 | | ادمین CMS | کاربر سایت |
 |---|-----------|------------|
-| Guard | `cms` | `web` |
-| Model | `CmsAdmin` | `User` |
+| Guard | `web` | `web` |
+| Model | `User` | `User` |
 | ورود | ایمیل + رمز | OTP موبایل (مسیر اصلی) + رمز اختیاری `POST /login/password` |
 | URL | `/admin/*` | `/login`, `/panel/*` |
 | Middleware | `cms.admin`, `cms.permission` | `auth` |
 
-ادمین‌ها توی جدول `cms_admins` هستن. کاربران عادی توی `users`. این دو تا به هم ربط ندارن.
+ادمین‌ها و کاربران عادی در جدول `users` هستند؛ role/permission دسترسی به پنل مدیریت را از دسترسی معمولی کاربران جدا می‌کند.
 
 کاربر سایت با شماره موبایل ثبت‌نام/ورود می‌کنه (`Auth\AuthController`). OTP از IPPanel می‌ره (`config/otp.php`) و ارسال روی `SendOtpSmsJob` است. اگه `IPPANEL_API_KEY` خالی باشه، کد توی log می‌افته — برای dev خوبه، production نه.
 
@@ -337,7 +337,7 @@ themes/rahbarhesab/
 
 ## فروشگاه و پرداخت
 
-جزئیات کامل (تومان/ریال، قفل کال‌بک، کوپن، اسپات، ETL): `docs/SHOP-PAYMENTS-AND-MIGRATION.md`
+جزئیات کامل (تومان/ریال، قفل کال‌بک، کوپن، اسپات، ETL): `docs/seo/SHOP-PAYMENTS-AND-MIGRATION.md`
 
 **واحد پول:** دیتابیس و نمایش **تومان**. درگاه **ریال** — `Money::tomanToRials()` (×۱۰). قاطی نکن.
 
@@ -457,7 +457,7 @@ QUEUE_CONNECTION=database
 ## Seederها — بعد migrate --seed چی داری
 
 `DatabaseSeeder` به ترتیب:
-1. `CmsSeeder` — ادمین، صفحات سیستمی، پست نمونه
+1. `DefaultUsersSeeder` — کاربران و حساب ادمین از `.env`
 2. `PlatformSeeder` — کاربر demo
 3. `RahbarHesabSeeder` — محتوای راهبر، دوره‌ها
 4. `CmsExtensionsSeeder` — قالب، منو، taxonomy
@@ -511,7 +511,7 @@ callback پرداخت، `OrderService::markPaid()` / `fulfill()`, و **queue wor
 `ColumnsBlock::render()` از `BlockRegistry` استفاده می‌کنه. type نامعتبر silent fail می‌کنه (try/catch).
 
 **۶. دسترسی ادمین**  
-role توی `cms_admins` — `Permission::roleDefaults()`.
+role روی `User` با Spatie Permission و `App\Support\AccessCatalog` مدیریت می‌شود.
 
 ---
 
@@ -527,7 +527,7 @@ role توی `cms_admins` — `Permission::roleDefaults()`.
 | سفارش | `app/Services/OrderService.php` |
 | کوپن | `app/Services/CouponService.php` |
 | تومان/ریال | `app/Support/Money.php` |
-| خرید/اسپات/WP | `docs/SHOP-PAYMENTS-AND-MIGRATION.md` |
+| خرید/اسپات/WP | `docs/seo/SHOP-PAYMENTS-AND-MIGRATION.md` |
 | قالب | `app/Services/ThemeService.php` |
 | منوی ادمین | `resources/menu/verticalMenu.json` |
 
@@ -537,7 +537,7 @@ role توی `cms_admins` — `Permission::roleDefaults()`.
 
 ۱. Laravel معمولیه — MVC + Service layer.  
 ۲. CMS شبیه WP: theme و block.  
-۳. دو auth جدا: cms admin vs user OTP (+ رمز اختیاری برای مهاجرت وردپرس).  
+۳. مدیریت و کاربران از guard `web` و مدل `User` استفاده می‌کنند؛ role/permission دسترسی پنل را کنترل می‌کند.  
 ۴. LMS روی ShopProduct + Course سوار شده. قیمت تومان است؛ درگاه ریال.  
 ۵. صفحه‌ساز JSON توی `builder_content` — ColumnsBlock nested داره.  
 ۶. قبل deploy: build, migrate, scheduler, queue worker, env (مرچنت، IPPanel، SpotPlayer).
