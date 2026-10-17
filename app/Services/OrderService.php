@@ -10,6 +10,7 @@ use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\ShopProduct;
 use App\Models\User;
+use App\Support\Money;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -71,6 +72,7 @@ class OrderService
                 'subtotal' => $subtotal,
                 'discount' => $discount,
                 'total' => $total,
+                'currency' => Money::STORE_CURRENCY,
                 'coupon_id' => $coupon?->id,
                 'coupon_code' => $coupon?->code,
                 'user_ip' => $ip,

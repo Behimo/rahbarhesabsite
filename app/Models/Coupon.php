@@ -34,7 +34,7 @@ class Coupon extends Model
         return $this->hasMany(CouponUsage::class);
     }
 
-    public function isValidForCart(float $subtotal, ?User $user = null): bool
+    public function isValidForCart(float $subtotal, ?User $user = null, ?int $excludeOrderId = null): bool
     {
         if (! $this->is_active) {
             return false;
@@ -68,8 +68,10 @@ class Coupon extends Model
         }
 
         if ($user && $this->is_first_order_only) {
-            $hasPriorOrders = Order::where('user_id', $user->id)
+            $hasPriorOrders = Order::query()
+                ->where('user_id', $user->id)
                 ->where('status', Order::STATUS_PAID)
+                ->when($excludeOrderId, fn ($query) => $query->whereKeyNot($excludeOrderId))
                 ->exists();
             if ($hasPriorOrders) {
                 return false;

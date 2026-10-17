@@ -10,12 +10,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 
 class ShopProduct extends Model
 {
     /** @use HasFactory<ShopProductFactory> */
-    use HasCategories, HasFactory, HasTags;
+    use HasCategories, HasFactory, HasTags, SoftDeletes;
 
     public const TYPE_COURSE = 'course';
 

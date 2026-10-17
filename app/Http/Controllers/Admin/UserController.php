@@ -93,6 +93,8 @@ class UserController extends Controller
             return back()->withErrors(['user' => 'حداقل یک مدیر سیستم باید باقی بماند.']);
         }
 
+        // Soft-delete keeps financial history; orders.user_id is RESTRICT on hard delete.
+        $user->forceFill(['status' => 'suspended'])->save();
         $user->delete();
 
         return redirect()->route('admin.users.index')->with('success', 'کاربر حذف شد.');

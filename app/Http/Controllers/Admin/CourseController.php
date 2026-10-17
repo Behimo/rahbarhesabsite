@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CourseLessonRequest;
 use App\Http\Requests\Admin\CourseSectionRequest;
+use App\Models\CartItem;
 use App\Models\Category;
 use App\Models\Course;
 use App\Models\CourseLesson;
@@ -104,7 +105,12 @@ class CourseController extends Controller
     public function destroy(ShopProduct $course): RedirectResponse
     {
         abort_unless($course->type === ShopProduct::TYPE_COURSE, 404);
-        $course->delete();
+
+        DB::transaction(function () use ($course): void {
+            CartItem::query()->where('shop_product_id', $course->id)->delete();
+            $course->update(['is_published' => false]);
+            $course->delete();
+        });
 
         return redirect()->route('admin.courses.index')->with('success', 'دوره حذف شد.');
     }

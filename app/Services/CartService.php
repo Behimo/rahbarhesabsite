@@ -6,6 +6,7 @@ use App\Models\CartItem;
 use App\Models\ShopProduct;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class CartService
 {
@@ -34,23 +35,27 @@ class CartService
 
     public function add(ShopProduct $product, int $quantity = 1): void
     {
-        $attributes = Auth::check()
-            ? ['user_id' => Auth::id(), 'shop_product_id' => $product->id]
-            : ['session_id' => session()->getId(), 'shop_product_id' => $product->id];
+        DB::transaction(function () use ($product, $quantity) {
+            $item = $this->lockedOwnerItem($product->id);
 
-        $item = CartItem::query()->firstOrNew($attributes);
+            if (! $item) {
+                $item = new CartItem(Auth::check()
+                    ? ['user_id' => Auth::id(), 'shop_product_id' => $product->id]
+                    : ['session_id' => session()->getId(), 'shop_product_id' => $product->id]);
+            }
 
-        if (! $product->tracksInventory()) {
-            $item->quantity = 1;
+            if ($this->forcesSingleUnit($product)) {
+                $item->quantity = 1;
+                $item->save();
+
+                return;
+            }
+
+            $next = ($item->exists ? $item->quantity : 0) + $quantity;
+            $this->assertInStock($product, $next);
+            $item->quantity = $next;
             $item->save();
-
-            return;
-        }
-
-        $next = ($item->exists ? $item->quantity : 0) + $quantity;
-        $this->assertInStock($product, $next);
-        $item->quantity = $next;
-        $item->save();
+        });
     }
 
     public function update(CartItem $item, int $quantity): void
@@ -63,7 +68,13 @@ class CartService
 
         $product = $item->product;
 
-        if (! $product || ! $product->tracksInventory()) {
+        if (! $product) {
+            $item->delete();
+
+            return;
+        }
+
+        if ($this->forcesSingleUnit($product)) {
             $item->update(['quantity' => 1]);
 
             return;
@@ -117,40 +128,70 @@ class CartService
         }
     }
 
+    /** Courses, digital goods and bundles are sold as a single seat/license. */
+    private function forcesSingleUnit(ShopProduct $product): bool
+    {
+        return in_array($product->type, [
+            ShopProduct::TYPE_COURSE,
+            ShopProduct::TYPE_DIGITAL,
+            ShopProduct::TYPE_BUNDLE,
+        ], true);
+    }
+
     public function mergeGuestCart(int $userId, ?string $sessionId = null): void
     {
         $sessionId = $sessionId ?: session()->getId();
 
-        CartItem::query()
-            ->where('session_id', $sessionId)
-            ->each(function (CartItem $guestItem) use ($userId) {
-                $existing = CartItem::query()
-                    ->where('user_id', $userId)
-                    ->where('shop_product_id', $guestItem->shop_product_id)
-                    ->first();
+        DB::transaction(function () use ($userId, $sessionId) {
+            CartItem::query()
+                ->where('session_id', $sessionId)
+                ->whereNull('user_id')
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->each(function (CartItem $guestItem) use ($userId) {
+                    $existing = CartItem::query()
+                        ->where('user_id', $userId)
+                        ->where('shop_product_id', $guestItem->shop_product_id)
+                        ->lockForUpdate()
+                        ->first();
 
-                if ($existing) {
-                    $product = $existing->product ?? ShopProduct::query()->find($existing->shop_product_id);
-                    $quantity = $existing->quantity + $guestItem->quantity;
+                    if ($existing) {
+                        $product = $existing->product ?? ShopProduct::query()->find($existing->shop_product_id);
+                        $quantity = $existing->quantity + $guestItem->quantity;
 
-                    if (! $product || ! $product->tracksInventory()) {
-                        $quantity = 1;
-                    } else {
-                        $quantity = min($quantity, (int) $product->stock);
-                    }
+                        if (! $product || $this->forcesSingleUnit($product)) {
+                            $quantity = 1;
+                        } elseif ($product->tracksInventory()) {
+                            $quantity = min($quantity, (int) $product->stock);
+                        }
 
-                    if ($quantity < 1) {
-                        $existing->delete();
+                        if ($quantity < 1) {
+                            $existing->delete();
+                            $guestItem->delete();
+
+                            return;
+                        }
+
+                        $existing->update(['quantity' => $quantity]);
                         $guestItem->delete();
-
-                        return;
+                    } else {
+                        $guestItem->update(['user_id' => $userId, 'session_id' => null]);
                     }
+                });
+        });
+    }
 
-                    $existing->update(['quantity' => $quantity]);
-                    $guestItem->delete();
-                } else {
-                    $guestItem->update(['user_id' => $userId, 'session_id' => null]);
-                }
-            });
+    private function lockedOwnerItem(int $productId): ?CartItem
+    {
+        $query = CartItem::query()->where('shop_product_id', $productId);
+
+        if (Auth::check()) {
+            $query->where('user_id', Auth::id());
+        } else {
+            $query->where('session_id', session()->getId())->whereNull('user_id');
+        }
+
+        return $query->lockForUpdate()->first();
     }
 }

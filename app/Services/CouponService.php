@@ -133,22 +133,32 @@ class CouponService
 
         $coupon = Coupon::query()->whereKey($order->coupon_id)->lockForUpdate()->first();
 
-        if (! $coupon || ! $coupon->isValidForCart((float) $order->subtotal, $order->user)) {
+        if (! $coupon) {
             throw new \RuntimeException(self::REJECTED);
         }
 
-        $usage = CouponUsage::query()->firstOrCreate(
-            ['coupon_id' => $order->coupon_id, 'order_id' => $order->id],
-            [
-                'user_id' => $order->user_id,
-                'discount_amount' => $order->discount,
-                'used_at' => now(),
-            ]
-        );
+        $existing = CouponUsage::query()
+            ->where('coupon_id', $order->coupon_id)
+            ->where('order_id', $order->id)
+            ->first();
 
-        if ($usage->wasRecentlyCreated) {
-            $coupon->increment('used_count');
+        if ($existing) {
+            return;
         }
+
+        if (! $coupon->isValidForCart((float) $order->subtotal, $order->user, $order->id)) {
+            throw new \RuntimeException(self::REJECTED);
+        }
+
+        CouponUsage::query()->create([
+            'coupon_id' => $order->coupon_id,
+            'order_id' => $order->id,
+            'user_id' => $order->user_id,
+            'discount_amount' => $order->discount,
+            'used_at' => now(),
+        ]);
+
+        $coupon->increment('used_count');
     }
 
     private function matchesTargets(Collection $targets, ShopProduct $product, CartItem $item): bool
