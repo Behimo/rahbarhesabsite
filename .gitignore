@@ -67,3 +67,8 @@ public/mockServiceWorker.js
 !.env.example
 composer.phar
 besun
+
+# Database dumps / WordPress backups (never push)
+*.sql
+*.sql.gz
+*.sql.zip
