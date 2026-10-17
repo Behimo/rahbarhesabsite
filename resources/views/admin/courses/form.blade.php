@@ -40,10 +40,16 @@
                         <label class="form-label" for="course-subtitle">زیرعنوان</label>
                         <input id="course-subtitle" type="text" name="subtitle" value="{{ old('subtitle', $product->subtitle) }}" class="form-control">
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label" for="course-description">توضیحات</label>
-                        <textarea id="course-description" name="description" rows="3" class="form-control">{{ old('description', $product->description) }}</textarea>
-                    </div>
+                    <x-admin.ckeditor
+                        name="description"
+                        id="course-description"
+                        label="توضیحات"
+                        :value="old('description', $product->description)"
+                        :rows="12"
+                        toolbar="full"
+                        :media-button="true"
+                        class="mb-3"
+                    />
                     <div class="mb-3">
                         <label class="form-label" for="course-learn">چه چیزهایی یاد می‌گیرند</label>
                         <textarea id="course-learn" name="what_you_learn" rows="3" class="form-control">{{ old('what_you_learn', implode("\n", $course->what_you_learn ?? [])) }}</textarea>

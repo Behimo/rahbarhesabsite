@@ -73,8 +73,12 @@ class CourseController extends SiteController
     {
         $product = ShopProduct::query()
             ->published()
-            ->where('slug', $slug)
             ->where('type', ShopProduct::TYPE_COURSE)
+            ->where(function ($query) use ($slug) {
+                $query->where('slug', $slug)
+                    ->orWhere('slug', rawurldecode($slug))
+                    ->orWhere('slug', rawurlencode($slug));
+            })
             ->with(['course.sections.lessons', 'course.instructor'])
             ->firstOrFail();
 

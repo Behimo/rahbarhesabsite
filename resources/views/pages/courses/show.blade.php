@@ -131,7 +131,7 @@
                 @if (filled($product->description))
                     <section class="course-detail-section" aria-labelledby="course-about-heading">
                         <h2 id="course-about-heading">درباره دوره</h2>
-                        <div class="course-detail-prose">{!! nl2br(e($product->description)) !!}</div>
+                        <div class="course-detail-prose">{!! clean_html($product->description) !!}</div>
                     </section>
                 @endif
 

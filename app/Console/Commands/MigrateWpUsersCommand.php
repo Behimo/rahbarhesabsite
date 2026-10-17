@@ -19,7 +19,19 @@ class MigrateWpUsersCommand extends Command
             return self::FAILURE;
         }
 
-        $stats = $migration->migrateUsers((bool) $this->option('dry-run'));
+        $total = $migration->countUsers();
+        $this->info(($this->option('dry-run') ? '[dry-run] ' : '')."مهاجرت کاربران ({$total} رکورد)...");
+
+        $bar = $this->output->createProgressBar($total);
+        $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% | %elapsed:6s% | ETA %remaining:6s%');
+        $bar->start();
+
+        $stats = $migration->migrateUsers((bool) $this->option('dry-run'), function () use ($bar) {
+            $bar->advance();
+        });
+
+        $bar->finish();
+        $this->newLine(2);
         $this->info('کاربران: '.json_encode($stats, JSON_UNESCAPED_UNICODE));
 
         return self::SUCCESS;

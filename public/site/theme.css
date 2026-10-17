@@ -2053,6 +2053,53 @@ body.rh-theme select {
     line-height: 2;
 }
 
+.course-detail-prose > *:first-child {
+    margin-top: 0;
+}
+
+.course-detail-prose > *:last-child {
+    margin-bottom: 0;
+}
+
+.course-detail-prose h1,
+.course-detail-prose h2,
+.course-detail-prose h3,
+.course-detail-prose h4 {
+    color: #1f1830;
+    font-weight: 800;
+    line-height: 1.5;
+    margin: 1.25em 0 0.5em;
+}
+
+.course-detail-prose h2 {
+    font-size: 1.25rem;
+}
+
+.course-detail-prose h3 {
+    font-size: 1.1rem;
+}
+
+.course-detail-prose p {
+    margin: 0 0 1em;
+}
+
+.course-detail-prose ul,
+.course-detail-prose ol {
+    margin: 0 0 1em;
+    padding-inline-start: 1.25rem;
+}
+
+.course-detail-prose a {
+    color: #5b3cc4;
+    text-decoration: underline;
+}
+
+.course-detail-prose img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+}
+
 .course-detail-reqs {
     margin: 0;
     padding: 0 1.1rem 0 0;

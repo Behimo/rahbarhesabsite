@@ -19,7 +19,19 @@ class MigrateWpOrdersCommand extends Command
             return self::FAILURE;
         }
 
-        $stats = $migration->migrateOrders((bool) $this->option('dry-run'));
+        $total = $migration->countPaidOrders();
+        $this->info(($this->option('dry-run') ? '[dry-run] ' : '')."مهاجرت سفارش‌ها ({$total} سفارش)...");
+
+        $bar = $this->output->createProgressBar($total);
+        $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% | %elapsed:6s% | ETA %remaining:6s%');
+        $bar->start();
+
+        $stats = $migration->migrateOrders((bool) $this->option('dry-run'), function () use ($bar) {
+            $bar->advance();
+        });
+
+        $bar->finish();
+        $this->newLine(2);
         $this->info('سفارش‌ها: '.json_encode($stats, JSON_UNESCAPED_UNICODE));
 
         return self::SUCCESS;

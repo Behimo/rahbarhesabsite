@@ -25,7 +25,8 @@ class HandleCmsRedirects
 
         $path = '/'.ltrim($request->path(), '/');
 
-        $redirect = Cache::remember("cms.redirect.{$path}", 3600, function () use ($path) {
+        // Hash the path: Persian/long slugs exceed cache.key varchar(255) with the app prefix.
+        $redirect = Cache::remember('cms.redirect.'.hash('sha1', $path), 3600, function () use ($path) {
             return CmsRedirect::query()
                 ->where('from_path', $path)
                 ->where('is_active', true)
