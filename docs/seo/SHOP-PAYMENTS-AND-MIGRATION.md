@@ -277,6 +277,7 @@ php artisan wp:migrate-audit
 |--------|-----|
 | `wp:migrate-users` | همه کاربران؛ بدون موبایل → `pending_activation`؛ موبایل تکراری → یک برنده (بیشترین سفارش paid) صاحب شماره، بقیه `claimed_mobile`؛ upsert فقط با `wp_id`؛ هش Phpass + `is_wp_password` |
 | `wp:migrate-courses` | محصولات ووکامرس → `shop_products` + `courses`؛ متای `_spotplayer_course`؛ ریدایرکت `/product/{slug}` |
+| `wp:migrate-term-links` | بازسازی اتصال دوره‌ها/مقالات به دسته‌ها و تگ‌ها (بعد از migrate-categories/courses/posts) |
 | `wp:migrate-orders` | همه سفارش completed/processing؛ لینک با `wp_id` یا `_billing_phone`؛ در غیر این صورت `user_id=null` + `needs_review` |
 | `wp:migrate-audit` | مقایسه تعداد WP در برابر لوکال + شمارنده‌های pending/needs_review |
 

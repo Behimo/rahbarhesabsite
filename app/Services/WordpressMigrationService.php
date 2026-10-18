@@ -11,11 +11,13 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Role;
 use App\Models\ShopProduct;
+use App\Models\Tag;
 use App\Models\User;
 use App\Support\AccessCatalog;
 use App\Support\PhoneNormalizer;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -60,8 +62,13 @@ class WordpressMigrationService
     public function countCategories(): int
     {
         return (int) $this->wp()->table('term_taxonomy')
-            ->whereIn('taxonomy', ['product_cat', 'category'])
+            ->whereIn('taxonomy', ['product_cat', 'category', 'post_tag', 'product_tag'])
             ->count();
+    }
+
+    public function countTermLinkTargets(): int
+    {
+        return $this->countProducts() + $this->countPosts();
     }
 
     public function countPosts(): int
@@ -88,20 +95,7 @@ class WordpressMigrationService
         ] as $taxonomy => $type) {
             $termIdMap = [];
 
-            $terms = $this->wp()->table('term_taxonomy as tt')
-                ->join('terms as t', 't.term_id', '=', 'tt.term_id')
-                ->where('tt.taxonomy', $taxonomy)
-                ->orderBy('tt.parent')
-                ->orderBy('t.term_id')
-                ->get([
-                    't.term_id',
-                    't.name',
-                    't.slug',
-                    'tt.parent',
-                    'tt.description',
-                ]);
-
-            foreach ($terms as $term) {
+            foreach ($this->wpTermsForTaxonomy($taxonomy) as $term) {
                 $slug = $this->normalizeWpSlug((string) $term->slug);
                 $name = trim((string) $term->name);
 
@@ -175,7 +169,172 @@ class WordpressMigrationService
             }
         }
 
+        $tagStats = $this->migrateTags($dryRun, $onProgress);
+
+        return [
+            'created' => $created + $tagStats['created'],
+            'updated' => $updated + $tagStats['updated'],
+            'skipped' => $skipped + $tagStats['skipped'],
+            'tags_created' => $tagStats['created'],
+            'tags_updated' => $tagStats['updated'],
+        ];
+    }
+
+    /**
+     * Import WP post_tag / product_tag into local tags table.
+     *
+     * @param  (callable(): void)|null  $onProgress
+     * @return array{created: int, updated: int, skipped: int}
+     */
+    public function migrateTags(bool $dryRun = false, ?callable $onProgress = null): array
+    {
+        $created = 0;
+        $updated = 0;
+        $skipped = 0;
+
+        foreach (['post_tag', 'product_tag'] as $taxonomy) {
+            foreach ($this->wpTermsForTaxonomy($taxonomy) as $term) {
+                $slug = $this->normalizeWpSlug((string) $term->slug);
+                $name = trim((string) $term->name);
+
+                if ($slug === '' || $name === '') {
+                    $skipped++;
+                    $onProgress && $onProgress();
+
+                    continue;
+                }
+
+                $slug = mb_substr($slug, 0, 191);
+
+                if ($dryRun) {
+                    Tag::query()->where('slug', $slug)->exists() ? $updated++ : $created++;
+                    $onProgress && $onProgress();
+
+                    continue;
+                }
+
+                $tag = Tag::query()->where('slug', $slug)->first();
+                if ($tag) {
+                    $tag->fill(['name' => mb_substr($name, 0, 191)])->save();
+                    $updated++;
+                } else {
+                    Tag::query()->create([
+                        'name' => mb_substr($name, 0, 191),
+                        'slug' => $slug,
+                    ]);
+                    $created++;
+                }
+
+                $onProgress && $onProgress();
+            }
+        }
+
         return compact('created', 'updated', 'skipped');
+    }
+
+    /**
+     * Rebuild category/tag pivots for already-migrated courses and posts.
+     *
+     * @param  (callable(): void)|null  $onProgress
+     * @return array{products_linked: int, posts_linked: int, product_category_links: int, post_category_links: int, post_tag_links: int, missing_products: int, missing_posts: int}
+     */
+    public function migrateTermLinks(bool $dryRun = false, ?callable $onProgress = null): array
+    {
+        $productsLinked = 0;
+        $postsLinked = 0;
+        $productCategoryLinks = 0;
+        $postCategoryLinks = 0;
+        $postTagLinks = 0;
+        $missingProducts = 0;
+        $missingPosts = 0;
+
+        $products = $this->wp()->table('posts')
+            ->where('post_type', 'product')
+            ->whereIn('post_status', ['publish', 'private'])
+            ->orderBy('ID')
+            ->get(['ID', 'post_name', 'post_title']);
+
+        foreach ($products as $post) {
+            $rawSlug = (string) ($post->post_name ?: '');
+            $slug = $this->normalizeWpSlug($rawSlug) ?: (Str::slug((string) $post->post_title).'-'.$post->ID);
+            $product = ShopProduct::query()
+                ->where(function ($q) use ($slug, $rawSlug) {
+                    $q->where('slug', $slug);
+                    if ($rawSlug !== '' && $rawSlug !== $slug) {
+                        $q->orWhere('slug', $rawSlug);
+                    }
+                })
+                ->first();
+
+            if (! $product) {
+                $missingProducts++;
+                $onProgress && $onProgress();
+
+                continue;
+            }
+
+            $catIds = $this->resolveCategoryIdsForWpObject((int) $post->ID, 'product_cat', Category::TYPE_PRODUCT);
+            if (! $dryRun) {
+                $product->syncCategories($catIds);
+            }
+            $productsLinked++;
+            $productCategoryLinks += count($catIds);
+            $onProgress && $onProgress();
+        }
+
+        $posts = $this->wp()->table('posts')
+            ->where('post_type', 'post')
+            ->where('post_status', 'publish')
+            ->orderBy('ID')
+            ->get(['ID', 'post_name', 'post_title']);
+
+        foreach ($posts as $post) {
+            $rawSlug = (string) ($post->post_name ?: '');
+            $slug = $this->normalizeWpSlug($rawSlug) ?: (Str::slug((string) $post->post_title).'-'.$post->ID);
+            $slug = mb_substr($slug, 0, 180);
+
+            $cmsPost = CmsPost::withTrashed()
+                ->where(function ($q) use ($slug, $rawSlug) {
+                    $q->where('slug', $slug);
+                    if ($rawSlug !== '' && $rawSlug !== $slug) {
+                        $q->orWhere('slug', $rawSlug);
+                    }
+                })
+                ->first();
+
+            if (! $cmsPost) {
+                $missingPosts++;
+                $onProgress && $onProgress();
+
+                continue;
+            }
+
+            $catIds = $this->resolveCategoryIdsForWpObject((int) $post->ID, 'category', Category::TYPE_POST);
+            $tagIds = $this->resolveTagIdsForWpObject((int) $post->ID, 'post_tag');
+
+            if (! $dryRun) {
+                if ($cmsPost->trashed()) {
+                    $cmsPost->restore();
+                }
+                $cmsPost->syncCategories($catIds);
+                $cmsPost->syncTags($tagIds);
+            }
+
+            $postsLinked++;
+            $postCategoryLinks += count($catIds);
+            $postTagLinks += count($tagIds);
+            $onProgress && $onProgress();
+        }
+
+        return [
+            'products_linked' => $productsLinked,
+            'posts_linked' => $postsLinked,
+            'product_category_links' => $productCategoryLinks,
+            'post_category_links' => $postCategoryLinks,
+            'post_tag_links' => $postTagLinks,
+            'missing_products' => $missingProducts,
+            'missing_posts' => $missingPosts,
+        ];
     }
 
     /**
@@ -495,6 +654,7 @@ class WordpressMigrationService
                 $cmsPost->save();
 
                 $this->syncModelCategories($cmsPost, (int) $post->ID, 'category', Category::TYPE_POST);
+                $this->syncModelTags($cmsPost, (int) $post->ID, 'post_tag');
 
                 $this->ensureRedirect('/'.$slug, '/blog/'.$slug);
                 if ($rawSlug !== '' && $rawSlug !== $slug) {
@@ -775,6 +935,9 @@ class WordpressMigrationService
             'local_post_category_links' => DB::table('categoryables')
                 ->where('categoryable_type', CmsPost::class)
                 ->count(),
+            'wp_post_tags' => $this->wp()->table('term_taxonomy')->where('taxonomy', 'post_tag')->count(),
+            'local_tags' => Tag::query()->count(),
+            'local_taggables' => DB::table('taggables')->count(),
             'wp_paid_orders' => $this->wp()->table('posts')->where('post_type', 'shop_order')->whereIn('post_status', ['wc-completed', 'wc-processing'])->count(),
             'local_wp_orders' => Order::query()->whereNotNull('wp_id')->count(),
             'local_orders_needs_review' => Order::query()->where('needs_review', true)->count(),
@@ -1171,16 +1334,24 @@ class WordpressMigrationService
      */
     private function syncModelCategories(Model $model, int $wpPostId, string $taxonomy, string $categoryType): void
     {
-        $rows = $this->wp()->table('term_relationships as tr')
-            ->join('term_taxonomy as tt', 'tt.term_taxonomy_id', '=', 'tr.term_taxonomy_id')
-            ->join('terms as t', 't.term_id', '=', 'tt.term_id')
-            ->where('tr.object_id', $wpPostId)
-            ->where('tt.taxonomy', $taxonomy)
-            ->orderBy('tr.term_order')
-            ->get(['t.slug', 't.name']);
+        $model->syncCategories($this->resolveCategoryIdsForWpObject($wpPostId, $taxonomy, $categoryType));
+    }
 
+    /**
+     * @param  Model&object{syncTags: callable}  $model
+     */
+    private function syncModelTags(Model $model, int $wpPostId, string $taxonomy): void
+    {
+        $model->syncTags($this->resolveTagIdsForWpObject($wpPostId, $taxonomy));
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function resolveCategoryIdsForWpObject(int $wpPostId, string $taxonomy, string $categoryType): array
+    {
         $ids = [];
-        foreach ($rows as $row) {
+        foreach ($this->wpTermsForObject($wpPostId, $taxonomy) as $row) {
             $slug = $this->normalizeWpSlug((string) $row->slug);
             if ($slug === '' || $this->isSkippedCategorySlug($slug)) {
                 continue;
@@ -1205,7 +1376,69 @@ class WordpressMigrationService
             }
         }
 
-        $model->syncCategories($ids);
+        return array_values(array_unique($ids));
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function resolveTagIdsForWpObject(int $wpPostId, string $taxonomy): array
+    {
+        $ids = [];
+        foreach ($this->wpTermsForObject($wpPostId, $taxonomy) as $row) {
+            $slug = $this->normalizeWpSlug((string) $row->slug);
+            if ($slug === '') {
+                continue;
+            }
+
+            $tag = Tag::query()->where('slug', mb_substr($slug, 0, 191))->first();
+            if (! $tag) {
+                $tag = Tag::query()->where('name', trim((string) $row->name))->first();
+            }
+
+            if ($tag) {
+                $ids[] = $tag->id;
+            }
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    /**
+     * Raw SQL avoids Laravel WP table-prefix breaking aliases / qualified columns.
+     *
+     * @return Collection<int, object{term_id: int|string, name: string, slug: string, parent: int|string, description: ?string}>
+     */
+    private function wpTermsForTaxonomy(string $taxonomy): Collection
+    {
+        $p = $this->wp()->getTablePrefix();
+
+        return collect($this->wp()->select(
+            "SELECT t.term_id, t.name, t.slug, tt.parent, tt.description
+             FROM {$p}term_taxonomy tt
+             INNER JOIN {$p}terms t ON t.term_id = tt.term_id
+             WHERE tt.taxonomy = ?
+             ORDER BY tt.parent ASC, t.term_id ASC",
+            [$taxonomy]
+        ));
+    }
+
+    /**
+     * @return Collection<int, object{slug: string, name: string}>
+     */
+    private function wpTermsForObject(int $objectId, string $taxonomy): Collection
+    {
+        $p = $this->wp()->getTablePrefix();
+
+        return collect($this->wp()->select(
+            "SELECT t.slug, t.name
+             FROM {$p}term_relationships tr
+             INNER JOIN {$p}term_taxonomy tt ON tt.term_taxonomy_id = tr.term_taxonomy_id
+             INNER JOIN {$p}terms t ON t.term_id = tt.term_id
+             WHERE tr.object_id = ? AND tt.taxonomy = ?
+             ORDER BY tr.term_order ASC, t.term_id ASC",
+            [$objectId, $taxonomy]
+        ));
     }
 
     /** @param  array<string, mixed>  $meta */

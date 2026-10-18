@@ -2,11 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
+use App\Models\CmsPost;
 use App\Models\Course;
 use App\Models\CourseEnrollment;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\ShopProduct;
+use App\Models\Tag;
 use App\Models\User;
 use App\Services\WordpressMigrationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -240,6 +243,77 @@ class WordpressMigrationTest extends TestCase
         $this->assertDatabaseHas('users', ['mobile' => '09351234567']);
     }
 
+    public function test_term_links_connect_products_and_posts_to_categories_and_tags(): void
+    {
+        $productCat = Category::factory()->product()->create([
+            'slug' => 'tax-courses',
+            'name' => 'دوره‌های مالیاتی',
+        ]);
+        $postCat = Category::factory()->post()->create([
+            'slug' => 'blogs',
+            'name' => 'مقالات',
+        ]);
+        Tag::query()->create(['name' => 'سامانه مودیان', 'slug' => 'moodian']);
+
+        $product = ShopProduct::query()->create([
+            'slug' => 'moodian-course',
+            'title' => 'دوره مودیان',
+            'price' => 100000,
+            'type' => ShopProduct::TYPE_COURSE,
+            'is_published' => true,
+        ]);
+        $post = CmsPost::query()->create([
+            'slug' => 'sample-article',
+            'title' => 'مقاله نمونه',
+            'body' => 'متن',
+            'status' => CmsPost::STATUS_PUBLISHED,
+            'is_published' => true,
+            'published_at' => now(),
+        ]);
+
+        $this->seedWordpressTerm(10, 'دوره‌های مالیاتی', 'tax-courses', 'product_cat');
+        $this->seedWordpressTerm(20, 'مقالات', 'blogs', 'category');
+        $this->seedWordpressTerm(30, 'سامانه مودیان', 'moodian', 'post_tag');
+
+        DB::connection('wordpress')->table('posts')->insert([
+            [
+                'ID' => 801,
+                'post_type' => 'product',
+                'post_status' => 'publish',
+                'post_name' => 'moodian-course',
+                'post_title' => 'دوره مودیان',
+                'post_content' => null,
+                'post_excerpt' => null,
+                'post_date' => null,
+            ],
+            [
+                'ID' => 802,
+                'post_type' => 'post',
+                'post_status' => 'publish',
+                'post_name' => 'sample-article',
+                'post_title' => 'مقاله نمونه',
+                'post_content' => null,
+                'post_excerpt' => null,
+                'post_date' => null,
+            ],
+        ]);
+
+        $this->attachWordpressTerm(801, 10);
+        $this->attachWordpressTerm(802, 20);
+        $this->attachWordpressTerm(802, 30);
+
+        $stats = app(WordpressMigrationService::class)->migrateTermLinks();
+
+        $this->assertSame(1, $stats['products_linked']);
+        $this->assertSame(1, $stats['posts_linked']);
+        $this->assertSame(1, $stats['product_category_links']);
+        $this->assertSame(1, $stats['post_category_links']);
+        $this->assertSame(1, $stats['post_tag_links']);
+        $this->assertTrue($product->fresh()->categories->contains('id', $productCat->id));
+        $this->assertTrue($post->fresh()->categories->contains('id', $postCat->id));
+        $this->assertTrue($post->fresh()->tags->contains('slug', 'moodian'));
+    }
+
     private function createWordpressTables(): void
     {
         Schema::connection('wordpress')->create('users', function ($table): void {
@@ -288,6 +362,51 @@ class WordpressMigrationTest extends TestCase
             $table->string('meta_key');
             $table->text('meta_value')->nullable();
         });
+
+        Schema::connection('wordpress')->create('terms', function ($table): void {
+            $table->unsignedBigInteger('term_id')->primary();
+            $table->string('name');
+            $table->string('slug');
+        });
+
+        Schema::connection('wordpress')->create('term_taxonomy', function ($table): void {
+            $table->unsignedBigInteger('term_taxonomy_id')->primary();
+            $table->unsignedBigInteger('term_id');
+            $table->string('taxonomy');
+            $table->unsignedBigInteger('parent')->default(0);
+            $table->text('description')->nullable();
+        });
+
+        Schema::connection('wordpress')->create('term_relationships', function ($table): void {
+            $table->unsignedBigInteger('object_id');
+            $table->unsignedBigInteger('term_taxonomy_id');
+            $table->integer('term_order')->default(0);
+        });
+    }
+
+    private function seedWordpressTerm(int $termId, string $name, string $slug, string $taxonomy): void
+    {
+        DB::connection('wordpress')->table('terms')->insert([
+            'term_id' => $termId,
+            'name' => $name,
+            'slug' => $slug,
+        ]);
+        DB::connection('wordpress')->table('term_taxonomy')->insert([
+            'term_taxonomy_id' => $termId,
+            'term_id' => $termId,
+            'taxonomy' => $taxonomy,
+            'parent' => 0,
+            'description' => null,
+        ]);
+    }
+
+    private function attachWordpressTerm(int $objectId, int $termTaxonomyId): void
+    {
+        DB::connection('wordpress')->table('term_relationships')->insert([
+            'object_id' => $objectId,
+            'term_taxonomy_id' => $termTaxonomyId,
+            'term_order' => 0,
+        ]);
     }
 
     /** @param  array<string, string>  $meta */
