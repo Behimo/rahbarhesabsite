@@ -178,66 +178,104 @@ class WordpressMigrationService
 
     /**
      * @param  (callable(): void)|null  $onProgress  called once per WP user row
+     * @return array{created: int, updated: int, pending_activation: int, duplicate_mobile: int}
      */
     public function migrateUsers(bool $dryRun = false, ?callable $onProgress = null): array
     {
         $created = 0;
         $updated = 0;
-        $skipped = 0;
+        $pendingActivation = 0;
+        $duplicateMobile = 0;
+
+        $orderCounts = $this->paidOrderCountsByCustomer();
+        $candidates = [];
 
         $users = $this->wp()->table('users')->orderBy('ID')->lazyById(250, 'ID')->chunk(250);
-
         foreach ($users as $batch) {
             $userMeta = $this->userMetaForIds($batch->pluck('ID')->all());
-
             foreach ($batch as $row) {
                 $meta = $userMeta[$row->ID] ?? [];
                 $mobile = $this->resolveMobile($meta, (string) $row->user_login);
-
-                if (! $mobile) {
-                    $skipped++;
-                    $onProgress && $onProgress();
-
-                    continue;
-                }
-
-                $existing = User::query()->where('wp_id', $row->ID)->orWhere('mobile', $mobile)->orWhere('phone', $mobile)->first();
-
-                $payload = [
-                    'wp_id' => $row->ID,
-                    'name' => trim(($meta['first_name'] ?? '').' '.($meta['last_name'] ?? '')) ?: ($row->display_name ?: $row->user_login),
-                    'first_name' => $meta['first_name'] ?? null,
-                    'last_name' => $meta['last_name'] ?? null,
-                    'email' => $row->user_email ?: null,
-                    'phone' => $mobile,
+                $candidates[] = [
+                    'row' => $row,
+                    'meta' => $meta,
                     'mobile' => $mobile,
-                    'status' => 'active',
+                    'orders' => (int) ($orderCounts[(int) $row->ID] ?? 0),
                 ];
-
-                if ($dryRun) {
-                    $existing ? $updated++ : $created++;
-                    $onProgress && $onProgress();
-
-                    continue;
-                }
-
-                if ($existing) {
-                    $existing->fill($payload)->save();
-                    $existing->ensureSiteRole();
-                    $this->storeWordpressPassword($existing->id, (string) $row->user_pass);
-                    $updated++;
-                } else {
-                    $user = User::query()->create($payload + ['password' => Str::random(32)]);
-                    $user->ensureSiteRole();
-                    $this->storeWordpressPassword($user->id, (string) $row->user_pass);
-                    $created++;
-                }
-
-                $onProgress && $onProgress();
             }
         }
 
-        return compact('created', 'updated', 'skipped');
+        $winnersByMobile = $this->mobileWinners($candidates);
+
+        foreach ($candidates as $candidate) {
+            $row = $candidate['row'];
+            $meta = $candidate['meta'];
+            $mobile = $candidate['mobile'];
+            $wpId = (int) $row->ID;
+            $isWinner = $mobile !== null && ($winnersByMobile[$mobile] ?? null) === $wpId;
+            $isDuplicate = $mobile !== null && ! $isWinner;
+
+            if ($isDuplicate) {
+                $duplicateMobile++;
+            }
+
+            $status = $isWinner ? User::STATUS_ACTIVE : User::STATUS_PENDING_ACTIVATION;
+            if ($status === User::STATUS_PENDING_ACTIVATION) {
+                $pendingActivation++;
+            }
+
+            $name = trim(($meta['first_name'] ?? '').' '.($meta['last_name'] ?? ''))
+                ?: ($row->display_name ?: $row->user_login);
+
+            $payload = [
+                'wp_id' => $wpId,
+                'name' => mb_substr((string) $name, 0, 191),
+                'first_name' => isset($meta['first_name']) ? mb_substr((string) $meta['first_name'], 0, 100) : null,
+                'last_name' => isset($meta['last_name']) ? mb_substr((string) $meta['last_name'], 0, 100) : null,
+                'email' => $this->uniqueEmailOrNull($row->user_email ?: null, $wpId),
+                'phone' => $isWinner ? $mobile : null,
+                'mobile' => $isWinner ? $mobile : null,
+                'claimed_mobile' => $isDuplicate ? $mobile : ($isWinner ? null : $this->rawClaimedMobile($meta, (string) $row->user_login)),
+                'status' => $status,
+            ];
+
+            $existing = User::withTrashed()->where('wp_id', $wpId)->first();
+
+            if ($dryRun) {
+                $existing ? $updated++ : $created++;
+                $onProgress && $onProgress();
+
+                continue;
+            }
+
+            if ($isWinner && $mobile) {
+                $this->releaseMobileFromOtherUsers($mobile, $wpId);
+            }
+
+            if ($existing) {
+                if ($existing->trashed()) {
+                    $existing->restore();
+                }
+                $existing->fill($payload)->save();
+                $existing->ensureSiteRole();
+                $this->storeWordpressPassword($existing->id, (string) $row->user_pass);
+                $updated++;
+            } else {
+                $user = User::query()->create($payload + ['password' => Str::random(32)]);
+                $user->ensureSiteRole();
+                $this->storeWordpressPassword($user->id, (string) $row->user_pass);
+                $created++;
+            }
+
+            $onProgress && $onProgress();
+        }
+
+        return [
+            'created' => $created,
+            'updated' => $updated,
+            'pending_activation' => $pendingActivation,
+            'duplicate_mobile' => $duplicateMobile,
+        ];
     }
 
     /**
@@ -425,11 +463,14 @@ class WordpressMigrationService
 
     /**
      * @param  (callable(): void)|null  $onProgress  called once per WP paid order
+     * @return array{created: int, enrolled: int, needs_review: int, linked_by_phone: int}
      */
     public function migrateOrders(bool $dryRun = false, ?callable $onProgress = null): array
     {
         $created = 0;
         $enrolled = 0;
+        $needsReview = 0;
+        $linkedByPhone = 0;
 
         $orders = $this->wp()->table('posts')
             ->where('post_type', 'shop_order')
@@ -439,17 +480,33 @@ class WordpressMigrationService
 
         foreach ($orders as $wpOrder) {
             $meta = $this->postMetaForIds([(int) $wpOrder->ID])[$wpOrder->ID] ?? [];
-            $user = isset($meta['_customer_user']) ? User::query()->where('wp_id', (int) $meta['_customer_user'])->first() : null;
+            $wpCustomerId = isset($meta['_customer_user']) ? (int) $meta['_customer_user'] : 0;
+            $billingPhoneRaw = (string) ($meta['_billing_phone'] ?? $meta['billing_phone'] ?? '');
+            $billingPhone = PhoneNormalizer::isValidIranMobile($billingPhoneRaw)
+                ? PhoneNormalizer::toLocal($billingPhoneRaw)
+                : null;
 
-            if (! $user) {
-                $onProgress && $onProgress();
+            $linkedViaPhone = false;
+            $user = $wpCustomerId > 0
+                ? User::query()->where('wp_id', $wpCustomerId)->first()
+                : null;
 
-                continue;
+            if (! $user && $billingPhone) {
+                $user = $this->findOrCreateUserForBillingPhone($billingPhone, $meta, $dryRun);
+                $linkedViaPhone = $user !== null;
             }
+
+            $isOrphan = $user === null;
 
             if ($dryRun) {
                 if (! Order::query()->where('wp_id', $wpOrder->ID)->exists()) {
                     $created++;
+                }
+                if ($isOrphan) {
+                    $needsReview++;
+                }
+                if ($linkedViaPhone) {
+                    $linkedByPhone++;
                 }
                 $onProgress && $onProgress();
 
@@ -478,24 +535,52 @@ class WordpressMigrationService
             $wpProducts = $productIds->isEmpty()
                 ? collect()
                 : $this->wp()->table('posts')->whereIn('ID', $productIds)->get(['ID', 'post_name'])->keyBy('ID');
-            $productsBySlug = $wpProducts->pluck('post_name')->filter()->unique()->isEmpty()
+            $slugList = $wpProducts->pluck('post_name')->filter()->unique();
+            $productsBySlug = $slugList->isEmpty()
                 ? collect()
-                : ShopProduct::query()->whereIn('slug', $wpProducts->pluck('post_name')->filter()->unique())->get()->keyBy('slug');
+                : ShopProduct::query()->whereIn('slug', $slugList)->get()->keyBy('slug');
 
             $wasCreated = ! Order::query()->where('wp_id', $wpOrder->ID)->exists();
-            DB::transaction(function () use ($wpOrder, $meta, $user, $items, $itemMeta, $wpProducts, $productsBySlug, &$enrolled): void {
+            DB::transaction(function () use (
+                $wpOrder,
+                $meta,
+                $user,
+                $items,
+                $itemMeta,
+                $wpProducts,
+                $productsBySlug,
+                $wpCustomerId,
+                $billingPhone,
+                $isOrphan,
+                &$enrolled
+            ): void {
                 $order = Order::query()->firstOrCreate(
                     ['wp_id' => $wpOrder->ID],
                     [
-                        'user_id' => $user->id,
+                        'user_id' => $user?->id,
                         'order_number' => 'WP-'.$wpOrder->ID,
                         'status' => Order::STATUS_PAID,
                         'subtotal' => (int) ($meta['_order_total'] ?? 0),
                         'discount' => (int) ($meta['_cart_discount'] ?? 0),
                         'total' => (int) ($meta['_order_total'] ?? 0),
                         'paid_at' => $wpOrder->post_date ? Carbon::parse($wpOrder->post_date) : now(),
+                        'needs_review' => $isOrphan,
+                        'wp_customer_id' => $wpCustomerId > 0 ? $wpCustomerId : null,
+                        'billing_phone' => $billingPhone,
                     ]
                 );
+
+                $order->forceFill([
+                    'user_id' => $user?->id,
+                    'needs_review' => $isOrphan,
+                    'wp_customer_id' => $wpCustomerId > 0 ? $wpCustomerId : null,
+                    'billing_phone' => $billingPhone,
+                    'status' => Order::STATUS_PAID,
+                    'subtotal' => (int) ($meta['_order_total'] ?? 0),
+                    'discount' => (int) ($meta['_cart_discount'] ?? 0),
+                    'total' => (int) ($meta['_order_total'] ?? 0),
+                    'paid_at' => $wpOrder->post_date ? Carbon::parse($wpOrder->post_date) : ($order->paid_at ?? now()),
+                ])->save();
 
                 $existingItems = $order->items()->get();
                 $existingWpItemIds = $existingItems
@@ -549,7 +634,7 @@ class WordpressMigrationService
                         }
                     }
 
-                    if ($shopProduct) {
+                    if ($user && $shopProduct) {
                         foreach ($shopProduct->relatedCourses() as $course) {
                             $hadEnrollment = CourseEnrollment::query()
                                 ->where('user_id', $user->id)
@@ -567,11 +652,22 @@ class WordpressMigrationService
             if ($wasCreated) {
                 $created++;
             }
+            if ($isOrphan) {
+                $needsReview++;
+            }
+            if ($linkedViaPhone) {
+                $linkedByPhone++;
+            }
 
             $onProgress && $onProgress();
         }
 
-        return compact('created', 'enrolled');
+        return [
+            'created' => $created,
+            'enrolled' => $enrolled,
+            'needs_review' => $needsReview,
+            'linked_by_phone' => $linkedByPhone,
+        ];
     }
 
     public function audit(): array
@@ -579,6 +675,7 @@ class WordpressMigrationService
         return [
             'wp_users' => $this->wp()->table('users')->count(),
             'local_users_with_wp_id' => User::query()->whereNotNull('wp_id')->count(),
+            'local_pending_activation' => User::query()->where('status', User::STATUS_PENDING_ACTIVATION)->count(),
             'wp_product_cats' => $this->wp()->table('term_taxonomy')->where('taxonomy', 'product_cat')->count(),
             'local_product_categories' => Category::query()->where('type', Category::TYPE_PRODUCT)->count(),
             'wp_post_cats' => $this->wp()->table('term_taxonomy')->where('taxonomy', 'category')->count(),
@@ -595,6 +692,8 @@ class WordpressMigrationService
                 ->count(),
             'wp_paid_orders' => $this->wp()->table('posts')->where('post_type', 'shop_order')->whereIn('post_status', ['wc-completed', 'wc-processing'])->count(),
             'local_wp_orders' => Order::query()->whereNotNull('wp_id')->count(),
+            'local_orders_needs_review' => Order::query()->where('needs_review', true)->count(),
+            'local_orders_without_user' => Order::query()->whereNull('user_id')->count(),
             'local_enrollments' => CourseEnrollment::query()->count(),
         ];
     }
@@ -651,6 +750,168 @@ class WordpressMigrationService
         }
 
         return null;
+    }
+
+    /**
+     * @return array<int, int> wp_user_id => paid order count
+     */
+    private function paidOrderCountsByCustomer(): array
+    {
+        $orderIds = $this->wp()->table('posts')
+            ->where('post_type', 'shop_order')
+            ->whereIn('post_status', ['wc-completed', 'wc-processing'])
+            ->pluck('ID');
+
+        if ($orderIds->isEmpty()) {
+            return [];
+        }
+
+        $counts = [];
+        foreach ($orderIds->chunk(500) as $chunk) {
+            $rows = $this->wp()->table('postmeta')
+                ->whereIn('post_id', $chunk->all())
+                ->where('meta_key', '_customer_user')
+                ->get(['meta_value']);
+
+            foreach ($rows as $row) {
+                $uid = (int) $row->meta_value;
+                if ($uid <= 0) {
+                    continue;
+                }
+                $counts[$uid] = ($counts[$uid] ?? 0) + 1;
+            }
+        }
+
+        return $counts;
+    }
+
+    /**
+     * @param  list<array{row: object, meta: array<string, mixed>, mobile: ?string, orders: int}>  $candidates
+     * @return array<string, int> mobile => winning wp_id
+     */
+    private function mobileWinners(array $candidates): array
+    {
+        $byMobile = [];
+        foreach ($candidates as $candidate) {
+            $mobile = $candidate['mobile'];
+            if ($mobile === null) {
+                continue;
+            }
+            $byMobile[$mobile][] = $candidate;
+        }
+
+        $winners = [];
+        foreach ($byMobile as $mobile => $group) {
+            usort($group, function (array $a, array $b): int {
+                if ($a['orders'] !== $b['orders']) {
+                    return $b['orders'] <=> $a['orders'];
+                }
+
+                return (int) $a['row']->ID <=> (int) $b['row']->ID;
+            });
+            $winners[$mobile] = (int) $group[0]['row']->ID;
+        }
+
+        return $winners;
+    }
+
+    private function releaseMobileFromOtherUsers(string $mobile, int $keepWpId): void
+    {
+        User::withTrashed()
+            ->where(function ($q) use ($mobile) {
+                $q->where('mobile', $mobile)->orWhere('phone', $mobile);
+            })
+            ->where(function ($q) use ($keepWpId) {
+                $q->whereNull('wp_id')->orWhere('wp_id', '!=', $keepWpId);
+            })
+            ->get()
+            ->each(function (User $user) use ($mobile): void {
+                $user->forceFill([
+                    'mobile' => null,
+                    'phone' => null,
+                    'claimed_mobile' => $user->claimed_mobile ?: $mobile,
+                    'status' => $user->status === User::STATUS_ACTIVE
+                        ? User::STATUS_PENDING_ACTIVATION
+                        : $user->status,
+                ])->save();
+            });
+    }
+
+    private function uniqueEmailOrNull(?string $email, int $wpId): ?string
+    {
+        $email = $email !== null ? trim($email) : null;
+        if ($email === null || $email === '') {
+            return null;
+        }
+
+        $taken = User::withTrashed()
+            ->where('email', $email)
+            ->where(function ($q) use ($wpId) {
+                $q->whereNull('wp_id')->orWhere('wp_id', '!=', $wpId);
+            })
+            ->exists();
+
+        return $taken ? null : mb_substr($email, 0, 255);
+    }
+
+    /** @param  array<string, mixed>  $meta */
+    private function rawClaimedMobile(array $meta, string $fallback): ?string
+    {
+        foreach (['loginx_phone', 'digits_phone', 'billing_phone', 'phone'] as $key) {
+            $raw = trim((string) ($meta[$key] ?? ''));
+            if ($raw !== '') {
+                return mb_substr($raw, 0, 15);
+            }
+        }
+
+        $fallback = trim($fallback);
+        if ($fallback !== '' && preg_match('/\d{8,}/', $fallback)) {
+            return mb_substr($fallback, 0, 15);
+        }
+
+        return null;
+    }
+
+    /** @param  array<string, mixed>  $meta */
+    private function findOrCreateUserForBillingPhone(string $mobile, array $meta, bool $dryRun): ?User
+    {
+        $existing = User::query()
+            ->where(function ($q) use ($mobile) {
+                $q->where('mobile', $mobile)->orWhere('phone', $mobile);
+            })
+            ->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        if ($dryRun) {
+            return new User(['mobile' => $mobile, 'phone' => $mobile, 'status' => User::STATUS_ACTIVE]);
+        }
+
+        $first = trim((string) ($meta['_billing_first_name'] ?? ''));
+        $last = trim((string) ($meta['_billing_last_name'] ?? ''));
+        $name = trim($first.' '.$last);
+        if ($name === '') {
+            $name = 'کاربر '.substr($mobile, -4);
+        }
+
+        $user = User::query()->create([
+            'name' => mb_substr($name, 0, 191),
+            'first_name' => $first !== '' ? mb_substr($first, 0, 100) : null,
+            'last_name' => $last !== '' ? mb_substr($last, 0, 100) : null,
+            'email' => $this->uniqueEmailOrNull(
+                isset($meta['_billing_email']) ? (string) $meta['_billing_email'] : null,
+                0
+            ),
+            'phone' => $mobile,
+            'mobile' => $mobile,
+            'password' => Str::random(32),
+            'status' => User::STATUS_ACTIVE,
+        ]);
+        $user->ensureSiteRole();
+
+        return $user;
     }
 
     private function storeWordpressPassword(int $userId, string $hash): void

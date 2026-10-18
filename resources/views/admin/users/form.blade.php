@@ -36,6 +36,18 @@
                     <div class="text-muted small">دوره‌ها</div>
                     <div class="fw-medium">{{ fa_digits($enrollmentsCount) }}</div>
                 </div>
+                @if ($user->wp_id)
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="text-muted small">شناسه وردپرس</div>
+                        <div class="fw-medium" dir="ltr">{{ $user->wp_id }}</div>
+                    </div>
+                @endif
+                @if ($user->claimed_mobile)
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="text-muted small">موبایل ادعایی (تکراری/خام)</div>
+                        <div class="fw-medium text-warning" dir="ltr">{{ $user->claimed_mobile }}</div>
+                    </div>
+                @endif
             </div>
         </div>
     </div>

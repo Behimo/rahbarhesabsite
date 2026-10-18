@@ -5,16 +5,24 @@
 @section('lede', 'مدیریت کاربران و دسترسی‌ها')
 
 @section('actions')
-    @if (admin_can('users', 'view'))
-        <a href="{{ route('admin.roles.index') }}" class="btn btn-label-secondary">
-            <i class="ti ti-shield me-1"></i>نقش‌ها
-        </a>
-    @endif
-    @if (admin_can('users', 'create'))
-        <a href="{{ route('admin.users.create') }}" class="btn btn-primary">
-            <i class="ti ti-plus me-1"></i>کاربر جدید
-        </a>
-    @endif
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+        <div class="btn-group">
+            <a href="{{ route('admin.users.index') }}" class="btn btn-sm {{ $status === '' ? 'btn-primary' : 'btn-label-secondary' }}">همه</a>
+            @foreach (\App\Models\User::statusLabels() as $value => $label)
+                <a href="{{ route('admin.users.index', ['status' => $value]) }}" class="btn btn-sm {{ $status === $value ? 'btn-primary' : 'btn-label-secondary' }}">{{ $label }}</a>
+            @endforeach
+        </div>
+        @if (admin_can('users', 'view'))
+            <a href="{{ route('admin.roles.index') }}" class="btn btn-label-secondary">
+                <i class="ti ti-shield me-1"></i>نقش‌ها
+            </a>
+        @endif
+        @if (admin_can('users', 'create'))
+            <a href="{{ route('admin.users.create') }}" class="btn btn-primary">
+                <i class="ti ti-plus me-1"></i>کاربر جدید
+            </a>
+        @endif
+    </div>
 @endsection
 
 @section('content')
@@ -34,14 +42,25 @@
             <tbody>
                 @forelse ($users as $user)
                     <tr>
-                        <td>{{ $user->displayName() }}</td>
-                        <td dir="ltr">{{ $user->mobile ?: $user->phone }}</td>
+                        <td>
+                            {{ $user->displayName() }}
+                            @if ($user->wp_id)
+                                <br><small class="text-muted" dir="ltr">wp_id: {{ $user->wp_id }}</small>
+                            @endif
+                        </td>
+                        <td dir="ltr">
+                            {{ $user->mobile ?: $user->phone ?: '—' }}
+                            @if ($user->claimed_mobile && ! $user->mobile)
+                                <br><small class="text-warning">ادعا: {{ $user->claimed_mobile }}</small>
+                            @endif
+                        </td>
                         <td><span class="badge bg-label-info">{{ $user->roles->first()?->displayName() ?? '—' }}</span></td>
                         <td>
                             @php
                                 $statusClass = match ($user->status) {
                                     'banned' => 'bg-label-danger',
                                     'suspended' => 'bg-label-warning',
+                                    'pending_activation' => 'bg-label-secondary',
                                     default => 'bg-label-success',
                                 };
                             @endphp

@@ -105,6 +105,10 @@ class UserRequest extends FormRequest
         $validated['phone'] = PhoneNormalizer::toLocal($validated['phone']);
         $validated['mobile'] = $validated['phone'];
 
+        if (($validated['status'] ?? null) === User::STATUS_ACTIVE) {
+            $validated['claimed_mobile'] = null;
+        }
+
         if ($user instanceof User) {
             if ($validated['phone'] !== ($user->mobile ?: $user->phone)) {
                 $validated['mobile_verified_at'] = null;

@@ -157,6 +157,8 @@ Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login/otp', [AuthController::class, 'sendOtp'])->middleware('throttle:otp-send')->name('login.otp');
     Route::post('/login/password', [AuthController::class, 'loginPassword'])->middleware('throttle:login')->name('login.password');
+    Route::get('/login/activate', [AuthController::class, 'showActivate'])->name('login.activate');
+    Route::post('/login/activate', [AuthController::class, 'sendActivateOtp'])->middleware('throttle:otp-send')->name('login.activate.submit');
     Route::get('/login/verify', [AuthController::class, 'showVerify'])->name('login.verify');
     Route::post('/login/verify', [AuthController::class, 'verifyOtp'])->middleware('throttle:otp-verify')->name('login.verify.submit');
 });
@@ -307,6 +309,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/{order}', 'show')->name('show');
             Route::post('/{order}/mark-paid', 'markPaid')->name('mark-paid');
             Route::post('/{order}/retry-licenses', 'retryLicenses')->name('retry-licenses');
+            Route::post('/{order}/assign-user', 'assignUser')->name('assign-user');
             Route::post('/enroll', 'enroll')->name('enroll');
             Route::post('/enrollments/{enrollment}/revoke', 'revokeEnrollment')->name('enrollments.revoke');
         });

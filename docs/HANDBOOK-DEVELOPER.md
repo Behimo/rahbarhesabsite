@@ -393,10 +393,10 @@ Middleware: `api.token` (`EnsureApiToken`)
 | `cms:publish-scheduled` | انتشار زمان‌بندی‌شده — **هر دقیقه scheduler** |
 | `cms:refresh-brand` | مهاجرت برندینگ قدیمی Bisan → Rahbar |
 | `otp:prune-logs` | پاکسازی لاگ OTP — **روزانه scheduler** |
-| `wp:migrate-users` | ETL کاربران وردپرس (بکاپ `WP_DB_*`) |
+| `wp:migrate-users` | ETL همه کاربران WP؛ بدون موبایل/`pending_activation`؛ موبایل تکراری با برنده سفارش |
 | `wp:migrate-courses` | ETL محصولات/دوره‌ها + ریدایرکت `/product/{slug}` |
-| `wp:migrate-orders` | ETL سفارش completed/processing + enrollment |
-| `wp:migrate-audit` | مقایسه تعداد WP vs لوکال |
+| `wp:migrate-orders` | ETL همه سفارش paid؛ لینک phone یا `needs_review` برای ادمین |
+| `wp:migrate-audit` | مقایسه تعداد WP vs لوکال + pending/needs_review |
 
 همه `wp:migrate-*` فلگ `--dry-run` دارند. ترتیب: users → courses → orders → audit. **فقط روی بکاپ، نه دیتابیس لایو.** `php artisan migrate` این کار را نمی‌کند.
 

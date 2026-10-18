@@ -48,6 +48,11 @@ class AuthController extends SiteController
         $validated = $request->validated();
 
         $existing = User::findByPhone($validated['phone']);
+        if ($existing?->needsActivation()) {
+            return back()->withErrors([
+                'phone' => 'این حساب نیاز به فعال‌سازی دارد. با ایمیل و رمز عبور وارد شوید و موبایل را تأیید کنید.',
+            ])->withInput();
+        }
         if ($existing?->isBlocked()) {
             return back()->withErrors(['phone' => 'حساب کاربری شما غیرفعال است.'])->withInput();
         }
@@ -62,6 +67,7 @@ class AuthController extends SiteController
             'otp_phone' => PhoneNormalizer::toLocal($validated['phone']),
             'otp_name' => $validated['name'] ?? null,
         ]);
+        session()->forget('activate_user_id');
 
         return redirect()->route('login.verify')
             ->with('success', 'کد تأیید ارسال شد.');
@@ -90,25 +96,63 @@ class AuthController extends SiteController
             return back()->withErrors(['code' => 'کد تأیید نامعتبر یا منقضی شده است.']);
         }
 
-        $user = User::findOrCreateByPhone($phone, session('otp_name'));
+        $local = PhoneNormalizer::toLocal($phone);
+        $activateUserId = session('activate_user_id');
 
-        if ($user->isBlocked()) {
-            return redirect()->route('login')->withErrors(['phone' => 'حساب کاربری شما غیرفعال است.']);
+        if ($activateUserId) {
+            $user = User::query()->find($activateUserId);
+            if (! $user || ! $user->needsActivation()) {
+                session()->forget(['otp_phone', 'otp_name', 'activate_user_id']);
+
+                return redirect()->route('login')->withErrors(['phone' => 'نشست فعال‌سازی نامعتبر است. دوباره وارد شوید.']);
+            }
+
+            $taken = User::query()
+                ->where('id', '!=', $user->id)
+                ->where(function ($q) use ($local) {
+                    $q->where('mobile', $local)->orWhere('phone', $local);
+                })
+                ->exists();
+
+            if ($taken) {
+                return back()->withErrors(['code' => 'این شماره موبایل متعلق به حساب دیگری است.']);
+            }
+
+            $user->forceFill([
+                'mobile' => $local,
+                'phone' => $local,
+                'claimed_mobile' => null,
+                'status' => User::STATUS_ACTIVE,
+                'mobile_verified_at' => now(),
+                'last_login_at' => now(),
+            ])->save();
+        } else {
+            $user = User::findOrCreateByPhone($phone, session('otp_name'));
+
+            if ($user->needsActivation()) {
+                return redirect()->route('login')->withErrors([
+                    'phone' => 'این حساب نیاز به فعال‌سازی دارد. با ایمیل و رمز عبور وارد شوید.',
+                ]);
+            }
+
+            if ($user->isBlocked()) {
+                return redirect()->route('login')->withErrors(['phone' => 'حساب کاربری شما غیرفعال است.']);
+            }
+
+            $user->forceFill([
+                'mobile' => $local,
+                'phone' => $local,
+                'mobile_verified_at' => now(),
+                'last_login_at' => now(),
+            ])->save();
         }
-
-        $user->forceFill([
-            'mobile' => PhoneNormalizer::toLocal($phone),
-            'phone' => PhoneNormalizer::toLocal($phone),
-            'mobile_verified_at' => now(),
-            'last_login_at' => now(),
-        ])->save();
 
         $guestSessionId = $request->session()->getId();
         Auth::login($user);
         $request->session()->regenerate();
         $this->cart->mergeGuestCart($user->id, $guestSessionId);
 
-        session()->forget(['otp_phone', 'otp_name']);
+        session()->forget(['otp_phone', 'otp_name', 'activate_user_id']);
 
         return redirect()->intended(route('panel.dashboard'));
     }
@@ -132,6 +176,20 @@ class AuthController extends SiteController
             return back()->withErrors(['login' => 'اطلاعات ورود نادرست است.'])->withInput();
         }
 
+        if ($user->needsActivation()) {
+            if ($user->is_wp_password) {
+                $user->forceFill([
+                    'password' => $validated['password'],
+                    'is_wp_password' => false,
+                ])->save();
+            }
+
+            session(['activate_user_id' => $user->id]);
+
+            return redirect()->route('login.activate')
+                ->with('success', 'برای فعال‌سازی حساب، شماره موبایل را وارد و کد تأیید را دریافت کنید.');
+        }
+
         if ($user->isBlocked()) {
             return back()->withErrors(['login' => 'حساب کاربری شما غیرفعال است.']);
         }
@@ -150,6 +208,76 @@ class AuthController extends SiteController
         $this->cart->mergeGuestCart($user->id, $guestSessionId);
 
         return redirect()->intended(route('panel.dashboard'));
+    }
+
+    public function showActivate(Request $request): View|RedirectResponse
+    {
+        $user = $this->activationUser();
+        if (! $user) {
+            return redirect()->route('login')
+                ->withErrors(['login' => 'برای فعال‌سازی ابتدا با ایمیل و رمز عبور وارد شوید.']);
+        }
+
+        return $this->render('auth.activate', [
+            'user' => $user,
+            'suggestedMobile' => $user->claimed_mobile,
+        ]);
+    }
+
+    public function sendActivateOtp(Request $request): RedirectResponse
+    {
+        $user = $this->activationUser();
+        if (! $user) {
+            return redirect()->route('login')
+                ->withErrors(['login' => 'برای فعال‌سازی ابتدا با ایمیل و رمز عبور وارد شوید.']);
+        }
+
+        $validated = $request->validate([
+            'phone' => ['required', 'string', 'max:20'],
+        ], [], ['phone' => 'شماره موبایل']);
+
+        $local = PhoneNormalizer::toLocal($validated['phone']);
+        if (! PhoneNormalizer::isValidIranMobile($local)) {
+            return back()->withErrors(['phone' => 'شماره موبایل معتبر نیست.'])->withInput();
+        }
+
+        $taken = User::query()
+            ->where('id', '!=', $user->id)
+            ->where(function ($q) use ($local) {
+                $q->where('mobile', $local)->orWhere('phone', $local);
+            })
+            ->exists();
+
+        if ($taken) {
+            return back()->withErrors(['phone' => 'این شماره موبایل قبلاً ثبت شده است.'])->withInput();
+        }
+
+        try {
+            $this->otp->send($local);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['phone' => $e->getMessage()])->withInput();
+        }
+
+        session([
+            'otp_phone' => $local,
+            'activate_user_id' => $user->id,
+        ]);
+        session()->forget('otp_name');
+
+        return redirect()->route('login.verify')
+            ->with('success', 'کد تأیید ارسال شد. پس از تأیید، حساب شما فعال می‌شود.');
+    }
+
+    private function activationUser(): ?User
+    {
+        $id = session('activate_user_id');
+        if (! $id) {
+            return null;
+        }
+
+        $user = User::query()->find($id);
+
+        return $user && $user->needsActivation() ? $user : null;
     }
 
     public function logout(Request $request): RedirectResponse

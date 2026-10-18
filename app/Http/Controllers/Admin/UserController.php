@@ -7,16 +7,25 @@ use App\Http\Requests\Admin\UserRequest;
 use App\Models\User;
 use App\Support\AccessCatalog;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class UserController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $users = User::query()->with('roles')->latest()->paginate(20);
+        $status = (string) $request->query('status', '');
+
+        $users = User::query()
+            ->with('roles')
+            ->when($status !== '' && array_key_exists($status, User::statusLabels()), fn ($q) => $q->where('status', $status))
+            ->latest()
+            ->paginate(20)
+            ->withQueryString();
 
         return view('admin.users.index', [
             'users' => $users,
+            'status' => $status,
         ]);
     }
 

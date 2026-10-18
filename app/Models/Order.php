@@ -20,7 +20,8 @@ class Order extends Model
 
     protected $fillable = [
         'user_id', 'order_number', 'status', 'subtotal', 'discount',
-        'total', 'currency', 'notes', 'paid_at', 'wp_id', 'coupon_id',
+        'total', 'currency', 'notes', 'paid_at', 'wp_id', 'needs_review',
+        'wp_customer_id', 'billing_phone', 'coupon_id',
         'coupon_code', 'user_ip', 'user_agent',
     ];
 
@@ -33,10 +34,16 @@ class Order extends Model
     {
         return [
             'paid_at' => 'datetime',
+            'needs_review' => 'boolean',
             'subtotal' => 'integer',
             'discount' => 'integer',
             'total' => 'integer',
         ];
+    }
+
+    public function needsReview(): bool
+    {
+        return (bool) $this->needs_review || $this->user_id === null;
     }
 
     public function user(): BelongsTo

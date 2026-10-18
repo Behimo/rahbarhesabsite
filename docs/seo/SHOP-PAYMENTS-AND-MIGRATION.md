@@ -252,24 +252,33 @@ WP_DB_PREFIX=wp_
 
 سرویس: `App\Services\WordpressMigrationService`
 
-### ترتیب اجرا
+### ترتیب اجرا (و اجرای مجدد پس از مهاجرت ناقص)
+
+قبل از ETL، اسکیمای لوکال را به‌روز کنید (`pending_activation`، `claimed_mobile`، `orders.needs_review`):
 
 ```bash
+php artisan migrate
 php artisan wp:migrate-users --dry-run
 php artisan wp:migrate-users
+php artisan wp:migrate-categories
 php artisan wp:migrate-courses --dry-run
 php artisan wp:migrate-courses
+php artisan wp:migrate-posts
 php artisan wp:migrate-orders --dry-run
 php artisan wp:migrate-orders
 php artisan wp:migrate-audit
 ```
 
+هدف audit: `local_users_with_wp_id ≈ wp_users` و `local_wp_orders ≈ wp_paid_orders`. سفارش‌های واقعاً بدون موبایل/کاربر در `local_orders_needs_review` می‌مانند تا ادمین در `/admin/orders?filter=needs_review` اختصاص دهد.
+
 | دستور | کار |
 |--------|-----|
-| `wp:migrate-users` | کاربران؛ موبایل: loginx_phone → digits_phone → billing_phone؛ هش Phpass خام + `is_wp_password=true` |
+| `wp:migrate-users` | همه کاربران؛ بدون موبایل → `pending_activation`؛ موبایل تکراری → یک برنده (بیشترین سفارش paid) صاحب شماره، بقیه `claimed_mobile`؛ upsert فقط با `wp_id`؛ هش Phpass + `is_wp_password` |
 | `wp:migrate-courses` | محصولات ووکامرس → `shop_products` + `courses`؛ متای `_spotplayer_course`؛ ریدایرکت `/product/{slug}` |
-| `wp:migrate-orders` | سفارش completed/processing → orders + items + enrollment |
-| `wp:migrate-audit` | مقایسه تعداد WP در برابر لوکال |
+| `wp:migrate-orders` | همه سفارش completed/processing؛ لینک با `wp_id` یا `_billing_phone`؛ در غیر این صورت `user_id=null` + `needs_review` |
+| `wp:migrate-audit` | مقایسه تعداد WP در برابر لوکال + شمارنده‌های pending/needs_review |
+
+فعال‌سازی کاربر `pending_activation`: ورود با ایمیل/رمز → `/login/activate` → OTP موبایل.
 
 حجم تقریبی دیتای لایو (برای ممیزی، نه برای این محیط): حدود ۱۱٬۴۰۰ کاربر، ۴۱ محصول، ۸٬۵۸۳ سفارش.
 

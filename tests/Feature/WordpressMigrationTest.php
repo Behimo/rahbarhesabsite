@@ -80,8 +80,14 @@ class WordpressMigrationTest extends TestCase
         $failItemCreation = false;
         $service = app(WordpressMigrationService::class);
 
-        $this->assertSame(['created' => 1, 'enrolled' => 1], $service->migrateOrders());
-        $this->assertSame(['created' => 0, 'enrolled' => 0], $service->migrateOrders());
+        $this->assertSame(
+            ['created' => 1, 'enrolled' => 1, 'needs_review' => 0, 'linked_by_phone' => 0],
+            $service->migrateOrders()
+        );
+        $this->assertSame(
+            ['created' => 0, 'enrolled' => 0, 'needs_review' => 0, 'linked_by_phone' => 0],
+            $service->migrateOrders()
+        );
         $this->assertSame(1, Order::query()->where('wp_id', 501)->count());
         $this->assertSame(1, OrderItem::query()->where('order_id', Order::query()->where('wp_id', 501)->value('id'))->count());
         $this->assertSame(1, CourseEnrollment::query()->where('user_id', $user->id)->where('course_id', $course->id)->count());
@@ -128,14 +134,129 @@ class WordpressMigrationTest extends TestCase
         $this->addWordpressOrder(502, 9002, 7002, $user->wp_id ?? 78, 'not-imported');
 
         $this->assertSame(
-            ['created' => 1, 'enrolled' => 0],
+            ['created' => 1, 'enrolled' => 0, 'needs_review' => 0, 'linked_by_phone' => 0],
             app(WordpressMigrationService::class)->migrateOrders(dryRun: true)
         );
         $this->assertDatabaseMissing('orders', ['wp_id' => 502]);
     }
 
+    public function test_users_without_mobile_are_imported_as_pending_activation(): void
+    {
+        $this->seedWordpressUser(11, 'no-phone-user', 'nophone@example.com', 'hash11', []);
+        $this->seedWordpressUser(12, '09121234567', 'withphone@example.com', 'hash12', [
+            'billing_phone' => '09121234567',
+        ]);
+
+        $stats = app(WordpressMigrationService::class)->migrateUsers();
+
+        $this->assertSame(2, $stats['created']);
+        $this->assertSame(1, $stats['pending_activation']);
+        $this->assertDatabaseHas('users', [
+            'wp_id' => 11,
+            'status' => User::STATUS_PENDING_ACTIVATION,
+            'mobile' => null,
+        ]);
+        $this->assertDatabaseHas('users', [
+            'wp_id' => 12,
+            'status' => User::STATUS_ACTIVE,
+            'mobile' => '09121234567',
+        ]);
+    }
+
+    public function test_duplicate_mobile_keeps_separate_users_and_orders_follow_wp_id(): void
+    {
+        $this->seedWordpressUser(21, '09121111111', 'first@example.com', 'hash21', [
+            'billing_phone' => '09120000000',
+        ]);
+        $this->seedWordpressUser(22, 'second', 'second@example.com', 'hash22', [
+            'billing_phone' => '09120000000',
+        ]);
+
+        $product = ShopProduct::query()->create([
+            'slug' => 'dup-course',
+            'title' => 'دوره تکراری',
+            'price' => 100000,
+            'type' => ShopProduct::TYPE_COURSE,
+            'is_published' => true,
+        ]);
+        $course = $product->course()->create(['level' => 'beginner']);
+
+        // User 22 has more paid orders → wins the mobile.
+        $this->addWordpressOrder(601, 9601, 7601, 22, $product->slug);
+        $this->addWordpressOrder(602, 9602, 7601, 22, $product->slug);
+        $this->addWordpressOrder(603, 9603, 7601, 21, $product->slug);
+
+        $userStats = app(WordpressMigrationService::class)->migrateUsers();
+        app(WordpressMigrationService::class)->migrateOrders();
+
+        $winner = User::query()->where('wp_id', 22)->firstOrFail();
+        $loser = User::query()->where('wp_id', 21)->firstOrFail();
+
+        $this->assertSame('09120000000', $winner->mobile);
+        $this->assertSame(User::STATUS_ACTIVE, $winner->status);
+        $this->assertNull($loser->mobile);
+        $this->assertSame('09120000000', $loser->claimed_mobile);
+        $this->assertSame(User::STATUS_PENDING_ACTIVATION, $loser->status);
+        $this->assertSame(1, $userStats['duplicate_mobile']);
+        $this->assertSame($loser->id, Order::query()->where('wp_id', 603)->value('user_id'));
+        $this->assertSame($winner->id, Order::query()->where('wp_id', 601)->value('user_id'));
+        $this->assertTrue(CourseEnrollment::query()->where('user_id', $loser->id)->where('course_id', $course->id)->exists());
+    }
+
+    public function test_guest_order_without_phone_is_imported_for_admin_review(): void
+    {
+        $this->addWordpressOrder(701, 9701, 7701, 0, 'orphan-course', billingPhone: 'bad');
+
+        $stats = app(WordpressMigrationService::class)->migrateOrders();
+
+        $this->assertSame(1, $stats['created']);
+        $this->assertSame(1, $stats['needs_review']);
+        $this->assertDatabaseHas('orders', [
+            'wp_id' => 701,
+            'user_id' => null,
+            'needs_review' => 1,
+        ]);
+    }
+
+    public function test_guest_order_with_billing_phone_links_or_creates_user(): void
+    {
+        ShopProduct::query()->create([
+            'slug' => 'guest-course',
+            'title' => 'دوره مهمان',
+            'price' => 120000,
+            'type' => ShopProduct::TYPE_COURSE,
+            'is_published' => true,
+        ])->course()->create(['level' => 'beginner']);
+
+        $this->addWordpressOrder(702, 9702, 7702, 0, 'guest-course', billingPhone: '09351234567');
+
+        $stats = app(WordpressMigrationService::class)->migrateOrders();
+
+        $this->assertSame(1, $stats['linked_by_phone']);
+        $this->assertSame(0, $stats['needs_review']);
+        $order = Order::query()->where('wp_id', 702)->firstOrFail();
+        $this->assertNotNull($order->user_id);
+        $this->assertFalse($order->needs_review);
+        $this->assertDatabaseHas('users', ['mobile' => '09351234567']);
+    }
+
     private function createWordpressTables(): void
     {
+        Schema::connection('wordpress')->create('users', function ($table): void {
+            $table->unsignedBigInteger('ID')->primary();
+            $table->string('user_login');
+            $table->string('user_pass')->nullable();
+            $table->string('user_email')->nullable();
+            $table->string('display_name')->nullable();
+        });
+
+        Schema::connection('wordpress')->create('usermeta', function ($table): void {
+            $table->id();
+            $table->unsignedBigInteger('user_id');
+            $table->string('meta_key');
+            $table->text('meta_value')->nullable();
+        });
+
         Schema::connection('wordpress')->create('posts', function ($table): void {
             $table->unsignedBigInteger('ID')->primary();
             $table->string('post_type')->nullable();
@@ -169,21 +290,37 @@ class WordpressMigrationTest extends TestCase
         });
     }
 
-    private function addWordpressOrder(int $orderId, int $itemId, int $wpProductId, int $wpUserId, string $slug): void
+    /** @param  array<string, string>  $meta */
+    private function seedWordpressUser(int $id, string $login, string $email, string $pass, array $meta): void
     {
+        DB::connection('wordpress')->table('users')->insert([
+            'ID' => $id,
+            'user_login' => $login,
+            'user_pass' => $pass,
+            'user_email' => $email,
+            'display_name' => $login,
+        ]);
+
+        foreach ($meta as $key => $value) {
+            DB::connection('wordpress')->table('usermeta')->insert([
+                'user_id' => $id,
+                'meta_key' => $key,
+                'meta_value' => $value,
+            ]);
+        }
+    }
+
+    private function addWordpressOrder(
+        int $orderId,
+        int $itemId,
+        int $wpProductId,
+        int $wpUserId,
+        string $slug,
+        ?string $billingPhone = null,
+    ): void {
         $connection = DB::connection('wordpress');
-        $connection->table('posts')->insert([
-            [
-                'ID' => $orderId,
-                'post_type' => 'shop_order',
-                'post_status' => 'wc-completed',
-                'post_name' => null,
-                'post_title' => null,
-                'post_content' => null,
-                'post_excerpt' => null,
-                'post_date' => '2026-10-01 12:00:00',
-            ],
-            [
+        if (! $connection->table('posts')->where('ID', $wpProductId)->exists()) {
+            $connection->table('posts')->insert([
                 'ID' => $wpProductId,
                 'post_type' => 'product',
                 'post_status' => 'publish',
@@ -192,13 +329,27 @@ class WordpressMigrationTest extends TestCase
                 'post_content' => null,
                 'post_excerpt' => null,
                 'post_date' => null,
-            ],
+            ]);
+        }
+        $connection->table('posts')->insert([
+            'ID' => $orderId,
+            'post_type' => 'shop_order',
+            'post_status' => 'wc-completed',
+            'post_name' => null,
+            'post_title' => null,
+            'post_content' => null,
+            'post_excerpt' => null,
+            'post_date' => '2026-10-01 12:00:00',
         ]);
-        $connection->table('postmeta')->insert([
+        $meta = [
             ['post_id' => $orderId, 'meta_key' => '_customer_user', 'meta_value' => (string) $wpUserId],
             ['post_id' => $orderId, 'meta_key' => '_order_total', 'meta_value' => '250000'],
             ['post_id' => $orderId, 'meta_key' => '_cart_discount', 'meta_value' => '0'],
-        ]);
+        ];
+        if ($billingPhone !== null) {
+            $meta[] = ['post_id' => $orderId, 'meta_key' => '_billing_phone', 'meta_value' => $billingPhone];
+        }
+        $connection->table('postmeta')->insert($meta);
         $connection->table('woocommerce_order_items')->insert([
             'order_item_id' => $itemId,
             'order_id' => $orderId,

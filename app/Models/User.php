@@ -18,9 +18,18 @@ class User extends Authenticatable
 {
     use HasFactory, HasRoles, Notifiable, SoftDeletes;
 
+    public const STATUS_ACTIVE = 'active';
+
+    public const STATUS_BANNED = 'banned';
+
+    public const STATUS_SUSPENDED = 'suspended';
+
+    public const STATUS_PENDING_ACTIVATION = 'pending_activation';
+
     protected $fillable = [
         'wp_id',
         'mobile',
+        'claimed_mobile',
         'mobile_verified_at',
         'name',
         'first_name',
@@ -126,7 +135,16 @@ class User extends Authenticatable
 
     public function isBlocked(): bool
     {
-        return in_array($this->status, ['banned', 'suspended'], true);
+        return in_array($this->status, [
+            self::STATUS_BANNED,
+            self::STATUS_SUSPENDED,
+            self::STATUS_PENDING_ACTIVATION,
+        ], true);
+    }
+
+    public function needsActivation(): bool
+    {
+        return $this->status === self::STATUS_PENDING_ACTIVATION;
     }
 
     /**
@@ -135,9 +153,10 @@ class User extends Authenticatable
     public static function statusLabels(): array
     {
         return [
-            'active' => 'فعال',
-            'suspended' => 'معلق',
-            'banned' => 'مسدود',
+            self::STATUS_ACTIVE => 'فعال',
+            self::STATUS_PENDING_ACTIVATION => 'در انتظار فعال‌سازی',
+            self::STATUS_SUSPENDED => 'معلق',
+            self::STATUS_BANNED => 'مسدود',
         ];
     }
 
@@ -217,7 +236,7 @@ class User extends Authenticatable
             'mobile' => $local,
             'email' => null,
             'password' => Str::random(32),
-            'status' => 'active',
+            'status' => self::STATUS_ACTIVE,
         ]);
 
         $user->ensureSiteRole();

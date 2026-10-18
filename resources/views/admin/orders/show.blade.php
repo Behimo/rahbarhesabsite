@@ -41,7 +41,38 @@
             </div>
         </div>
 
-        @if (admin_can('orders', 'create'))
+        @if ($order->needsReview() && admin_can('orders', 'update'))
+            <div class="card mb-4 border-warning">
+                <div class="card-header bg-label-warning"><h5 class="mb-0">اختصاص کاربر به سفارش یتیم</h5></div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        این سفارش از وردپرس بدون کاربر مشخص آمده است.
+                        @if ($order->wp_customer_id) WP customer: <span dir="ltr">{{ $order->wp_customer_id }}</span>@endif
+                        @if ($order->billing_phone) | موبایل صورتحساب: <span dir="ltr">{{ $order->billing_phone }}</span>@endif
+                    </p>
+                    <form method="POST" action="{{ route('admin.orders.assign-user', $order) }}" class="row g-3 align-items-end">
+                        @csrf
+                        <div class="col-md-9">
+                            <label class="form-label">کاربر</label>
+                            <select name="user_id" class="form-select" required>
+                                <option value="">انتخاب کنید…</option>
+                                @foreach ($assignableUsers as $u)
+                                    <option value="{{ $u->id }}">
+                                        #{{ $u->id }} — {{ $u->displayName() }}
+                                        @if ($u->mobile ?: $u->phone) ({{ $u->mobile ?: $u->phone }}) @endif
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-warning w-100">اختصاص و صدور دسترسی</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        @endif
+
+        @if ($order->user_id && admin_can('orders', 'create'))
             <div class="card mb-4">
                 <div class="card-header"><h5 class="mb-0">ثبت‌نام دستی / هدیه</h5></div>
                 <div class="card-body">
@@ -103,8 +134,20 @@
     <div class="col-md-4">
         <div class="card mb-4">
             <div class="card-body">
-                <p><strong>کاربر:</strong> {{ $order->user->name }}</p>
-                <p><strong>موبایل:</strong> {{ $order->user->mobile ?: $order->user->phone }}</p>
+                @if ($order->needsReview())
+                    <p><span class="badge bg-label-warning">سفارش یتیم WP — نیاز به بررسی</span></p>
+                @endif
+                <p><strong>کاربر:</strong>
+                    @if ($order->user)
+                        {{ $order->user->displayName() }}
+                    @else
+                        <span class="text-danger">بدون کاربر</span>
+                    @endif
+                </p>
+                <p><strong>موبایل:</strong> {{ $order->user?->mobile ?: $order->user?->phone ?: ($order->billing_phone ?: '—') }}</p>
+                @if ($order->wp_id)
+                    <p><strong>WP order:</strong> <span dir="ltr">{{ $order->wp_id }}</span></p>
+                @endif
                 <p><strong>وضعیت:</strong> {{ $order->status }}</p>
                 <p><strong>جمع:</strong> {{ number_format($order->subtotal) }} تومان</p>
                 <p><strong>تخفیف:</strong> {{ number_format($order->discount) }} تومان @if($order->coupon_code) ({{ $order->coupon_code }}) @endif</p>
