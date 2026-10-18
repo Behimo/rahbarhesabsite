@@ -20,7 +20,8 @@ class MigrateWpUsersCommand extends Command
         }
 
         $total = $migration->countUsers();
-        $this->info(($this->option('dry-run') ? '[dry-run] ' : '')."مهاجرت کاربران ({$total} رکورد)...");
+        $this->info(($this->option('dry-run') ? '[dry-run] ' : '')."مهاجرت کاربران ({$total} رکورد، حالت سریع bulk)...");
+        $this->comment('خواندن از وردپرس و نوشتن دسته‌ای — معمولاً چند دقیقه، نه چند ده دقیقه.');
 
         $bar = $this->output->createProgressBar($total);
         $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% | %elapsed:6s% | ETA %remaining:6s%');

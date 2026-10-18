@@ -9,8 +9,10 @@ use App\Models\Course;
 use App\Models\CourseEnrollment;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Role;
 use App\Models\ShopProduct;
 use App\Models\User;
+use App\Support\AccessCatalog;
 use App\Support\PhoneNormalizer;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
@@ -177,6 +179,8 @@ class WordpressMigrationService
     }
 
     /**
+     * Fast path: bulk read + bulk upsert (no per-user bcrypt / Eloquent / role sync).
+     *
      * @param  (callable(): void)|null  $onProgress  called once per WP user row
      * @return array{created: int, updated: int, pending_activation: int, duplicate_mobile: int}
      */
@@ -190,8 +194,7 @@ class WordpressMigrationService
         $orderCounts = $this->paidOrderCountsByCustomer();
         $candidates = [];
 
-        $users = $this->wp()->table('users')->orderBy('ID')->lazyById(250, 'ID')->chunk(250);
-        foreach ($users as $batch) {
+        foreach ($this->wp()->table('users')->orderBy('ID')->lazyById(500, 'ID')->chunk(500) as $batch) {
             $userMeta = $this->userMetaForIds($batch->pluck('ID')->all());
             foreach ($batch as $row) {
                 $meta = $userMeta[$row->ID] ?? [];
@@ -206,6 +209,21 @@ class WordpressMigrationService
         }
 
         $winnersByMobile = $this->mobileWinners($candidates);
+
+        $existingByWpId = DB::table('users')
+            ->whereNotNull('wp_id')
+            ->get(['id', 'wp_id', 'email', 'deleted_at'])
+            ->keyBy(fn ($row) => (int) $row->wp_id);
+
+        $usedEmails = [];
+        foreach (DB::table('users')->whereNotNull('email')->get(['email', 'wp_id']) as $row) {
+            $email = mb_strtolower((string) $row->email);
+            $usedEmails[$email] = (int) ($row->wp_id ?? 0);
+        }
+
+        $now = now()->toDateTimeString();
+        $rows = [];
+        $winnerReleases = [];
 
         foreach ($candidates as $candidate) {
             $row = $candidate['row'];
@@ -224,51 +242,81 @@ class WordpressMigrationService
                 $pendingActivation++;
             }
 
+            if ($isWinner && $mobile) {
+                $winnerReleases[$mobile] = $wpId;
+            }
+
             $name = trim(($meta['first_name'] ?? '').' '.($meta['last_name'] ?? ''))
                 ?: ($row->display_name ?: $row->user_login);
 
-            $payload = [
+            $email = $this->claimUniqueEmail($row->user_email ?: null, $wpId, $usedEmails);
+            $password = (string) $row->user_pass;
+            if ($password === '') {
+                $password = '!';
+            }
+
+            $existing = $existingByWpId->get($wpId);
+            if ($existing) {
+                $updated++;
+            } else {
+                $created++;
+            }
+
+            $rows[] = [
                 'wp_id' => $wpId,
                 'name' => mb_substr((string) $name, 0, 191),
                 'first_name' => isset($meta['first_name']) ? mb_substr((string) $meta['first_name'], 0, 100) : null,
                 'last_name' => isset($meta['last_name']) ? mb_substr((string) $meta['last_name'], 0, 100) : null,
-                'email' => $this->uniqueEmailOrNull($row->user_email ?: null, $wpId),
+                'email' => $email,
                 'phone' => $isWinner ? $mobile : null,
                 'mobile' => $isWinner ? $mobile : null,
                 'claimed_mobile' => $isDuplicate ? $mobile : ($isWinner ? null : $this->rawClaimedMobile($meta, (string) $row->user_login)),
                 'status' => $status,
+                'password' => $password,
+                'is_wp_password' => true,
+                'created_at' => $now,
+                'updated_at' => $now,
+                'deleted_at' => null,
             ];
-
-            $existing = User::withTrashed()->where('wp_id', $wpId)->first();
-
-            if ($dryRun) {
-                $existing ? $updated++ : $created++;
-                $onProgress && $onProgress();
-
-                continue;
-            }
-
-            if ($isWinner && $mobile) {
-                $this->releaseMobileFromOtherUsers($mobile, $wpId);
-            }
-
-            if ($existing) {
-                if ($existing->trashed()) {
-                    $existing->restore();
-                }
-                $existing->fill($payload)->save();
-                $existing->ensureSiteRole();
-                $this->storeWordpressPassword($existing->id, (string) $row->user_pass);
-                $updated++;
-            } else {
-                $user = User::query()->create($payload + ['password' => Str::random(32)]);
-                $user->ensureSiteRole();
-                $this->storeWordpressPassword($user->id, (string) $row->user_pass);
-                $created++;
-            }
-
-            $onProgress && $onProgress();
         }
+
+        if ($dryRun) {
+            foreach ($rows as $_) {
+                $onProgress && $onProgress();
+            }
+
+            return [
+                'created' => $created,
+                'updated' => $updated,
+                'pending_activation' => $pendingActivation,
+                'duplicate_mobile' => $duplicateMobile,
+            ];
+        }
+
+        $this->bulkReleaseWinnerMobiles($winnerReleases);
+
+        $updateColumns = [
+            'name', 'first_name', 'last_name', 'email', 'phone', 'mobile', 'claimed_mobile',
+            'status', 'password', 'is_wp_password', 'updated_at', 'deleted_at',
+        ];
+
+        foreach (array_chunk($rows, 250) as $chunk) {
+            DB::table('users')->upsert($chunk, ['wp_id'], $updateColumns);
+            if ($onProgress) {
+                for ($i = 0, $n = count($chunk); $i < $n; $i++) {
+                    $onProgress();
+                }
+            }
+        }
+
+        $wpIds = array_column($rows, 'wp_id');
+        $localIds = [];
+        foreach (array_chunk($wpIds, 1000) as $chunk) {
+            foreach (DB::table('users')->whereIn('wp_id', $chunk)->pluck('id') as $id) {
+                $localIds[] = (int) $id;
+            }
+        }
+        $this->bulkEnsureSiteRoles($localIds);
 
         return [
             'created' => $created,
@@ -472,34 +520,220 @@ class WordpressMigrationService
         $needsReview = 0;
         $linkedByPhone = 0;
 
+        $usersByWpId = User::query()->whereNotNull('wp_id')->get(['id', 'wp_id', 'mobile', 'phone', 'status'])
+            ->keyBy(fn (User $u) => (int) $u->wp_id);
+        $usersByMobile = User::query()
+            ->where(function ($q) {
+                $q->whereNotNull('mobile')->orWhereNotNull('phone');
+            })
+            ->get(['id', 'wp_id', 'mobile', 'phone', 'status']);
+        $mobileIndex = [];
+        foreach ($usersByMobile as $u) {
+            foreach (array_filter([(string) $u->mobile, (string) $u->phone]) as $m) {
+                $mobileIndex[$m] = $u;
+            }
+        }
+
+        $productsBySlug = ShopProduct::query()->with(['course', 'bundledCourses'])->get()->keyBy('slug');
+        $existingOrderWpIds = Order::query()->whereNotNull('wp_id')->pluck('id', 'wp_id');
+        $orderService = app(OrderService::class);
+
         $orders = $this->wp()->table('posts')
             ->where('post_type', 'shop_order')
             ->whereIn('post_status', ['wc-completed', 'wc-processing'])
             ->orderBy('ID')
-            ->lazyById(250, 'ID');
+            ->lazyById(200, 'ID');
 
-        foreach ($orders as $wpOrder) {
-            $meta = $this->postMetaForIds([(int) $wpOrder->ID])[$wpOrder->ID] ?? [];
-            $wpCustomerId = isset($meta['_customer_user']) ? (int) $meta['_customer_user'] : 0;
-            $billingPhoneRaw = (string) ($meta['_billing_phone'] ?? $meta['billing_phone'] ?? '');
-            $billingPhone = PhoneNormalizer::isValidIranMobile($billingPhoneRaw)
-                ? PhoneNormalizer::toLocal($billingPhoneRaw)
-                : null;
+        foreach ($orders->chunk(100) as $batch) {
+            $orderIds = $batch->pluck('ID')->map(fn ($id) => (int) $id)->all();
+            $metaByOrder = $this->postMetaForIds($orderIds);
 
-            $linkedViaPhone = false;
-            $user = $wpCustomerId > 0
-                ? User::query()->where('wp_id', $wpCustomerId)->first()
-                : null;
+            $allItems = $this->wp()->table('woocommerce_order_items')
+                ->whereIn('order_id', $orderIds)
+                ->where('order_item_type', 'line_item')
+                ->orderBy('order_item_id')
+                ->get()
+                ->groupBy('order_id');
 
-            if (! $user && $billingPhone) {
-                $user = $this->findOrCreateUserForBillingPhone($billingPhone, $meta, $dryRun);
-                $linkedViaPhone = $user !== null;
-            }
+            $allItemIds = $allItems->flatten(1)->pluck('order_item_id')->all();
+            $itemMetaByItem = $allItemIds === []
+                ? collect()
+                : $this->wp()->table('woocommerce_order_itemmeta')
+                    ->whereIn('order_item_id', $allItemIds)
+                    ->get(['order_item_id', 'meta_key', 'meta_value'])
+                    ->groupBy('order_item_id')
+                    ->map(fn ($rows) => $rows->pluck('meta_value', 'meta_key')->all());
 
-            $isOrphan = $user === null;
+            $wpProductIds = $itemMetaByItem
+                ->map(fn (array $values) => (int) ($values['_product_id'] ?? 0))
+                ->filter(fn (int $id) => $id > 0)
+                ->unique()
+                ->values()
+                ->all();
+            $wpProducts = $wpProductIds === []
+                ? collect()
+                : $this->wp()->table('posts')->whereIn('ID', $wpProductIds)->get(['ID', 'post_name'])->keyBy('ID');
 
-            if ($dryRun) {
-                if (! Order::query()->where('wp_id', $wpOrder->ID)->exists()) {
+            foreach ($batch as $wpOrder) {
+                $meta = $metaByOrder[$wpOrder->ID] ?? [];
+                $wpCustomerId = isset($meta['_customer_user']) ? (int) $meta['_customer_user'] : 0;
+                $billingPhoneRaw = (string) ($meta['_billing_phone'] ?? $meta['billing_phone'] ?? '');
+                $billingPhone = PhoneNormalizer::isValidIranMobile($billingPhoneRaw)
+                    ? PhoneNormalizer::toLocal($billingPhoneRaw)
+                    : null;
+
+                $linkedViaPhone = false;
+                $user = $wpCustomerId > 0 ? ($usersByWpId->get($wpCustomerId) ?: null) : null;
+
+                if (! $user && $billingPhone) {
+                    $user = $mobileIndex[$billingPhone] ?? null;
+                    if (! $user && ! $dryRun) {
+                        $user = $this->findOrCreateUserForBillingPhone($billingPhone, $meta, false);
+                        if ($user) {
+                            $mobileIndex[$billingPhone] = $user;
+                            if ($user->wp_id) {
+                                $usersByWpId->put((int) $user->wp_id, $user);
+                            }
+                        }
+                    } elseif (! $user && $dryRun) {
+                        $user = new User(['mobile' => $billingPhone, 'phone' => $billingPhone, 'status' => User::STATUS_ACTIVE]);
+                    }
+                    $linkedViaPhone = $user !== null;
+                }
+
+                $isOrphan = $user === null || (! $dryRun && ! $user->exists);
+
+                if ($dryRun) {
+                    if (! $existingOrderWpIds->has($wpOrder->ID)) {
+                        $created++;
+                    }
+                    if ($isOrphan) {
+                        $needsReview++;
+                    }
+                    if ($linkedViaPhone) {
+                        $linkedByPhone++;
+                    }
+                    $onProgress && $onProgress();
+
+                    continue;
+                }
+
+                $items = $allItems->get($wpOrder->ID, collect());
+                $wasCreated = ! $existingOrderWpIds->has($wpOrder->ID);
+
+                DB::transaction(function () use (
+                    $wpOrder,
+                    $meta,
+                    $user,
+                    $items,
+                    $itemMetaByItem,
+                    $wpProducts,
+                    $productsBySlug,
+                    $wpCustomerId,
+                    $billingPhone,
+                    $isOrphan,
+                    $orderService,
+                    $existingOrderWpIds,
+                    &$enrolled
+                ): void {
+                    $order = Order::query()->firstOrCreate(
+                        ['wp_id' => $wpOrder->ID],
+                        [
+                            'user_id' => $isOrphan ? null : $user->id,
+                            'order_number' => 'WP-'.$wpOrder->ID,
+                            'status' => Order::STATUS_PAID,
+                            'subtotal' => (int) ($meta['_order_total'] ?? 0),
+                            'discount' => (int) ($meta['_cart_discount'] ?? 0),
+                            'total' => (int) ($meta['_order_total'] ?? 0),
+                            'paid_at' => $wpOrder->post_date ? Carbon::parse($wpOrder->post_date) : now(),
+                            'needs_review' => $isOrphan,
+                            'wp_customer_id' => $wpCustomerId > 0 ? $wpCustomerId : null,
+                            'billing_phone' => $billingPhone,
+                        ]
+                    );
+
+                    $order->forceFill([
+                        'user_id' => $isOrphan ? null : $user->id,
+                        'needs_review' => $isOrphan,
+                        'wp_customer_id' => $wpCustomerId > 0 ? $wpCustomerId : null,
+                        'billing_phone' => $billingPhone,
+                        'status' => Order::STATUS_PAID,
+                        'subtotal' => (int) ($meta['_order_total'] ?? 0),
+                        'discount' => (int) ($meta['_cart_discount'] ?? 0),
+                        'total' => (int) ($meta['_order_total'] ?? 0),
+                        'paid_at' => $wpOrder->post_date ? Carbon::parse($wpOrder->post_date) : ($order->paid_at ?? now()),
+                    ])->save();
+
+                    $existingOrderWpIds[$wpOrder->ID] = $order->id;
+
+                    $existingItems = $order->items()->get();
+                    $existingWpItemIds = $existingItems
+                        ->map(fn (OrderItem $item) => (string) ($item->metadata['wp_order_item_id'] ?? ''))
+                        ->filter()
+                        ->flip();
+                    $legacyMatches = $existingItems->filter(
+                        fn (OrderItem $item) => empty($item->metadata['wp_order_item_id'])
+                    )->values()->all();
+
+                    foreach ($items as $item) {
+                        $sourceMeta = $itemMetaByItem->get($item->order_item_id, []);
+                        $wpItemId = (string) $item->order_item_id;
+                        $productId = (int) ($sourceMeta['_product_id'] ?? 0);
+                        $price = (int) ($sourceMeta['_line_total'] ?? 0);
+                        $quantity = max(1, (int) ($sourceMeta['_qty'] ?? 1));
+                        $wpProduct = $wpProducts->get($productId);
+                        $shopProduct = $wpProduct ? $productsBySlug->get($wpProduct->post_name) : null;
+
+                        if (! $existingWpItemIds->has($wpItemId)) {
+                            $legacyIndex = null;
+                            foreach ($legacyMatches as $index => $legacy) {
+                                if ((int) ($legacy->metadata['wp_product_id'] ?? 0) === $productId
+                                    && $legacy->title === $item->order_item_name
+                                    && (int) $legacy->price === $price
+                                    && (int) $legacy->quantity === $quantity) {
+                                    $legacyIndex = $index;
+                                    break;
+                                }
+                            }
+
+                            if ($legacyIndex !== null) {
+                                $legacy = $legacyMatches[$legacyIndex];
+                                unset($legacyMatches[$legacyIndex]);
+                                $legacy->update(['metadata' => array_merge($legacy->metadata ?? [], [
+                                    'wp_order_item_id' => $wpItemId,
+                                    'wp_product_id' => $productId,
+                                ])]);
+                            } else {
+                                OrderItem::query()->create([
+                                    'order_id' => $order->id,
+                                    'shop_product_id' => $shopProduct?->id,
+                                    'title' => $item->order_item_name,
+                                    'price' => $price,
+                                    'quantity' => $quantity,
+                                    'metadata' => [
+                                        'wp_order_item_id' => $wpItemId,
+                                        'wp_product_id' => $productId,
+                                    ],
+                                ]);
+                            }
+                        }
+
+                        if (! $isOrphan && $user && $shopProduct) {
+                            foreach ($shopProduct->relatedCourses() as $course) {
+                                $hadEnrollment = CourseEnrollment::query()
+                                    ->where('user_id', $user->id)
+                                    ->where('course_id', $course->id)
+                                    ->exists();
+                                $orderService->enrollUser($user, $course, $order, CourseEnrollment::SOURCE_PURCHASE);
+                                if (! $hadEnrollment) {
+                                    $enrolled++;
+                                }
+                            }
+                        }
+                    }
+                });
+
+                if ($wasCreated) {
                     $created++;
                 }
                 if ($isOrphan) {
@@ -508,158 +742,9 @@ class WordpressMigrationService
                 if ($linkedViaPhone) {
                     $linkedByPhone++;
                 }
+
                 $onProgress && $onProgress();
-
-                continue;
             }
-
-            $items = $this->wp()->table('woocommerce_order_items')
-                ->where('order_id', $wpOrder->ID)
-                ->where('order_item_type', 'line_item')
-                ->orderBy('order_item_id')
-                ->get();
-
-            $itemIds = $items->pluck('order_item_id');
-            $itemMeta = $itemIds->isEmpty()
-                ? collect()
-                : $this->wp()->table('woocommerce_order_itemmeta')
-                    ->whereIn('order_item_id', $itemIds)
-                    ->get(['order_item_id', 'meta_key', 'meta_value'])
-                    ->groupBy('order_item_id')
-                    ->map(fn ($rows) => $rows->pluck('meta_value', 'meta_key')->all());
-
-            $productIds = $itemMeta->map(fn (array $values) => (int) ($values['_product_id'] ?? 0))
-                ->filter(fn (int $id) => $id > 0)
-                ->unique()
-                ->values();
-            $wpProducts = $productIds->isEmpty()
-                ? collect()
-                : $this->wp()->table('posts')->whereIn('ID', $productIds)->get(['ID', 'post_name'])->keyBy('ID');
-            $slugList = $wpProducts->pluck('post_name')->filter()->unique();
-            $productsBySlug = $slugList->isEmpty()
-                ? collect()
-                : ShopProduct::query()->whereIn('slug', $slugList)->get()->keyBy('slug');
-
-            $wasCreated = ! Order::query()->where('wp_id', $wpOrder->ID)->exists();
-            DB::transaction(function () use (
-                $wpOrder,
-                $meta,
-                $user,
-                $items,
-                $itemMeta,
-                $wpProducts,
-                $productsBySlug,
-                $wpCustomerId,
-                $billingPhone,
-                $isOrphan,
-                &$enrolled
-            ): void {
-                $order = Order::query()->firstOrCreate(
-                    ['wp_id' => $wpOrder->ID],
-                    [
-                        'user_id' => $user?->id,
-                        'order_number' => 'WP-'.$wpOrder->ID,
-                        'status' => Order::STATUS_PAID,
-                        'subtotal' => (int) ($meta['_order_total'] ?? 0),
-                        'discount' => (int) ($meta['_cart_discount'] ?? 0),
-                        'total' => (int) ($meta['_order_total'] ?? 0),
-                        'paid_at' => $wpOrder->post_date ? Carbon::parse($wpOrder->post_date) : now(),
-                        'needs_review' => $isOrphan,
-                        'wp_customer_id' => $wpCustomerId > 0 ? $wpCustomerId : null,
-                        'billing_phone' => $billingPhone,
-                    ]
-                );
-
-                $order->forceFill([
-                    'user_id' => $user?->id,
-                    'needs_review' => $isOrphan,
-                    'wp_customer_id' => $wpCustomerId > 0 ? $wpCustomerId : null,
-                    'billing_phone' => $billingPhone,
-                    'status' => Order::STATUS_PAID,
-                    'subtotal' => (int) ($meta['_order_total'] ?? 0),
-                    'discount' => (int) ($meta['_cart_discount'] ?? 0),
-                    'total' => (int) ($meta['_order_total'] ?? 0),
-                    'paid_at' => $wpOrder->post_date ? Carbon::parse($wpOrder->post_date) : ($order->paid_at ?? now()),
-                ])->save();
-
-                $existingItems = $order->items()->get();
-                $existingWpItemIds = $existingItems
-                    ->map(fn (OrderItem $item) => (string) ($item->metadata['wp_order_item_id'] ?? ''))
-                    ->filter()
-                    ->flip();
-                $legacyMatches = $existingItems->filter(
-                    fn (OrderItem $item) => empty($item->metadata['wp_order_item_id'])
-                )->values()->all();
-
-                foreach ($items as $item) {
-                    $sourceMeta = $itemMeta->get($item->order_item_id, []);
-                    $wpItemId = (string) $item->order_item_id;
-                    $productId = (int) ($sourceMeta['_product_id'] ?? 0);
-                    $price = (int) ($sourceMeta['_line_total'] ?? 0);
-                    $quantity = max(1, (int) ($sourceMeta['_qty'] ?? 1));
-                    $wpProduct = $wpProducts->get($productId);
-                    $shopProduct = $wpProduct ? $productsBySlug->get($wpProduct->post_name) : null;
-
-                    if (! $existingWpItemIds->has($wpItemId)) {
-                        $legacyIndex = null;
-                        foreach ($legacyMatches as $index => $legacy) {
-                            if ((int) ($legacy->metadata['wp_product_id'] ?? 0) === $productId
-                                && $legacy->title === $item->order_item_name
-                                && (int) $legacy->price === $price
-                                && (int) $legacy->quantity === $quantity) {
-                                $legacyIndex = $index;
-                                break;
-                            }
-                        }
-
-                        if ($legacyIndex !== null) {
-                            $legacy = $legacyMatches[$legacyIndex];
-                            unset($legacyMatches[$legacyIndex]);
-                            $legacy->update(['metadata' => array_merge($legacy->metadata ?? [], [
-                                'wp_order_item_id' => $wpItemId,
-                                'wp_product_id' => $productId,
-                            ])]);
-                        } else {
-                            OrderItem::query()->create([
-                                'order_id' => $order->id,
-                                'shop_product_id' => $shopProduct?->id,
-                                'title' => $item->order_item_name,
-                                'price' => $price,
-                                'quantity' => $quantity,
-                                'metadata' => [
-                                    'wp_order_item_id' => $wpItemId,
-                                    'wp_product_id' => $productId,
-                                ],
-                            ]);
-                        }
-                    }
-
-                    if ($user && $shopProduct) {
-                        foreach ($shopProduct->relatedCourses() as $course) {
-                            $hadEnrollment = CourseEnrollment::query()
-                                ->where('user_id', $user->id)
-                                ->where('course_id', $course->id)
-                                ->exists();
-                            app(OrderService::class)->enrollUser($user, $course, $order, CourseEnrollment::SOURCE_PURCHASE);
-                            if (! $hadEnrollment) {
-                                $enrolled++;
-                            }
-                        }
-                    }
-                }
-            });
-
-            if ($wasCreated) {
-                $created++;
-            }
-            if ($isOrphan) {
-                $needsReview++;
-            }
-            if ($linkedViaPhone) {
-                $linkedByPhone++;
-            }
-
-            $onProgress && $onProgress();
         }
 
         return [
@@ -786,6 +871,129 @@ class WordpressMigrationService
     }
 
     /**
+     * @param  array<string, int>  $usedEmails  lowercase email => owning wp_id (0 = local-only)
+     */
+    private function claimUniqueEmail(?string $email, int $wpId, array &$usedEmails): ?string
+    {
+        $email = $email !== null ? trim($email) : null;
+        if ($email === null || $email === '') {
+            return null;
+        }
+
+        $email = mb_substr($email, 0, 255);
+        $key = mb_strtolower($email);
+        $owner = $usedEmails[$key] ?? null;
+
+        if ($owner !== null && $owner !== $wpId) {
+            return null;
+        }
+
+        $usedEmails[$key] = $wpId;
+
+        return $email;
+    }
+
+    /**
+     * @param  array<string, int>  $winnerReleases  mobile => winner wp_id
+     */
+    private function bulkReleaseWinnerMobiles(array $winnerReleases): void
+    {
+        foreach ($winnerReleases as $mobile => $keepWpId) {
+            $ids = DB::table('users')
+                ->where(function ($q) use ($mobile) {
+                    $q->where('mobile', $mobile)->orWhere('phone', $mobile);
+                })
+                ->where(function ($q) use ($keepWpId) {
+                    $q->whereNull('wp_id')->orWhere('wp_id', '!=', $keepWpId);
+                })
+                ->pluck('id');
+
+            if ($ids->isEmpty()) {
+                continue;
+            }
+
+            DB::table('users')
+                ->whereIn('id', $ids)
+                ->whereNull('claimed_mobile')
+                ->update(['claimed_mobile' => $mobile]);
+
+            DB::table('users')
+                ->whereIn('id', $ids)
+                ->where('status', User::STATUS_ACTIVE)
+                ->update(['status' => User::STATUS_PENDING_ACTIVATION]);
+
+            DB::table('users')
+                ->whereIn('id', $ids)
+                ->update([
+                    'mobile' => null,
+                    'phone' => null,
+                    'updated_at' => now(),
+                ]);
+        }
+    }
+
+    /**
+     * @param  list<int|string>  $userIds
+     */
+    private function bulkEnsureSiteRoles(array $userIds): void
+    {
+        if ($userIds === []) {
+            return;
+        }
+
+        $role = Role::query()
+            ->where('name', AccessCatalog::ROLE_USER)
+            ->where('guard_name', AccessCatalog::guard())
+            ->first();
+
+        if (! $role) {
+            return;
+        }
+
+        $modelType = (new User)->getMorphClass();
+        $already = DB::table('model_has_roles')
+            ->where('role_id', $role->id)
+            ->where('model_type', $modelType)
+            ->whereIn('model_id', $userIds)
+            ->pluck('model_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+        $alreadySet = array_fill_keys($already, true);
+
+        $inserts = [];
+        foreach ($userIds as $userId) {
+            $userId = (int) $userId;
+            if (isset($alreadySet[$userId])) {
+                continue;
+            }
+            // Skip users that already have any role.
+            $inserts[$userId] = [
+                'role_id' => $role->id,
+                'model_type' => $modelType,
+                'model_id' => $userId,
+            ];
+        }
+
+        if ($inserts === []) {
+            return;
+        }
+
+        $withAnyRole = DB::table('model_has_roles')
+            ->where('model_type', $modelType)
+            ->whereIn('model_id', array_keys($inserts))
+            ->pluck('model_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+        foreach ($withAnyRole as $id) {
+            unset($inserts[$id]);
+        }
+
+        foreach (array_chunk(array_values($inserts), 500) as $chunk) {
+            DB::table('model_has_roles')->insert($chunk);
+        }
+    }
+
+    /**
      * @param  list<array{row: object, meta: array<string, mixed>, mobile: ?string, orders: int}>  $candidates
      * @return array<string, int> mobile => winning wp_id
      */
@@ -896,22 +1104,29 @@ class WordpressMigrationService
             $name = 'کاربر '.substr($mobile, -4);
         }
 
-        $user = User::query()->create([
+        $now = now()->toDateTimeString();
+        $email = $this->uniqueEmailOrNull(
+            isset($meta['_billing_email']) ? (string) $meta['_billing_email'] : null,
+            0
+        );
+
+        $id = DB::table('users')->insertGetId([
             'name' => mb_substr($name, 0, 191),
             'first_name' => $first !== '' ? mb_substr($first, 0, 100) : null,
             'last_name' => $last !== '' ? mb_substr($last, 0, 100) : null,
-            'email' => $this->uniqueEmailOrNull(
-                isset($meta['_billing_email']) ? (string) $meta['_billing_email'] : null,
-                0
-            ),
+            'email' => $email,
             'phone' => $mobile,
             'mobile' => $mobile,
-            'password' => Str::random(32),
+            'password' => '!',
+            'is_wp_password' => false,
             'status' => User::STATUS_ACTIVE,
+            'created_at' => $now,
+            'updated_at' => $now,
         ]);
-        $user->ensureSiteRole();
 
-        return $user;
+        $this->bulkEnsureSiteRoles([$id]);
+
+        return User::query()->findOrFail($id);
     }
 
     private function storeWordpressPassword(int $userId, string $hash): void

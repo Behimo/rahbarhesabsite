@@ -269,6 +269,8 @@ php artisan wp:migrate-orders
 php artisan wp:migrate-audit
 ```
 
+**عملکرد / روز انتقال:** `migrate-users` و `migrate-orders` به‌صورت bulk نوشته می‌شوند (بدون bcrypt به‌ازای هر کاربر). کاربران/دوره‌ها/مقالات را **قبل از cutover** روی بکاپ WP اجرا کنید؛ شب انتقال فقط دلتای سفارش‌ها (و در صورت نیاز یک `migrate-users` سریع دوباره) بماند تا downtime زیر یک ساعت بماند.
+
 هدف audit: `local_users_with_wp_id ≈ wp_users` و `local_wp_orders ≈ wp_paid_orders`. سفارش‌های واقعاً بدون موبایل/کاربر در `local_orders_needs_review` می‌مانند تا ادمین در `/admin/orders?filter=needs_review` اختصاص دهد.
 
 | دستور | کار |
