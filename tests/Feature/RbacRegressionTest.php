@@ -64,6 +64,46 @@ class RbacRegressionTest extends TestCase
         );
     }
 
+    public function test_editor_cannot_export_or_import_cms_data(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $editor = User::factory()->create();
+        $editor->assignRole(AccessCatalog::ROLE_EDITOR);
+
+        $this->actingAs($editor)
+            ->get(route('admin.export'))
+            ->assertForbidden();
+
+        $this->actingAs($editor)
+            ->post(route('admin.import'), [])
+            ->assertForbidden();
+    }
+
+    public function test_shop_manager_cannot_export_or_import_cms_data(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $manager = User::factory()->create();
+        $manager->assignRole(AccessCatalog::ROLE_SHOP_MANAGER);
+
+        $this->actingAs($manager)
+            ->get(route('admin.export'))
+            ->assertForbidden();
+
+        $this->actingAs($manager)
+            ->post(route('admin.import'), [])
+            ->assertForbidden();
+    }
+
+    public function test_admin_can_export_cms_data(): void
+    {
+        $admin = $this->makeAdmin();
+
+        $this->actingAs($admin)
+            ->get(route('admin.export'))
+            ->assertOk()
+            ->assertHeader('content-disposition');
+    }
+
     private function makeStaffWithUserPermissions(string $roleName): User
     {
         $this->seed(RolesAndPermissionsSeeder::class);
