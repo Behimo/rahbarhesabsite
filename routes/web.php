@@ -66,7 +66,7 @@ Route::controller(SitemapController::class)->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Public Frontend (Site)
+| Public Frontend (Site) — WordPress URL parity
 |--------------------------------------------------------------------------
 */
 
@@ -74,14 +74,20 @@ Route::controller(SitemapController::class)->group(function () {
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/search', [SearchController::class, 'index'])->name('search');
 
-// Courses & LMS
+// Courses at /product/ (WP WooCommerce permalinks) + LMS actions under /courses/
+Route::get('/product', [CourseController::class, 'index'])->name('courses.index');
+Route::get('/product/page/{page}', [CourseController::class, 'index'])->whereNumber('page')->name('courses.index.paged');
+Route::get('/product/{slug}', [CourseController::class, 'show'])->name('courses.show');
+Route::get('/product-category/{category}', [CourseController::class, 'index'])->name('courses.category');
+Route::get('/product-category/{category}/page/{page}', [CourseController::class, 'index'])->whereNumber('page')->name('courses.category.paged');
+
 Route::controller(CourseController::class)->prefix('courses')->name('courses.')->group(function () {
-    Route::get('/', 'index')->name('index');
-    Route::get('/{slug}', 'show')->name('show');
+    Route::get('/', function () {
+        return new \Illuminate\Http\RedirectResponse(app(\App\Services\PermalinkService::class)->absolute('/product'), 301);
+    });
     Route::get('/{slug}/preview/{lessonSlug}', 'previewLesson')->name('preview');
     Route::get('/{slug}/lessons/{lessonSlug}/file', 'serveLessonFile')->name('lesson.file');
 
-    // Authenticated student actions
     Route::middleware('auth')->group(function () {
         Route::get('/{slug}/enroll-free', 'enrollFree')->name('enroll-free');
         Route::post('/{slug}/license/refresh', 'refreshLicense')->name('license.refresh');
@@ -89,31 +95,47 @@ Route::controller(CourseController::class)->prefix('courses')->name('courses.')-
         Route::post('/{slug}/lessons/{lessonSlug}/complete', 'completeLesson')->name('lesson.complete');
         Route::get('/{slug}/lessons/{lessonSlug}/download', 'downloadLesson')->name('lesson.download');
     });
+
+    // Staging-era Laravel course URLs → WP product permalinks (preserve trailing slash)
+    Route::get('/{slug}', function (string $slug) {
+        $target = app(\App\Services\PermalinkService::class)->absolute('/product/'.rawurldecode($slug));
+
+        return new \Illuminate\Http\RedirectResponse($target, 301);
+    });
 });
 
-// Legacy Product URLs (301 Redirect to Courses)
-Route::redirect('/products', '/courses', 301)->name('products.index');
-Route::get('/products/{slug}', fn () => redirect()->route('courses.index', [], 301))->name('products.show');
+Route::get('/products', function () {
+    return new \Illuminate\Http\RedirectResponse(app(\App\Services\PermalinkService::class)->absolute('/product'), 301);
+})->name('products.index');
+Route::get('/products/{slug}', function (string $slug) {
+    $target = app(\App\Services\PermalinkService::class)->absolute('/product/'.rawurldecode($slug));
 
-// Blog
-Route::controller(BlogController::class)->prefix('blog')->name('blog.')->group(function () {
-    Route::get('/', 'index')->name('index');
-    Route::get('/{slug}', 'show')->name('show');
-});
+    return new \Illuminate\Http\RedirectResponse($target, 301);
+})->name('products.show');
 
-// Accounting Laws (مواد قانونی)
+// Blog index + taxonomy archives
+Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
+Route::get('/blog/page/{page}', [BlogController::class, 'index'])->whereNumber('page')->name('blog.index.paged');
+Route::get('/category/{category}', [BlogController::class, 'index'])->name('blog.category');
+Route::get('/category/{category}/page/{page}', [BlogController::class, 'index'])->whereNumber('page')->name('blog.category.paged');
+Route::get('/tag/{tag}', [BlogController::class, 'index'])->name('blog.tag');
+Route::get('/tag/{tag}/page/{page}', [BlogController::class, 'index'])->whereNumber('page')->name('blog.tag.paged');
+
+// Accounting Laws (مواد قانونی) — Laravel-only section
 Route::controller(LawController::class)->prefix('laws')->name('laws.')->group(function () {
     Route::get('/', 'index')->name('index');
     Route::get('/{slug}', 'show')->name('show');
 });
 
-// Pages & Institutional
-Route::redirect('/why-bisan', '/about', 301)->name('why-bisan');
-Route::redirect('/services', '/about', 301)->name('services');
-Route::get('/about', [PageController::class, 'about'])->name('about');
-Route::get('/contact', [ContactController::class, 'index'])->name('contact');
-Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:contact')->name('contact.store');
-Route::get('/p/{slug}', [PageController::class, 'show'])->name('pages.show');
+// Pages & Institutional (WP slugs)
+Route::redirect('/why-bisan', '/about-us/', 301)->name('why-bisan');
+Route::redirect('/services', '/about-us/', 301)->name('services');
+Route::get('/about-us', [PageController::class, 'about'])->name('about');
+Route::redirect('/about', '/about-us/', 301);
+Route::get('/contact-us', [PageController::class, 'contact'])->name('contact');
+Route::post('/contact-us', [ContactController::class, 'store'])->middleware('throttle:contact')->name('contact.store');
+Route::redirect('/contact', '/contact-us/', 301);
+Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:contact');
 
 // Cafe Soal (Q&A)
 Route::controller(CafeQuestionController::class)->prefix('cafe-soal')->name('cafe-soal.')->group(function () {
@@ -123,6 +145,17 @@ Route::controller(CafeQuestionController::class)->prefix('cafe-soal')->name('caf
     Route::get('/{slug}', 'show')->name('show');
     Route::post('/{slug}/answers', 'storeAnswer')->middleware(['auth', 'throttle:20,1'])->name('answers.store');
 });
+
+// WP-style post permalink /{category}/{slug}/ then CMS pages /{slug}/
+Route::get('/{category}/{slug}', [BlogController::class, 'show'])
+    // "blog" is allowed as category segment so /blog/{post-slug}/ works for uncategorized fallback.
+    ->where('category', '^(?!admin|panel|api|login|logout|cart|checkout|search|courses|laws|cafe-soal|product|product-category|category|tag|feed|wp-admin|wp-content|wp-includes|wp-json|my-login|about-us|contact-us|sanctum|storage|build|site|themes).*$')
+    ->where('slug', '^(?!page$).+$')
+    ->name('blog.show');
+
+Route::get('/{slug}', [PageController::class, 'show'])
+    ->where('slug', '^(?!admin|panel|api|login|logout|cart|checkout|search|courses|laws|cafe-soal|product|product-category|category|tag|blog|feed|wp-admin|wp-content|wp-includes|wp-json|my-login|sanctum|storage|build|site|themes).*$')
+    ->name('pages.show');
 
 /*
 |--------------------------------------------------------------------------

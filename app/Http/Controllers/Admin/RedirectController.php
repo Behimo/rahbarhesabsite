@@ -51,37 +51,24 @@ class RedirectController extends Controller
 
     public function import(RedirectImportRequest $request): RedirectResponse
     {
-        $count = 0;
-        foreach (preg_split('/\r\n|\r|\n/', $request->input('rows')) as $line) {
-            $line = trim($line);
-            if ($line === '' || str_starts_with($line, '#')) {
-                continue;
-            }
-
-            $parts = preg_split('/\s*,\s*|\s+/', $line);
-            $from = '/'.ltrim((string) ($parts[0] ?? ''), '/');
-            $to = (string) ($parts[1] ?? '/');
-            $code = (int) ($parts[2] ?? 301);
-
-            if ($from === '/' || $to === '') {
-                continue;
-            }
-
-            CmsRedirect::query()->updateOrCreate(
-                ['from_path' => $from],
-                ['to_path' => $to, 'status_code' => in_array($code, [301, 302], true) ? $code : 301, 'is_active' => true]
-            );
-            $this->forgetPath($from);
-            $count++;
-        }
+        $result = app(\App\Services\RankMathRedirectImporter::class)->import((string) $request->input('rows'));
 
         app(CacheService::class)->flushContent();
 
-        return back()->with('success', "{$count} ریدایرکت وارد شد.");
+        $message = "{$result['imported']} ریدایرکت وارد شد";
+        if ($result['skipped'] > 0) {
+            $message .= "، {$result['skipped']} رد شد";
+        }
+        if ($result['chains'] !== []) {
+            $message .= '. هشدار زنجیره: '.implode(' | ', array_slice($result['chains'], 0, 3));
+        }
+
+        return back()->with('success', $message);
     }
 
     private function forgetPath(string $path): void
     {
-        Cache::forget('cms.redirect.'.$path);
+        Cache::forget(\App\Http\Middleware\HandleCmsRedirects::cacheKey($path));
+        Cache::forget(\App\Http\Middleware\HandleCmsRedirects::cacheKey('q:'.$path));
     }
 }

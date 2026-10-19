@@ -90,7 +90,7 @@
                     </h2>
                     <div class="site-search__list">
                         @foreach ($courses as $course)
-                            <a href="{{ route('courses.show', $course->slug) }}" class="site-search__row">
+                            <a href="{{ $course->url() }}" class="site-search__row">
                                 <span class="site-search__thumb">
                                     @if ($course->featured_image)
                                         <img src="{{ $course->featured_image }}" alt="" loading="lazy" decoding="async" width="72" height="72">
@@ -125,7 +125,7 @@
                     </h2>
                     <div class="site-search__list">
                         @foreach ($posts as $post)
-                            <a href="{{ route('blog.show', $post->slug) }}" class="site-search__row">
+                            <a href="{{ $post->url() }}" class="site-search__row">
                                 <span class="site-search__thumb">
                                     @if ($post->featured_image)
                                         <img src="{{ $post->featured_image }}" alt="" loading="lazy" decoding="async" width="72" height="72">

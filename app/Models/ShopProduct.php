@@ -28,7 +28,8 @@ class ShopProduct extends Model
 
     protected $fillable = [
         'slug', 'title', 'subtitle', 'description', 'price', 'sale_price', 'type',
-        'featured_image', 'is_published', 'stock', 'meta_title', 'meta_description', 'sort_order',
+        'featured_image', 'is_published', 'stock', 'meta_title', 'meta_description', 'meta_keywords',
+        'og_image', 'robots', 'canonical_url', 'wp_post_id', 'sort_order',
     ];
 
     protected function casts(): array
@@ -77,6 +78,11 @@ class ShopProduct extends Model
     public function scopePublished($query)
     {
         return $query->where('is_published', true);
+    }
+
+    public function url(): string
+    {
+        return app(\App\Services\PermalinkService::class)->productAbsolute($this);
     }
 
     public function effectivePrice(): int

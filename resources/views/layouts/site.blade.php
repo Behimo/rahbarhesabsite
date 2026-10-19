@@ -14,6 +14,12 @@
     @endif
     <meta name="robots" content="{{ $seoMeta['robots'] ?? 'index, follow' }}">
     <link rel="canonical" href="{{ $seoMeta['canonical'] ?? url()->current() }}">
+    @if ($gsc = config('seo.analytics.gsc_verification'))
+        <meta name="google-site-verification" content="{{ $gsc }}">
+    @endif
+    @if ($gtm = config('seo.analytics.gtm_id'))
+        <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','{{ $gtm }}');</script>
+    @endif
 
     <meta property="og:type" content="website">
     <meta property="og:locale" content="fa_IR">
@@ -39,6 +45,7 @@
         $siteVer = fn (string $file) => file_exists($sitePublic . '/' . $file) ? filemtime($sitePublic . '/' . $file) : time();
     @endphp
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="https://cdn.jsdelivr.net/npm/@fontsource-variable/vazirmatn@5.1.0/files/vazirmatn-arabic-wght-normal.woff2">
     <link rel="stylesheet" href="{{ asset('site/fonts.css') }}?v={{ $siteVer('fonts.css') }}">
     <link rel="stylesheet" href="{{ asset('site/style.css') }}?v={{ $siteVer('style.css') }}">
     <link rel="stylesheet" href="{{ asset('site/theme.css') }}?v={{ $siteVer('theme.css') }}">
@@ -51,6 +58,9 @@
     @stack('head')
 </head>
 <body class="rh-theme">
+    @if ($gtm = config('seo.analytics.gtm_id'))
+        <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ $gtm }}" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    @endif
     @include('components.navbar', ['navLinks' => $navLinks ?? []])
 
     @php $pageSidebars = app(\App\Services\SidebarService::class)->current(); @endphp

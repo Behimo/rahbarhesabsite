@@ -67,6 +67,20 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
         }
+
+        // Keep route()/asset() on the same host:port as the browser (e.g. localhost:8000).
+        if (! $this->app->environment('production') && ! $this->app->runningInConsole()) {
+            $this->app->booted(function () {
+                try {
+                    $request = request();
+                    if ($request && $request->getHost()) {
+                        URL::forceRootUrl($request->getSchemeAndHttpHost());
+                    }
+                } catch (\Throwable) {
+                    // ignore during early boot
+                }
+            });
+        }
     }
 
     protected function registerRateLimiters(): void

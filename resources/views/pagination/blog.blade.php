@@ -1,3 +1,18 @@
+@php
+    $base = isset($paginationBase)
+        ? rtrim((string) $paginationBase, '/')
+        : rtrim(parse_url($paginator->path(), PHP_URL_PATH) ?: '/blog', '/');
+
+    $pageUrl = function (int $page) use ($base): string {
+        $permalinks = app(\App\Services\PermalinkService::class);
+        if ($page <= 1) {
+            return $permalinks->normalizePath($base === '' ? '/' : $base);
+        }
+
+        return $permalinks->normalizePath($base.'/page/'.$page);
+    };
+@endphp
+
 @if ($paginator->hasPages())
     <nav class="blog-pager" aria-label="صفحه‌بندی مطالب" dir="rtl">
         <p class="blog-pager__summary">
@@ -19,7 +34,7 @@
                         </svg>
                     </span>
                 @else
-                    <a class="blog-pager__btn" href="{{ $paginator->previousPageUrl() }}" rel="prev" aria-label="صفحه قبل">
+                    <a class="blog-pager__btn" href="{{ $pageUrl($paginator->currentPage() - 1) }}" rel="prev" aria-label="صفحه قبل">
                         <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
                             <path d="M7.5 4.5L13 10l-5.5 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
@@ -42,7 +57,7 @@
                                     {{ fa_digits($page) }}
                                 </span>
                             @else
-                                <a class="blog-pager__btn" href="{{ $url }}" aria-label="صفحه {{ fa_digits($page) }}">
+                                <a class="blog-pager__btn" href="{{ $pageUrl((int) $page) }}" aria-label="صفحه {{ fa_digits($page) }}">
                                     {{ fa_digits($page) }}
                                 </a>
                             @endif
@@ -53,7 +68,7 @@
 
             <li class="blog-pager__item">
                 @if ($paginator->hasMorePages())
-                    <a class="blog-pager__btn" href="{{ $paginator->nextPageUrl() }}" rel="next" aria-label="صفحه بعد">
+                    <a class="blog-pager__btn" href="{{ $pageUrl($paginator->currentPage() + 1) }}" rel="next" aria-label="صفحه بعد">
                         <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
                             <path d="M12.5 4.5L7 10l5.5 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>

@@ -201,7 +201,7 @@ class AdminContentRegressionTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->get(route('blog.show', 'xss-post'))
+        $this->get('/blog/xss-post')
             ->assertOk()
             ->assertDontSee('<img src=x onerror=', false, 'Raw script from a non-admin role reached the page unescaped.');
     }

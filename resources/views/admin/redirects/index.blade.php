@@ -22,9 +22,10 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label">کد</label>
-                <select name="status_code" class="form-select">
+                                <select name="status_code" class="form-select">
                     <option value="301">301</option>
                     <option value="302">302</option>
+                    <option value="410">410</option>
                 </select>
             </div>
             <div class="col-md-2">
@@ -42,9 +43,10 @@
     <div class="card-body">
         <form method="POST" action="{{ route('admin.redirects.import') }}">
             @csrf
-            <label class="form-label" for="redirect-rows">هر خط: مسیر قدیم، مسیر جدید، کد</label>
-            <textarea id="redirect-rows" name="rows" rows="5" class="form-control mb-3" dir="ltr" placeholder="/product/old /courses/new 301"></textarea>
-            <button class="btn btn-outline-primary">ورود</button>
+            <label class="form-label" for="redirect-rows">صادرات Rank Math یا هر خط: from,to,code</label>
+            <textarea id="redirect-rows" name="rows" rows="5" class="form-control mb-3" dir="ltr" placeholder="/old-path/,/final-path/,301"></textarea>
+            <p class="text-muted small mb-3">برای فایل بزرگ‌تر از CLI: <code dir="ltr">php artisan seo:import-rankmath-redirects path/to/export.csv</code></p>
+            <button class="btn btn-outline-primary">ورود Rank Math / دسته‌ای</button>
         </form>
     </div>
 </div>

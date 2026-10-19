@@ -14,7 +14,7 @@
         ? (int) round((1 - ($course->sale_price / $course->price)) * 100)
         : 0;
     $isFreeCard = $isFree ?? $course->isFree();
-    $courseUrl = route('courses.show', $course->slug);
+    $courseUrl = $course->url();
     $linked = $linked ?? false;
     $cardClasses = trim(implode(' ', array_filter([
         'course-card',

@@ -21,7 +21,7 @@ class RedirectRequest extends FormRequest
         return [
             'from_path' => ['required', 'string', 'max:255', Rule::unique('cms_redirects', 'from_path')->ignore($redirectId)],
             'to_path' => ['required', 'string', 'max:255', 'regex:/^\/(?!\/)[^\s\\\\]*$/'],
-            'status_code' => ['required', 'in:301,302'],
+            'status_code' => ['required', 'in:301,302,410'],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

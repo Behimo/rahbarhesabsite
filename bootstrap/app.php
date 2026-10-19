@@ -6,6 +6,8 @@ use App\Http\Middleware\EnsureApiToken;
 use App\Http\Middleware\EnsureCmsAdmin;
 use App\Http\Middleware\EnsureUser;
 use App\Http\Middleware\HandleCmsRedirects;
+use App\Http\Middleware\HandleGoneWordpressPaths;
+use App\Http\Middleware\NormalizeSeoUrl;
 use App\Http\Middleware\PreventIndexingNonProduction;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -26,6 +28,8 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureActiveAccount::class,
         ]);
 
+        $middleware->append(HandleGoneWordpressPaths::class);
+        $middleware->append(NormalizeSeoUrl::class);
         $middleware->append(HandleCmsRedirects::class);
         $middleware->append(PreventIndexingNonProduction::class);
 

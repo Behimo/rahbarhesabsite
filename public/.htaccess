@@ -13,10 +13,21 @@
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
 
-    # Redirect Trailing Slashes If Not A Folder...
+    # Force HTTPS (production hosts only)
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP_HOST} ^(www\.)?rahbarhesab\.com$ [NC]
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # www → apex
+    RewriteCond %{HTTP_HOST} ^www\.rahbarhesab\.com$ [NC]
+    RewriteRule ^ https://rahbarhesab.com%{REQUEST_URI} [L,R=301]
+
+    # Force trailing slash (WordPress parity), skip real files and extensioned paths
+    RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_URI} (.+)/$
-    RewriteRule ^ %1 [L,R=301]
+    RewriteCond %{REQUEST_URI} !/$
+    RewriteCond %{REQUEST_URI} !\.[a-zA-Z0-9]{1,8}$
+    RewriteRule ^(.*)$ /$1/ [L,R=301]
 
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d

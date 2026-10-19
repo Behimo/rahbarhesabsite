@@ -2,12 +2,28 @@
 
 namespace App\Http\Controllers\Site;
 
+use App\Services\PermalinkService;
 use Illuminate\View\View;
 
 class PageController extends SiteController
 {
-    public function show(string $slug): View
+    public function show(string $slug, PermalinkService $permalinks): View
     {
+        // Map WordPress page slugs to internal system pages.
+        $internal = match ($slug) {
+            'about-us' => 'about',
+            'contact-us' => 'contact',
+            default => $slug,
+        };
+
+        if ($internal === 'about') {
+            return $this->about($permalinks);
+        }
+
+        if ($internal === 'contact') {
+            return $this->contact($permalinks);
+        }
+
         $page = $this->siteData->dynamicPage($slug);
 
         abort_unless($page, 404);
@@ -15,17 +31,27 @@ class PageController extends SiteController
         return $this->renderSystemPage($slug, 'pages.dynamic', [
             'page' => $page,
             'bodyHtml' => $page->content['body_html'] ?? '',
+            'seo' => $this->seo->meta([
+                'title' => $page->meta_title ?: ($page->title.' | '.config('cms.site_name_fa')),
+                'description' => $page->meta_description,
+                'keywords' => $page->meta_keywords,
+                'og_image' => $page->og_image,
+                'canonical' => $page->canonical_url ?: $permalinks->pageAbsolute($page),
+                'robots' => $page->robots,
+            ]),
             'structuredData' => [
                 $this->seo->breadcrumbSchema([
                     ['name' => 'خانه', 'url' => route('home')],
-                    ['name' => $page->title, 'url' => route('pages.show', $page->slug)],
+                    ['name' => $page->title, 'url' => $permalinks->pageAbsolute($page)],
                 ]),
             ],
         ]);
     }
 
-    public function about(): View
+    public function about(?PermalinkService $permalinks = null): View
     {
+        $permalinks ??= app(PermalinkService::class);
+
         return $this->renderSystemPage('about', 'pages.about', [
             'aboutTimeline' => $this->siteData->aboutTimeline(),
             'aboutPillars' => $this->siteData->aboutPillars(),
@@ -35,21 +61,23 @@ class PageController extends SiteController
             'structuredData' => [
                 $this->seo->breadcrumbSchema([
                     ['name' => 'خانه', 'url' => route('home')],
-                    ['name' => 'درباره ما', 'url' => route('about')],
+                    ['name' => 'درباره ما', 'url' => $permalinks->absolute($permalinks->pageBySlug('about'))],
                 ]),
             ],
         ]);
     }
 
-    public function contact(): View
+    public function contact(?PermalinkService $permalinks = null): View
     {
+        $permalinks ??= app(PermalinkService::class);
+
         return $this->renderSystemPage('contact', 'pages.contact', [
             'contact' => $this->siteData->contact(),
             'contactFaq' => $this->siteData->contactFaq(),
             'structuredData' => [
                 $this->seo->breadcrumbSchema([
                     ['name' => 'خانه', 'url' => route('home')],
-                    ['name' => 'تماس', 'url' => route('contact')],
+                    ['name' => 'تماس', 'url' => $permalinks->absolute($permalinks->pageBySlug('contact'))],
                 ]),
             ],
         ]);

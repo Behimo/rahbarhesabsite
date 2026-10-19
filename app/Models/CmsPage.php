@@ -12,7 +12,7 @@ class CmsPage extends Model
 
     protected $fillable = [
         'slug', 'title', 'template', 'builder_enabled', 'meta_title', 'meta_description', 'meta_keywords',
-        'og_image', 'robots', 'content', 'builder_content', 'is_published', 'status', 'published_at',
+        'og_image', 'robots', 'canonical_url', 'wp_post_id', 'content', 'builder_content', 'is_published', 'status', 'published_at',
         'show_in_nav', 'is_system', 'sort_order',
     ];
 

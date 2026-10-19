@@ -24,6 +24,7 @@ class CmsPost extends Model
     protected $fillable = [
         'slug', 'title', 'excerpt', 'body', 'featured_image',
         'featured_image_alt', 'author', 'meta_title', 'meta_description', 'meta_keywords', 'og_image',
+        'robots', 'canonical_url', 'wp_post_id',
         'is_published', 'status', 'published_at', 'views', 'reading_time_minutes',
     ];
 
@@ -71,6 +72,16 @@ class CmsPost extends Model
         $words = max(1, str_word_count($text) + preg_match_all('/[\x{0600}-\x{06FF}]+/u', $text));
 
         return max(1, (int) ceil($words / 180));
+    }
+
+    public function url(): string
+    {
+        return app(\App\Services\PermalinkService::class)->postAbsolute($this);
+    }
+
+    public function bodyHtml(): string
+    {
+        return clean_html(wp_shortcodes($this->body));
     }
 
     /** @return array<string, mixed> */

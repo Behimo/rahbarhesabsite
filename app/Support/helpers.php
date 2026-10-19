@@ -5,7 +5,35 @@ use Illuminate\Support\Carbon;
 if (! function_exists('clean_html')) {
     function clean_html(?string $html): string
     {
-        return \App\Support\HtmlSanitizer::clean($html);
+        $clean = \App\Support\HtmlSanitizer::clean($html);
+
+        try {
+            return app(\App\Services\ContentUrlRewriter::class)->rewrite($clean);
+        } catch (\Throwable) {
+            return $clean;
+        }
+    }
+}
+
+if (! function_exists('wp_shortcodes')) {
+    /**
+     * Strip or light-transform leftover WordPress shortcodes so they never render raw.
+     */
+    function wp_shortcodes(?string $html): string
+    {
+        if ($html === null || $html === '') {
+            return '';
+        }
+
+        // [gallery ids="1,2"] → empty (images should already be in HTML after migration)
+        $html = preg_replace('/\[gallery[^\]]*\]/iu', '', $html) ?? $html;
+        $html = preg_replace('/\[caption[^\]]*\](.*?)\[\/caption\]/isu', '$1', $html) ?? $html;
+        $html = preg_replace('/\[embed\](.*?)\[\/embed\]/isu', '<p><a href="$1">$1</a></p>', $html) ?? $html;
+        $html = preg_replace('/\[video[^\]]*\](.*?)\[\/video\]/isu', '$1', $html) ?? $html;
+        // Drop unknown shortcodes rather than showing brackets to users/Google
+        $html = preg_replace('/\[\/?[a-z][a-z0-9_-]*[^\]]*\]/iu', '', $html) ?? $html;
+
+        return $html;
     }
 }
 

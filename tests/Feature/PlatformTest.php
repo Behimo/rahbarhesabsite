@@ -46,7 +46,7 @@ class PlatformTest extends TestCase
         ]);
 
         $this->get(route('courses.index'))->assertOk();
-        $this->get(route('courses.show', 'test-course'))->assertOk();
+        $this->get('/product/test-course')->assertOk();
     }
 
     public function test_free_course_enrollment(): void

@@ -1,17 +1,21 @@
 @extends('layouts.site')
 
 @php
-    $activeCategory = request('category');
+    $activeCategory = $activeCategory ?? request('category');
     $activeType = request('type');
     $searchQuery = request('q');
     $hasFilters = filled($activeCategory) || filled($activeType) || filled($searchQuery);
 
     $filterUrl = function (array $overrides = []) {
+        $category = array_key_exists('category', $overrides) ? $overrides['category'] : request('category');
         $query = array_filter([
             'q' => array_key_exists('q', $overrides) ? $overrides['q'] : request('q'),
-            'category' => array_key_exists('category', $overrides) ? $overrides['category'] : request('category'),
             'type' => array_key_exists('type', $overrides) ? $overrides['type'] : request('type'),
         ], fn ($value) => filled($value));
+
+        if (filled($category)) {
+            return route('courses.category', array_merge(['category' => $category], $query));
+        }
 
         return route('courses.index', $query);
     };
@@ -85,7 +89,7 @@
         <div class="courses-archive-toolbar">
             <div class="courses-archive-toolbar-start">
                 <p class="courses-archive-count">
-                    <span class="courses-archive-count-number">{{ fa_digits($courses->count()) }}</span>
+                    <span class="courses-archive-count-number">{{ fa_digits(method_exists($courses, 'total') ? $courses->total() : $courses->count()) }}</span>
                     {{ $hasFilters ? 'نتیجه' : 'دوره آموزشی' }}
                 </p>
 
@@ -148,6 +152,14 @@
                     ])
                 @endforeach
             </div>
+
+            @if (method_exists($courses, 'hasPages') && $courses->hasPages())
+                <div class="blog-pagination" style="margin-top:2rem;">
+                    {{ $courses->links('pagination.blog', [
+                        'paginationBase' => filled($activeCategory) ? '/product-category/'.$activeCategory : '/product',
+                    ]) }}
+                </div>
+            @endif
         @endif
     </div>
 </section>

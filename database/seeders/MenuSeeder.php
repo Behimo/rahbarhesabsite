@@ -118,7 +118,7 @@ class MenuSeeder extends Seeder
         return [
             'label' => $label,
             'type' => 'route',
-            'route_name' => 'courses.index',
+            'route_name' => 'courses.category',
             'route_params' => ['category' => $slug],
         ];
     }
@@ -131,7 +131,7 @@ class MenuSeeder extends Seeder
         return [
             'label' => $label,
             'type' => 'route',
-            'route_name' => 'blog.index',
+            'route_name' => 'blog.category',
             'route_params' => ['category' => $slug],
         ];
     }

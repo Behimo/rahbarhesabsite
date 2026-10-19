@@ -8,7 +8,7 @@
     @if ($post->exists)
         <a href="{{ route('admin.posts.preview', $post) }}" class="btn btn-label-secondary" target="_blank" rel="noopener">پیش‌نمایش</a>
         @if ($post->isLive())
-            <a href="{{ route('blog.show', $post->slug) }}" class="btn btn-label-primary" target="_blank" rel="noopener">مشاهده در سایت</a>
+            <a href="{{ $post->url() }}" class="btn btn-label-primary" target="_blank" rel="noopener">مشاهده در سایت</a>
         @endif
         <a href="{{ route('admin.posts.revisions', $post) }}" class="btn btn-label-secondary">تاریخچه</a>
         @if (admin_can('posts', 'create'))

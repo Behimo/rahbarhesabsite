@@ -29,24 +29,32 @@ class CourseController extends SiteController
         parent::__construct($siteData, $seo);
     }
 
-    public function index(Request $request, CategoryService $categories): View
+    public function index(Request $request, CategoryService $categories, ?string $category = null, ?int $page = null): View
     {
+        $permalinks = app(\App\Services\PermalinkService::class);
+
+        if ($page !== null) {
+            $request->merge(['page' => max(1, $page)]);
+        }
+
         $type = $request->query('type');
-        $categoryPath = $request->string('category')->toString();
-        $category = $categoryPath !== ''
+        $categoryPath = $category ?: $request->string('category')->toString();
+        $categoryModel = $categoryPath !== ''
             ? $categories->findByPath(Category::TYPE_PRODUCT, $categoryPath)
             : null;
-        $categoryIds = $category ? $category->descendantsAndSelf()->pluck('id') : collect();
+
+        abort_if($categoryPath !== '' && ! $categoryModel, 404);
+
+        $categoryIds = $categoryModel ? $categoryModel->descendantsAndSelf()->pluck('id') : collect();
 
         $courses = ShopProduct::query()
             ->published()
             ->where('type', ShopProduct::TYPE_COURSE)
             ->with(['course.instructor', 'categories'])
-            ->when($category, fn ($q) => $q->whereHas(
+            ->when($categoryModel, fn ($q) => $q->whereHas(
                 'categories',
                 fn ($related) => $related->whereIn('categories.id', $categoryIds)
             ))
-            ->when($categoryPath !== '' && ! $category, fn ($q) => $q->whereRaw('0 = 1'))
             ->when($request->query('q'), function ($q, $search) {
                 $q->where(function ($inner) use ($search) {
                     $inner->where('title', 'like', "%{$search}%")
@@ -56,17 +64,37 @@ class CourseController extends SiteController
             ->when($type === 'free', fn ($q) => $q->whereRaw('COALESCE(sale_price, price) = 0'))
             ->when($type === 'paid', fn ($q) => $q->whereRaw('COALESCE(sale_price, price) > 0'))
             ->orderBy('sort_order')
-            ->get();
+            ->paginate(12);
 
-        $categories = $categories->flat(Category::TYPE_PRODUCT, true);
+        $categoryList = $categories->flat(Category::TYPE_PRODUCT, true);
+
+        $canonicalPath = $categoryModel
+            ? $permalinks->category($categoryModel, $request->integer('page') ?: null)
+            : $permalinks->productIndex($request->integer('page') ?: null);
 
         $seo = $this->seo->meta([
-            'title' => 'دوره‌های آموزشی حسابداری | '.config('cms.site_name_fa'),
-            'description' => 'دوره‌های کاربردی حسابداری و مالیات — آموزش عملی ویژه بازار کار ایران.',
+            'title' => $categoryModel
+                ? (($categoryModel->meta_title ?: $categoryModel->name).' | '.config('cms.site_name_fa'))
+                : ('دوره‌های آموزشی حسابداری | '.config('cms.site_name_fa')),
+            'description' => $categoryModel?->meta_description
+                ?: 'دوره‌های کاربردی حسابداری و مالیات — آموزش عملی ویژه بازار کار ایران.',
             'keywords' => 'دوره حسابداری, آموزش مالیات, اظهارنامه, راهبر حساب',
+            'canonical' => $permalinks->absolute($canonicalPath),
         ]);
 
-        return $this->render('pages.courses.index', compact('courses', 'categories', 'seo'));
+        return $this->render('pages.courses.index', [
+            'courses' => $courses,
+            'categories' => $categoryList,
+            'activeCategory' => $categoryModel?->full_slug ?: $categoryModel?->slug,
+            'seo' => $seo,
+            'structuredData' => [
+                $this->seo->breadcrumbSchema([
+                    ['name' => 'خانه', 'url' => route('home')],
+                    ['name' => 'دوره‌ها', 'url' => route('courses.index')],
+                    ...($categoryModel ? [['name' => $categoryModel->name, 'url' => $permalinks->absolute($permalinks->category($categoryModel))]] : []),
+                ]),
+            ],
+        ]);
     }
 
     public function show(string $slug): View
@@ -100,11 +128,15 @@ class CourseController extends SiteController
             }
         }
 
+        $permalinks = app(\App\Services\PermalinkService::class);
+
         $seo = $this->seo->meta([
             'title' => $product->meta_title ?: ($product->title.' | '.config('cms.site_name_fa')),
             'description' => $product->meta_description ?: $product->description,
-            'keywords' => $product->meta_keywords,
-            'og_image' => $product->featured_image,
+            'keywords' => $product->meta_keywords ?? null,
+            'og_image' => $product->og_image ?: $product->featured_image,
+            'canonical' => $product->canonical_url ?: $permalinks->productAbsolute($product),
+            'robots' => $product->robots ?? null,
         ]);
 
         return $this->render('pages.courses.show', [
@@ -119,7 +151,7 @@ class CourseController extends SiteController
                 $this->seo->breadcrumbSchema([
                     ['name' => 'خانه', 'url' => route('home')],
                     ['name' => 'دوره‌ها', 'url' => route('courses.index')],
-                    ['name' => $product->title, 'url' => route('courses.show', $product->slug)],
+                    ['name' => $product->title, 'url' => $permalinks->productAbsolute($product)],
                 ]),
             ],
         ]);

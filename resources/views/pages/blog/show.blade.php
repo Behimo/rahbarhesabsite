@@ -19,16 +19,16 @@
                 @if ($post->category)
                     @foreach ($post->category->ancestors as $ancestor)
                         <span class="blog-breadcrumb__sep" aria-hidden="true">/</span>
-                        <a href="{{ route('blog.index', ['category' => $ancestor->full_slug]) }}">{{ $ancestor->name }}</a>
+                        <a href="{{ route('blog.category', $ancestor->full_slug ?: $ancestor->slug) }}">{{ $ancestor->name }}</a>
                     @endforeach
                     <span class="blog-breadcrumb__sep" aria-hidden="true">/</span>
-                    <a href="{{ route('blog.index', ['category' => $post->category->full_slug]) }}">{{ $post->category->name }}</a>
+                    <a href="{{ route('blog.category', $post->category->full_slug ?: $post->category->slug) }}">{{ $post->category->name }}</a>
                 @endif
             </nav>
 
             <header class="blog-article__header">
                 @if ($post->category)
-                    <a href="{{ route('blog.index', ['category' => $post->category->full_slug]) }}" class="blog-tag">{{ $post->category->name }}</a>
+                    <a href="{{ route('blog.category', $post->category->full_slug ?: $post->category->slug) }}" class="blog-tag">{{ $post->category->name }}</a>
                 @endif
                 <h1 class="blog-article__title">{{ $post->title }}</h1>
                 <div class="blog-article__byline">
@@ -52,13 +52,13 @@
             @endif
 
             <div class="blog-article__content prose prose-slate">
-                {!! clean_html($post->body) !!}
+                {!! $post->bodyHtml() !!}
             </div>
 
             @if ($post->relationLoaded('tags') ? $post->tags->isNotEmpty() : $post->tags()->exists())
                 <div class="blog-article__tags" style="margin-top:28px;display:flex;flex-wrap:wrap;gap:8px;">
                     @foreach ($post->tags as $tag)
-                        <span class="blog-tag blog-tag--quiet">{{ $tag->name }}</span>
+                        <a href="{{ route('blog.tag', $tag->slug) }}" class="blog-tag blog-tag--quiet">{{ $tag->name }}</a>
                     @endforeach
                 </div>
             @endif
@@ -74,10 +74,10 @@
                 </div>
                 <div class="blog-related__grid">
                     @foreach ($related as $item)
-                        <a href="{{ route('blog.show', $item->slug) }}" class="blog-related__card">
+                        <a href="{{ $item->url() }}" class="blog-related__card">
                             <div class="blog-related__media">
                                 @if ($item->featured_image)
-                                    <img src="{{ $item->featured_image }}" alt="" loading="lazy" decoding="async">
+                                    <img src="{{ $item->featured_image }}" alt="{{ $item->featured_image_alt ?: $item->title }}" loading="lazy" decoding="async">
                                 @else
                                     <div class="blog-card__fallback blog-card__fallback--sm" aria-hidden="true">
                                         <svg viewBox="0 0 40 40" fill="none">

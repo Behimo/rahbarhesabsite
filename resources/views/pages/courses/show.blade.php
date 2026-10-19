@@ -1,9 +1,9 @@
 @extends('layouts.site')
 
 @php
-    $lessonsCount = $course->sections->sum(fn ($s) => $s->lessons->count());
-    $sectionsCount = $course->sections->count();
-    $minutes = (int) ($course->duration_minutes ?? 0);
+    $lessonsCount = $course?->sections?->sum(fn ($s) => $s->lessons->count()) ?? 0;
+    $sectionsCount = $course?->sections?->count() ?? 0;
+    $minutes = (int) ($course?->duration_minutes ?? 0);
     if ($minutes >= 60) {
         $hours = (int) floor($minutes / 60);
         $remain = $minutes % 60;
@@ -19,7 +19,7 @@
         'intermediate' => 'متوسط',
         'advanced' => 'پیشرفته',
     ];
-    $levelLabel = $levelLabels[$course->level ?? ''] ?? null;
+    $levelLabel = $levelLabels[$course?->level ?? ''] ?? null;
 
     $hasDiscount = $product->sale_price && $product->price > $product->sale_price;
     $discountPercent = $hasDiscount
@@ -27,9 +27,9 @@
         : 0;
 
     $isFree = $product->isFree();
-    $instructor = $course->instructor;
-    $learnItems = array_values(array_filter($course->what_you_learn ?? []));
-    $requirementItems = array_values(array_filter($course->requirements ?? []));
+    $instructor = $course?->instructor;
+    $learnItems = array_values(array_filter($course?->what_you_learn ?? []));
+    $requirementItems = array_values(array_filter($course?->requirements ?? []));
 @endphp
 
 @section('page')
@@ -131,7 +131,7 @@
                 @if (filled($product->description))
                     <section class="course-detail-section" aria-labelledby="course-about-heading">
                         <h2 id="course-about-heading">درباره دوره</h2>
-                        <div class="course-detail-prose">{!! clean_html($product->description) !!}</div>
+                        <div class="course-detail-prose">{!! clean_html(wp_shortcodes($product->description)) !!}</div>
                     </section>
                 @endif
 

@@ -4,7 +4,10 @@ namespace App\Services;
 
 class SeoService
 {
-    public function __construct(private SiteDataService $siteData) {}
+    public function __construct(
+        private SiteDataService $siteData,
+        private PermalinkService $permalinks,
+    ) {}
 
     public function meta(array $overrides = []): array
     {
@@ -148,15 +151,36 @@ class SeoService
     public function postSitemapUrls(): array
     {
         $urls = [
-            ['loc' => route('blog.index'), 'priority' => '0.8', 'changefreq' => 'daily'],
+            ['loc' => $this->permalinks->absolute($this->permalinks->blogIndex()), 'priority' => '0.8', 'changefreq' => 'daily'],
         ];
 
-        foreach (\App\Models\CmsPost::query()->published()->get() as $post) {
+        foreach (\App\Models\CmsPost::query()->published()->with('categories')->get() as $post) {
+            if ($this->isNoindex($post->robots ?? null)) {
+                continue;
+            }
+
             $urls[] = [
-                'loc' => route('blog.show', $post->slug),
+                'loc' => $this->permalinks->postAbsolute($post),
                 'priority' => '0.7',
                 'changefreq' => 'weekly',
                 'lastmod' => $post->updated_at?->toAtomString(),
+            ];
+        }
+
+        foreach (\App\Models\Category::query()->where('type', \App\Models\Category::TYPE_POST)->where('is_active', true)->get() as $category) {
+            $urls[] = [
+                'loc' => $this->permalinks->absolute($this->permalinks->category($category)),
+                'priority' => '0.6',
+                'changefreq' => 'weekly',
+                'lastmod' => $category->updated_at?->toAtomString(),
+            ];
+        }
+
+        foreach (\App\Models\Tag::query()->orderBy('name')->get() as $tag) {
+            $urls[] = [
+                'loc' => $this->permalinks->absolute($this->permalinks->tag($tag)),
+                'priority' => '0.5',
+                'changefreq' => 'weekly',
             ];
         }
 
@@ -166,32 +190,29 @@ class SeoService
     public function pageSitemapUrls(): array
     {
         $urls = [
-            ['loc' => route('home'), 'priority' => '1.0', 'changefreq' => 'daily'],
-            ['loc' => route('courses.index'), 'priority' => '0.9', 'changefreq' => 'daily'],
-            ['loc' => route('cafe-soal.index'), 'priority' => '0.8', 'changefreq' => 'daily'],
-            ['loc' => route('laws.index'), 'priority' => '0.8', 'changefreq' => 'weekly'],
-            ['loc' => route('about'), 'priority' => '0.7', 'changefreq' => 'monthly'],
-            ['loc' => route('contact'), 'priority' => '0.8', 'changefreq' => 'monthly'],
+            ['loc' => $this->permalinks->absolute('/'), 'priority' => '1.0', 'changefreq' => 'daily'],
+            ['loc' => $this->permalinks->absolute($this->permalinks->productIndex()), 'priority' => '0.9', 'changefreq' => 'daily'],
+            ['loc' => $this->permalinks->absolute('/cafe-soal'), 'priority' => '0.8', 'changefreq' => 'daily'],
+            ['loc' => $this->permalinks->absolute('/laws'), 'priority' => '0.8', 'changefreq' => 'weekly'],
+            ['loc' => $this->permalinks->absolute($this->permalinks->pageBySlug('about')), 'priority' => '0.7', 'changefreq' => 'monthly'],
+            ['loc' => $this->permalinks->absolute($this->permalinks->pageBySlug('contact')), 'priority' => '0.8', 'changefreq' => 'monthly'],
         ];
 
         foreach (\App\Models\CmsPage::query()->published()->get() as $page) {
             $slug = $page->slug;
-            $route = match ($slug) {
-                'home' => route('home'),
-                'about' => route('about'),
-                'contact' => route('contact'),
-                'services', 'why-bisan' => null,
-                default => $page->is_system ? null : route('pages.show', $page->slug),
-            };
-
-            if ($route) {
-                $urls[] = [
-                    'loc' => $route,
-                    'priority' => '0.6',
-                    'changefreq' => 'monthly',
-                    'lastmod' => $page->updated_at?->toAtomString(),
-                ];
+            if (in_array($slug, ['home', 'services', 'why-bisan'], true) || $page->is_system) {
+                continue;
             }
+            if ($this->isNoindex($page->robots ?? null)) {
+                continue;
+            }
+
+            $urls[] = [
+                'loc' => $this->permalinks->pageAbsolute($page),
+                'priority' => '0.6',
+                'changefreq' => 'monthly',
+                'lastmod' => $page->updated_at?->toAtomString(),
+            ];
         }
 
         return $urls;
@@ -202,11 +223,24 @@ class SeoService
         $urls = [];
 
         foreach (\App\Models\ShopProduct::query()->published()->where('type', 'course')->get() as $course) {
+            if ($this->isNoindex($course->robots ?? null)) {
+                continue;
+            }
+
             $urls[] = [
-                'loc' => route('courses.show', $course->slug),
+                'loc' => $this->permalinks->productAbsolute($course),
                 'priority' => '0.9',
                 'changefreq' => 'weekly',
                 'lastmod' => $course->updated_at?->toAtomString(),
+            ];
+        }
+
+        foreach (\App\Models\Category::query()->where('type', \App\Models\Category::TYPE_PRODUCT)->where('is_active', true)->get() as $category) {
+            $urls[] = [
+                'loc' => $this->permalinks->absolute($this->permalinks->category($category)),
+                'priority' => '0.7',
+                'changefreq' => 'weekly',
+                'lastmod' => $category->updated_at?->toAtomString(),
             ];
         }
 
@@ -244,7 +278,7 @@ class SeoService
             '@type' => 'Course',
             'name' => $product->title,
             'description' => $product->description,
-            'url' => route('courses.show', $product->slug),
+            'url' => $this->permalinks->productAbsolute($product),
             'inLanguage' => 'fa-IR',
             'provider' => [
                 '@type' => 'Organization',
@@ -256,12 +290,17 @@ class SeoService
                 'price' => $product->effectivePrice() * 10,
                 'priceCurrency' => 'IRR',
                 'availability' => 'https://schema.org/InStock',
+                'url' => $this->permalinks->productAbsolute($product),
             ],
-            'hasCourseInstance' => [
+            'hasCourseInstance' => array_filter([
                 '@type' => 'CourseInstance',
                 'courseMode' => 'online',
                 'courseWorkload' => 'PT'.($course?->duration_minutes ?: 60).'M',
-            ],
+                'instructor' => $course?->instructor?->name ? [
+                    '@type' => 'Person',
+                    'name' => $course->instructor->name,
+                ] : null,
+            ]),
         ];
     }
 
@@ -355,10 +394,16 @@ class SeoService
 
     private function canonicalUrl(): string
     {
-        $base = rtrim((string) config('app.url'), '/');
-        $path = trim((string) request()->path(), '/');
+        return $this->permalinks->absolute('/'.trim((string) request()->path(), '/'));
+    }
 
-        return $base.($path === '' ? '/' : '/'.$path);
+    private function isNoindex(?string $robots): bool
+    {
+        if (! $robots) {
+            return false;
+        }
+
+        return str_contains(mb_strtolower($robots), 'noindex');
     }
 
     private function absoluteUrl(?string $path): ?string
@@ -375,6 +420,6 @@ class SeoService
             return $path;
         }
 
-        return rtrim((string) config('app.url'), '/').'/'.ltrim($path, '/');
+        return $this->permalinks->absolute($path);
     }
 }

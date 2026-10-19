@@ -30,7 +30,7 @@
                     همه مطالب
                 </a>
                 @foreach ($categories as $category)
-                    <a href="{{ route('blog.index', ['category' => $category->full_slug]) }}"
+                    <a href="{{ route('blog.category', $category->full_slug ?: $category->slug) }}"
                        class="blog-filter{{ $activeCategory === $category->full_slug || $activeCategory === $category->slug ? ' is-active' : '' }}">
                         {{ str_repeat('– ', $category->treeDepth) }}{{ $category->name }}
                     </a>
@@ -49,10 +49,10 @@
         @else
             @if ($featured)
                 <section class="blog-featured" aria-label="مطالب ویژه">
-                    <a href="{{ route('blog.show', $featured->slug) }}" class="blog-featured__card">
+                    <a href="{{ $featured->url() }}" class="blog-featured__card">
                         <div class="blog-featured__media">
                             @if ($featured->featured_image)
-                                <img src="{{ $featured->featured_image }}" alt="" loading="eager" decoding="async">
+                                <img src="{{ $featured->featured_image }}" alt="{{ $featured->featured_image_alt ?: $featured->title }}" loading="eager" decoding="async">
                             @else
                                 <div class="blog-featured__fallback" aria-hidden="true">
                                     <span>{{ mb_substr($featured->title, 0, 1) }}</span>
@@ -87,10 +87,10 @@
                 <section class="blog-grid" aria-label="فهرست مطالب">
                     @foreach ($listing as $post)
                         <article class="blog-card">
-                            <a href="{{ route('blog.show', $post->slug) }}" class="blog-card__link">
+                            <a href="{{ $post->url() }}" class="blog-card__link">
                                 <div class="blog-card__media">
                                     @if ($post->featured_image)
-                                        <img src="{{ $post->featured_image }}" alt="" loading="lazy" decoding="async">
+                                        <img src="{{ $post->featured_image }}" alt="{{ $post->featured_image_alt ?: $post->title }}" loading="lazy" decoding="async">
                                     @else
                                         <div class="blog-card__fallback" aria-hidden="true">
                                             <svg viewBox="0 0 40 40" fill="none">
@@ -122,7 +122,7 @@
 
             @if ($posts->hasPages())
                 <div class="blog-pagination">
-                    {{ $posts->links('pagination.blog') }}
+                    {{ $posts->links('pagination.blog', ['paginationBase' => $paginationBase ?? '/blog']) }}
                 </div>
             @endif
         @endif

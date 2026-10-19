@@ -557,12 +557,12 @@ class WordpressMigrationService
                     ]
                 );
 
-                $this->ensureRedirect('/product/'.$slug, '/courses/'.$slug);
-                // Encoded WP slugs often exceed cms_redirects.from_path (varchar 191); skip if too long.
-                if ($rawSlug !== '' && $rawSlug !== $slug) {
-                    $this->ensureRedirect('/product/'.$rawSlug, '/courses/'.$slug);
-                }
-                $this->ensureRedirect('/?p='.$post->ID, '/courses/'.$slug);
+                $this->applyRankMathMeta($product, $meta);
+                $product->wp_post_id = (int) $post->ID;
+                $product->save();
+
+                // URL parity: /product/{slug} stays canonical — only map legacy ?p= IDs.
+                $this->ensureRedirect('/?p='.$post->ID, '/product/'.$slug.'/');
 
                 $this->syncModelCategories($product, (int) $post->ID, 'product_cat', Category::TYPE_PRODUCT);
 
@@ -656,11 +656,16 @@ class WordpressMigrationService
                 $this->syncModelCategories($cmsPost, (int) $post->ID, 'category', Category::TYPE_POST);
                 $this->syncModelTags($cmsPost, (int) $post->ID, 'post_tag');
 
-                $this->ensureRedirect('/'.$slug, '/blog/'.$slug);
-                if ($rawSlug !== '' && $rawSlug !== $slug) {
-                    $this->ensureRedirect('/'.$rawSlug, '/blog/'.$slug);
+                $this->applyRankMathMeta($cmsPost, $meta);
+                $cmsPost->wp_post_id = (int) $post->ID;
+                if (! empty($meta['_thumbnail_id'])) {
+                    $cmsPost->featured_image_alt = $this->attachmentAlt((int) $meta['_thumbnail_id']) ?: $cmsPost->featured_image_alt;
                 }
-                $this->ensureRedirect('/?p='.$post->ID, '/blog/'.$slug);
+                $cmsPost->save();
+
+                $cmsPost->load('categories');
+                $permalink = app(\App\Services\PermalinkService::class)->post($cmsPost);
+                $this->ensureRedirect('/?p='.$post->ID, $permalink);
 
                 $onProgress && $onProgress();
             }
@@ -1312,8 +1317,93 @@ class WordpressMigrationService
 
         CmsRedirect::query()->updateOrCreate(
             ['from_path' => $from],
-            ['to_path' => $to, 'status_code' => 301, 'is_active' => true]
+            [
+                'to_path' => $to,
+                'status_code' => 301,
+                'is_active' => true,
+                'source' => 'wp-migrate',
+            ]
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $meta
+     */
+    private function applyRankMathMeta(Model $model, array $meta): void
+    {
+        $title = $this->metaString($meta, ['rank_math_title', 'rank_math_facebook_title']);
+        $description = $this->metaString($meta, ['rank_math_description', 'rank_math_facebook_description']);
+        $robots = $this->rankMathRobots($meta);
+        $canonical = $this->metaString($meta, ['rank_math_canonical_url']);
+        $ogImage = $this->metaString($meta, ['rank_math_facebook_image', 'rank_math_twitter_image']);
+
+        if ($title) {
+            $model->meta_title = mb_substr($title, 0, 191);
+        }
+        if ($description) {
+            $model->meta_description = mb_substr($description, 0, 500);
+        }
+        if ($robots && $model->isFillable('robots')) {
+            $model->robots = $robots;
+        }
+        if ($canonical && $model->isFillable('canonical_url')) {
+            $model->canonical_url = mb_substr($canonical, 0, 500);
+        }
+        if ($ogImage && $model->isFillable('og_image')) {
+            $model->og_image = mb_substr($ogImage, 0, 191);
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $meta
+     * @param  list<string>  $keys
+     */
+    private function metaString(array $meta, array $keys): ?string
+    {
+        foreach ($keys as $key) {
+            $value = trim((string) ($meta[$key] ?? ''));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $meta
+     */
+    private function rankMathRobots(array $meta): ?string
+    {
+        $raw = $meta['rank_math_robots'] ?? null;
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+
+        $parts = is_array($raw) ? $raw : (array) @unserialize((string) $raw);
+        if (! is_array($parts) || $parts === []) {
+            $parts = array_filter(array_map('trim', explode(',', (string) $raw)));
+        }
+
+        $parts = array_values(array_filter(array_map(fn ($p) => mb_strtolower(trim((string) $p)), $parts)));
+
+        return $parts === [] ? null : implode(', ', $parts);
+    }
+
+    private function attachmentAlt(int $attachmentId): ?string
+    {
+        if ($attachmentId <= 0) {
+            return null;
+        }
+
+        $alt = $this->wp()->table('postmeta')
+            ->where('post_id', $attachmentId)
+            ->where('meta_key', '_wp_attachment_image_alt')
+            ->value('meta_value');
+
+        $alt = trim((string) $alt);
+
+        return $alt !== '' ? mb_substr($alt, 0, 191) : null;
     }
 
     private function isSkippedCategorySlug(string $slug): bool

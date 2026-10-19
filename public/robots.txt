@@ -1,6 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /admin/
-Disallow: /panel/
-
-Sitemap: https://rahbarhesab.com/sitemap_index.xml

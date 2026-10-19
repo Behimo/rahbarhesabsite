@@ -201,7 +201,7 @@ class SidebarTest extends TestCase
             ->assertSee('دوره پیش‌فرض سایدبار مقاله')
             ->assertDontSee('فایل که در سایدبار مقاله نیست');
 
-        $this->get(route('blog.show', $post->slug))
+        $this->get('/blog/'.$post->slug)
             ->assertOk()
             ->assertDontSee('آخرین دوره‌ها');
     }

@@ -134,7 +134,9 @@ class SidebarService
             ->limit($limit)
             ->get()
             ->map(function (ShopProduct $product) {
-                $url = $product->isCourse() ? route('courses.show', $product->slug) : null;
+                $url = $product->isCourse()
+                    ? app(\App\Services\PermalinkService::class)->productAbsolute($product)
+                    : null;
 
                 return [
                     'title' => $product->title,
@@ -174,30 +176,34 @@ class SidebarService
             ->orderByDesc('id')
             ->limit($limit)
             ->get()
-            ->map(fn (CmsPost $post) => [
-                'title' => $post->title,
-                'url' => route('blog.show', $post->slug),
-                'image' => $this->imageUrl($post->featured_image),
-                'meta' => $post->published_at ? fa_date($post->published_at) : null,
-            ])
+            ->map(function (CmsPost $post) {
+                $post->loadMissing('categories');
+
+                return [
+                    'title' => $post->title,
+                    'url' => app(\App\Services\PermalinkService::class)->postAbsolute($post),
+                    'image' => $this->imageUrl($post->featured_image),
+                    'meta' => $post->published_at ? fa_date($post->published_at) : null,
+                ];
+            })
             ->all();
     }
 
     private function moreUrl(CmsSidebar $sidebar): ?string
     {
+        $permalinks = app(\App\Services\PermalinkService::class);
         $category = $sidebar->selection === CmsSidebar::SELECTION_CATEGORY ? $sidebar->category : null;
-        $categoryPath = $category?->full_slug;
 
         if ($sidebar->source === CmsSidebar::SOURCE_POST) {
-            return $categoryPath
-                ? route('blog.index', ['category' => $categoryPath])
-                : route('blog.index');
+            return $category
+                ? $permalinks->absolute($permalinks->category($category))
+                : $permalinks->absolute($permalinks->blogIndex());
         }
 
         if ($sidebar->source === CmsSidebar::SOURCE_COURSE) {
-            return $categoryPath
-                ? route('courses.index', ['category' => $categoryPath])
-                : route('courses.index');
+            return $category
+                ? $permalinks->absolute($permalinks->category($category))
+                : $permalinks->absolute($permalinks->productIndex());
         }
 
         return null;
@@ -270,8 +276,9 @@ class SidebarService
     private function requestPath(Request $request): string
     {
         $path = trim($request->path(), '/');
+        $path = $path === '' ? '/' : '/'.$path;
 
-        return $path === '' ? '/' : '/'.$path;
+        return $this->canonicalPublicPath($path);
     }
 
     private function normalizePath(string $path): string
@@ -287,6 +294,15 @@ class SidebarService
 
         $path = '/'.trim($path, '/');
 
-        return $path === '/' ? '/' : $path;
+        return $this->canonicalPublicPath($path === '/' ? '/' : $path);
+    }
+
+    private function canonicalPublicPath(string $path): string
+    {
+        return match ($path) {
+            '/contact' => '/contact-us',
+            '/about' => '/about-us',
+            default => $path,
+        };
     }
 }

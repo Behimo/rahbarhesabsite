@@ -7,6 +7,7 @@ use App\Models\CmsPost;
 use App\Models\CmsProduct;
 use App\Models\CmsRedirect;
 use App\Models\ShopProduct;
+use App\Services\PermalinkService;
 use App\Services\SeoService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -19,21 +20,35 @@ class SitemapAndRedirectTest extends TestCase
     {
         CmsRedirect::query()->create([
             'from_path' => '/old-tax-guide',
-            'to_path' => '/blog',
+            'to_path' => '/blog/',
             'status_code' => 301,
             'is_active' => true,
         ]);
 
         $this->get('/old-tax-guide')
             ->assertStatus(301)
-            ->assertRedirect('/blog');
+            ->assertRedirect('/blog/');
+    }
+
+    public function test_query_p_redirect_resolves(): void
+    {
+        CmsRedirect::query()->create([
+            'from_path' => '/?p=42',
+            'to_path' => '/blogs/sample-post/',
+            'status_code' => 301,
+            'is_active' => true,
+        ]);
+
+        $this->get('/?p=42')
+            ->assertStatus(301)
+            ->assertRedirect('/blogs/sample-post/');
     }
 
     public function test_inactive_redirect_is_not_followed(): void
     {
         CmsRedirect::query()->create([
             'from_path' => '/retired-guide',
-            'to_path' => '/blog',
+            'to_path' => '/blog/',
             'status_code' => 301,
             'is_active' => false,
         ]);
@@ -53,9 +68,35 @@ class SitemapAndRedirectTest extends TestCase
         $this->get('/external-hop')->assertNotFound();
     }
 
+    public function test_gone_wordpress_paths_return_410(): void
+    {
+        $this->get('/feed')->assertStatus(410);
+        $this->get('/wp-login.php')->assertStatus(410);
+    }
+
+    public function test_product_and_blog_parity_routes(): void
+    {
+        $course = ShopProduct::factory()->course()->create([
+            'slug' => 'parity-course',
+            'is_published' => true,
+        ]);
+
+        $post = CmsPost::factory()->published()->create([
+            'slug' => 'parity-post',
+        ]);
+
+        $this->get('/product/parity-course')
+            ->assertOk()
+            ->assertSee($course->title, false);
+
+        $this->get('/blog/parity-post')
+            ->assertOk()
+            ->assertSee($post->title, false);
+    }
+
     public function test_sitemaps_omit_unpublished_content(): void
     {
-        CmsPost::factory()->published()->create(['slug' => 'live-sitemap-post']);
+        $livePost = CmsPost::factory()->published()->create(['slug' => 'live-sitemap-post']);
         CmsPost::factory()->draft()->create(['slug' => 'draft-sitemap-post']);
 
         CmsPage::query()->create([
@@ -76,7 +117,7 @@ class SitemapAndRedirectTest extends TestCase
             'status' => 'draft',
         ]);
 
-        ShopProduct::factory()->course()->create([
+        $liveCourse = ShopProduct::factory()->course()->create([
             'slug' => 'live-sitemap-course',
             'is_published' => true,
         ]);
@@ -90,31 +131,27 @@ class SitemapAndRedirectTest extends TestCase
             'title' => 'محصول منتشرشده',
             'is_published' => true,
         ]);
-        CmsProduct::query()->create([
-            'slug' => 'draft-sitemap-product',
-            'title' => 'محصول پیش‌نویس',
-            'is_published' => false,
-        ]);
+
+        $permalinks = app(PermalinkService::class);
 
         $this->get(route('sitemap.posts'))
             ->assertOk()
-            ->assertSee(route('blog.show', 'live-sitemap-post'), false)
+            ->assertSee($permalinks->postAbsolute($livePost), false)
             ->assertDontSee('draft-sitemap-post', false);
 
         $this->get(route('sitemap.pages'))
             ->assertOk()
-            ->assertSee(route('pages.show', 'live-sitemap-page'), false)
+            ->assertSee($permalinks->absolute('/live-sitemap-page'), false)
             ->assertDontSee('draft-sitemap-page', false);
 
         $this->get(route('sitemap.courses'))
             ->assertOk()
-            ->assertSee(route('courses.show', 'live-sitemap-course'), false)
+            ->assertSee($permalinks->productAbsolute($liveCourse), false)
             ->assertDontSee('draft-sitemap-course', false);
 
         $this->get(route('sitemap.products'))
             ->assertOk()
-            ->assertDontSee(route('products.show', 'live-sitemap-product'), false)
-            ->assertDontSee(route('products.index'), false);
+            ->assertDontSee('live-sitemap-product', false);
     }
 
     public function test_robots_and_non_production_responses_block_indexing(): void
@@ -128,10 +165,12 @@ class SitemapAndRedirectTest extends TestCase
 
     public function test_search_is_noindex_and_canonical_omits_query_parameters(): void
     {
+        $canonical = app(PermalinkService::class)->absolute('/search');
+
         $this->get('/search?q=tax&utm_source=campaign')
             ->assertOk()
             ->assertSee('<meta name="robots" content="noindex, nofollow">', false)
-            ->assertSee('<link rel="canonical" href="'.rtrim(config('app.url'), '/').'/search">', false);
+            ->assertSee('<link rel="canonical" href="'.$canonical.'">', false);
     }
 
     public function test_sitemap_does_not_fabricate_lastmod_dates(): void
@@ -156,6 +195,7 @@ class SitemapAndRedirectTest extends TestCase
 
         $this->assertSame(990000, $schema['offers']['price']);
         $this->assertSame('IRR', $schema['offers']['priceCurrency']);
+        $this->assertStringContainsString('/product/', $schema['url']);
     }
 
     public function test_faq_schema_omits_empty_or_incomplete_faqs(): void
@@ -179,7 +219,8 @@ class SitemapAndRedirectTest extends TestCase
             'featured_image' => '/storage/articles/cover.webp',
         ]);
 
-        $this->get(route('blog.show', $post->slug))
+        // In tests trailing-slash middleware is skipped; hit the WP-style category/slug path.
+        $this->get('/blog/schema-article')
             ->assertOk()
             ->assertSee('"dateModified":"'.$post->updated_at->toIso8601String().'"', false)
             ->assertSee('twitter:image', false);
