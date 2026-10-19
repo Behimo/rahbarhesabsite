@@ -12,13 +12,17 @@
     <div class="card-body">
         <form method="POST" action="{{ route('admin.redirects.store') }}" class="row g-3 align-items-end">
             @csrf
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="form-label">از مسیر</label>
                 <input type="text" name="from_path" class="form-control" dir="ltr" placeholder="/old-url" required>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-2">
+                <label class="form-label">پرس‌وجو (اختیاری)</label>
+                <input type="text" name="from_query" class="form-control" dir="ltr" placeholder="utm_source=news">
+            </div>
+            <div class="col-md-3">
                 <label class="form-label">به مسیر</label>
-                <input type="text" name="to_path" class="form-control" dir="ltr" placeholder="/courses" required>
+                <input type="text" name="to_path" class="form-control" dir="ltr" placeholder="/courses یا https://example.com" required>
             </div>
             <div class="col-md-2">
                 <label class="form-label">کد</label>
@@ -31,6 +35,9 @@
             <div class="col-md-2">
                 <input type="hidden" name="is_active" value="1">
                 <button class="btn btn-primary w-100">افزودن</button>
+            </div>
+            <div class="col-12">
+                <div class="form-text">اگر پرس‌وجو پر شود، فقط درخواست‌هایی با همان رشتهٔ پرس‌وجو ریدایرکت می‌شوند (مثلاً <code dir="ltr">?utm_source=news</code>).</div>
             </div>
         </form>
     </div>
@@ -58,6 +65,7 @@
             <thead>
                 <tr>
                     <th>از</th>
+                    <th>پرس‌وجو</th>
                     <th>به</th>
                     <th>کد</th>
                     <th>فعال</th>
@@ -67,19 +75,23 @@
             <tbody>
                 @forelse ($redirects as $redirect)
                     <tr>
-                        <td colspan="5">
+                        <td colspan="6">
                             <form method="POST" action="{{ route('admin.redirects.update', $redirect) }}" class="row g-2 align-items-center">
                                 @csrf @method('PUT')
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <input type="text" name="from_path" value="{{ $redirect->from_path }}" class="form-control form-control-sm" dir="ltr">
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-2">
+                                    <input type="text" name="from_query" value="{{ $redirect->from_query }}" class="form-control form-control-sm" dir="ltr" placeholder="—">
+                                </div>
+                                <div class="col-md-3">
                                     <input type="text" name="to_path" value="{{ $redirect->to_path }}" class="form-control form-control-sm" dir="ltr">
                                 </div>
                                 <div class="col-md-1">
                                     <select name="status_code" class="form-select form-select-sm">
                                         <option value="301" @selected($redirect->status_code == 301)>301</option>
                                         <option value="302" @selected($redirect->status_code == 302)>302</option>
+                                        <option value="410" @selected($redirect->status_code == 410)>410</option>
                                     </select>
                                 </div>
                                 <div class="col-md-1">
@@ -101,7 +113,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" class="text-center text-muted py-5">ریدایرکتی ثبت نشده</td></tr>
+                    <tr><td colspan="6" class="text-center text-muted py-5">ریدایرکتی ثبت نشده</td></tr>
                 @endforelse
             </tbody>
         </table>

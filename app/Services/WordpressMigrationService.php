@@ -1316,12 +1316,13 @@ class WordpressMigrationService
         }
 
         CmsRedirect::query()->updateOrCreate(
-            ['from_path' => $from],
+            ['from_path' => $from, 'from_query' => ''],
             [
                 'to_path' => $to,
                 'status_code' => 301,
                 'is_active' => true,
                 'source' => 'wp-migrate',
+                'match_query' => false,
             ]
         );
     }

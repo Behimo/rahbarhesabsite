@@ -76,6 +76,11 @@
                         <label class="form-label" for="page-keywords">کلمات کلیدی</label>
                         <input type="text" name="meta_keywords" id="page-keywords" value="{{ old('meta_keywords', $page->meta_keywords) }}" class="form-control">
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="page-canonical">آدرس کانونیکال (اختیاری)</label>
+                        <input type="url" name="canonical_url" id="page-canonical" value="{{ old('canonical_url', $page->canonical_url) }}" class="form-control" dir="ltr" placeholder="https://rahbarhesab.com/...">
+                        <div class="form-text">اگر خالی باشد، آدرس خودکار صفحه استفاده می‌شود.</div>
+                    </div>
                     <div>
                         <label class="form-label" for="page-og">تصویر Open Graph</label>
                         <input type="text" name="og_image" id="page-og" value="{{ old('og_image', $page->og_image) }}" class="form-control" dir="ltr">

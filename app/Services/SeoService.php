@@ -333,46 +333,6 @@ class SeoService
         ];
     }
 
-    public function sitemapUrls(): array
-    {
-        $urls = [
-            ['loc' => route('home'), 'priority' => '1.0', 'changefreq' => 'weekly'],
-            ['loc' => route('products.index'), 'priority' => '0.9', 'changefreq' => 'weekly'],
-            ['loc' => route('blog.index'), 'priority' => '0.8', 'changefreq' => 'weekly'],
-            ['loc' => route('services'), 'priority' => '0.8', 'changefreq' => 'monthly'],
-            ['loc' => route('why-bisan'), 'priority' => '0.7', 'changefreq' => 'monthly'],
-            ['loc' => route('about'), 'priority' => '0.7', 'changefreq' => 'monthly'],
-            ['loc' => route('contact'), 'priority' => '0.8', 'changefreq' => 'monthly'],
-        ];
-
-        foreach (\App\Models\CmsPost::query()->published()->get() as $post) {
-            $urls[] = [
-                'loc' => $this->permalinks->postAbsolute($post),
-                'priority' => '0.7',
-                'changefreq' => 'monthly',
-                'lastmod' => $post->updated_at?->toAtomString(),
-            ];
-        }
-
-        foreach (\App\Models\CmsPage::query()->published()->where('is_system', false)->get() as $page) {
-            $urls[] = [
-                'loc' => route('pages.show', $page->slug),
-                'priority' => '0.6',
-                'changefreq' => 'monthly',
-            ];
-        }
-
-        foreach ($this->siteData->products() as $product) {
-            $urls[] = [
-                'loc' => route('products.show', $product['slug']),
-                'priority' => '0.8',
-                'changefreq' => 'weekly',
-            ];
-        }
-
-        return $urls;
-    }
-
     private function defaultRobots(): string
     {
         if (request()->routeIs(['search', 'cart.*', 'checkout.*', 'login', 'login.verify', 'panel.*'])) {

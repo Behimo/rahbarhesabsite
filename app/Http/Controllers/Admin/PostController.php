@@ -270,6 +270,8 @@ class PostController extends Controller
             'meta_description' => ['nullable', 'string', 'max:500'],
             'meta_keywords' => ['nullable', 'string', 'max:300'],
             'og_image' => ['nullable', 'string', 'max:500'],
+            'canonical_url' => ['nullable', 'url', 'max:500'],
+            'robots' => ['nullable', 'string', 'max:50'],
             'published_at' => ['nullable', 'date'],
             'status' => ['nullable', 'in:draft,published,scheduled'],
             'tag_ids' => ['nullable', 'array'],

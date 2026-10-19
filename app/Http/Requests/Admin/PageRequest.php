@@ -9,6 +9,10 @@ use Illuminate\Validation\Rule;
 
 class PageRequest extends FormRequest
 {
+    /**
+     * @deprecated Kept for backwards compatibility; the canonical list lives in
+     *             config/seo.php so routing and validation can never diverge.
+     */
     public const RESERVED_SLUGS = [
         'admin', 'blog', 'products', 'courses', 'cart', 'checkout', 'login', 'register', 'panel',
         'contact', 'services', 'about', 'why-bisan', 'sitemap.xml', 'robots.txt', 'api',
@@ -23,11 +27,15 @@ class PageRequest extends FormRequest
     {
         $page = $this->page();
         $isSystem = (bool) $page?->is_system;
+        $reservedSlugs = array_values(array_unique(array_merge(
+            config('seo.reserved_prefixes', []),
+            self::RESERVED_SLUGS,
+        )));
 
         return [
             'slug' => $isSystem
                 ? ['sometimes', 'nullable']
-                : ['required', 'string', 'max:100', new EnglishSlug, Rule::unique('cms_pages', 'slug')->ignore($page?->id), Rule::notIn(self::RESERVED_SLUGS)],
+                : ['required', 'string', 'max:100', new EnglishSlug, Rule::unique('cms_pages', 'slug')->ignore($page?->id), Rule::notIn($reservedSlugs)],
             'title' => ['required', 'string', 'max:200'],
             'template' => ['nullable', 'in:system,content'],
             'status' => ['nullable', 'in:draft,published,scheduled'],
@@ -36,6 +44,7 @@ class PageRequest extends FormRequest
             'meta_description' => ['nullable', 'string', 'max:500'],
             'meta_keywords' => ['nullable', 'string', 'max:300'],
             'og_image' => ['nullable', 'string', 'max:500'],
+            'canonical_url' => ['nullable', 'url', 'max:500'],
             'robots' => ['required', 'string', 'max:50'],
             'body_html' => ['nullable', 'string'],
             'sort_order' => ['nullable', 'integer', 'min:0'],

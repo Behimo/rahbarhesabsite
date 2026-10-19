@@ -34,9 +34,17 @@ class HandleCmsRedirects
         $pathWithSlash = str_ends_with($path, '/') || $path === '/' ? $path : $path.'/';
         $pathTrimmed = $path === '/' ? '/' : rtrim($path, '/');
 
-        $redirect = $this->findRedirect($pathTrimmed)
-            ?? ($pathWithSlash !== $pathTrimmed ? $this->findRedirect($pathWithSlash) : null)
-            ?? $this->findQueryRedirect($request, $pathTrimmed);
+        $queryBased = false;
+        $redirect = $this->findRedirect($pathTrimmed);
+
+        if (! $redirect && $pathWithSlash !== $pathTrimmed) {
+            $redirect = $this->findRedirect($pathWithSlash);
+        }
+
+        if (! $redirect) {
+            $redirect = $this->findQueryRedirect($request, $pathTrimmed);
+            $queryBased = $redirect !== null;
+        }
 
         if ($redirect) {
             $code = (int) $redirect->status_code;
@@ -45,7 +53,7 @@ class HandleCmsRedirects
             }
 
             $target = $this->safeTarget((string) $redirect->to_path);
-            if ($target !== null) {
+            if ($target !== null && ! $this->isSelfLoop($request, $target, $queryBased)) {
                 if (! in_array($code, [301, 302, 307, 308], true)) {
                     $code = 301;
                 }
@@ -101,26 +109,89 @@ class HandleCmsRedirects
         $queryString = $request->getQueryString() ?: '';
         $lookup = $path.($queryString !== '' ? '?'.$queryString : '');
 
-        return Cache::remember(self::cacheKey('q:'.$lookup), 3600, function () use ($path, $queryString, $lookup) {
-            return CmsRedirect::query()
+        return Cache::remember(self::cacheKey('q:'.$lookup), 3600, function () use ($path, $queryString, $lookup, $request) {
+            $exact = CmsRedirect::query()
                 ->where('from_path', $path)
                 ->where('match_query', true)
                 ->where('from_query', $queryString)
                 ->where('is_active', true)
-                ->first()
-                // Legacy Rank Math imports stored path?query inside from_path.
-                ?? CmsRedirect::query()
-                    ->where('from_path', $lookup)
-                    ->where('is_active', true)
-                    ->first();
+                ->first();
+
+            if ($exact) {
+                return $exact;
+            }
+
+            // Legacy Rank Math imports stored path?query inside from_path.
+            $legacy = CmsRedirect::query()
+                ->where('from_path', $lookup)
+                ->where('is_active', true)
+                ->first();
+
+            if ($legacy) {
+                return $legacy;
+            }
+
+            // Tolerate extra tracking params: the request must contain every
+            // param in the stored query, but may carry additional ones.
+            return CmsRedirect::query()
+                ->where('from_path', $path)
+                ->where('match_query', true)
+                ->where('is_active', true)
+                ->whereNotNull('from_query')
+                ->get()
+                ->first(fn (CmsRedirect $redirect): bool => $this->queryIsSubset(
+                    (string) $redirect->from_query,
+                    $request->query()
+                ));
         });
+    }
+
+    /**
+     * @param  array<string, mixed>  $requestQuery
+     */
+    private function queryIsSubset(string $fromQuery, array $requestQuery): bool
+    {
+        if ($fromQuery === '') {
+            return false;
+        }
+
+        parse_str($fromQuery, $expected);
+
+        if ($expected === []) {
+            return false;
+        }
+
+        foreach ($expected as $key => $value) {
+            if (! array_key_exists($key, $requestQuery)) {
+                return false;
+            }
+
+            if (is_array($value)) {
+                if ($requestQuery[$key] != $value) {
+                    return false;
+                }
+            } elseif ((string) $requestQuery[$key] !== (string) $value) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function safeTarget(string $to): ?string
     {
         $to = trim($to);
 
-        if ($to === '' || ! str_starts_with($to, '/') || str_starts_with($to, '//') || str_contains($to, '\\')) {
+        if ($to === '') {
+            return null;
+        }
+
+        // Allow explicit http(s) destinations (Rank Math external redirects).
+        if (preg_match('#^https?://#i', $to)) {
+            return $to;
+        }
+
+        if (! str_starts_with($to, '/') || str_starts_with($to, '//') || str_contains($to, '\\')) {
             return null;
         }
 
@@ -131,8 +202,42 @@ class HandleCmsRedirects
         return $to;
     }
 
+    /**
+     * Never redirect a request back onto the same path — the middleware matches
+     * a source regardless of query string, so a same-path target loops forever.
+     */
+    private function isSelfLoop(Request $request, string $target, bool $queryBased): bool
+    {
+        if (preg_match('#^https?://#i', $target)) {
+            return false;
+        }
+
+        $permalinks = app(PermalinkService::class);
+        $parts = parse_url($target);
+        $targetPath = $permalinks->normalizePath($parts['path'] ?? '/');
+        $requestPath = $permalinks->normalizePath('/'.ltrim($request->path(), '/'));
+
+        if ($targetPath !== $requestPath) {
+            return false;
+        }
+
+        // Path-based match ignores the query string → any same-path target loops.
+        if (! $queryBased) {
+            return true;
+        }
+
+        // Query-based match only loops when it repeats the same query string.
+        $targetQuery = $parts['query'] ?? '';
+
+        return $targetQuery !== '' && $targetQuery === ($request->getQueryString() ?: '');
+    }
+
     private function absoluteTarget(string $target): string
     {
+        if (preg_match('#^https?://#i', $target)) {
+            return $target;
+        }
+
         $permalinks = app(PermalinkService::class);
         $parts = parse_url($target);
         $path = $parts['path'] ?? '/';

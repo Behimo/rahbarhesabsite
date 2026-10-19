@@ -258,6 +258,9 @@ class SitemapAndRedirectTest extends TestCase
             ->assertOk()
             ->assertSee('خبر صفحه اصلی', false)
             ->assertSee('href="'.$url.'"', false);
+
+        // The category-based permalink (/{category}/{slug}) must resolve too.
+        $this->get('/news/home-news-post')->assertOk()->assertSee('خبر صفحه اصلی', false);
     }
 
     public function test_blog_and_product_paged_and_tag_archives_resolve(): void
@@ -350,5 +353,93 @@ class SitemapAndRedirectTest extends TestCase
 
         $this->assertStringContainsString('/product/page/2/', $html);
         $this->assertStringContainsString('type=free', $html);
+    }
+
+    public function test_page_slug_starting_with_reserved_word_still_resolves(): void
+    {
+        foreach (['builder-page', 'productivity', 'blogging', 'site-map-guide'] as $slug) {
+            CmsPage::query()->create([
+                'slug' => $slug,
+                'title' => 'صفحه '.$slug,
+                'template' => 'content',
+                'is_system' => false,
+                'is_published' => true,
+                'status' => 'published',
+            ]);
+
+            $this->get('/'.$slug)->assertOk();
+        }
+    }
+
+    public function test_reserved_exact_slug_is_not_routed_as_a_page(): void
+    {
+        CmsPage::query()->create([
+            'slug' => 'build',
+            'title' => 'صفحه رزرو شده',
+            'template' => 'content',
+            'is_system' => false,
+            'is_published' => true,
+            'status' => 'published',
+        ]);
+
+        $this->get('/build')->assertNotFound();
+    }
+
+    public function test_external_redirect_target_is_imported_and_served(): void
+    {
+        $importer = app(RankMathRedirectImporter::class);
+        $result = $importer->import("/go,https://example.com/landing,301\n");
+
+        $this->assertSame(1, $result['imported']);
+        $this->assertSame('https://example.com/landing', CmsRedirect::query()->value('to_path'));
+
+        $this->get('/go')
+            ->assertStatus(301)
+            ->assertHeader('Location', 'https://example.com/landing');
+    }
+
+    public function test_self_redirect_differing_only_by_trailing_slash_is_skipped(): void
+    {
+        $importer = app(RankMathRedirectImporter::class);
+        $result = $importer->import("/same-page,/same-page/,301\n");
+
+        $this->assertSame(0, $result['imported']);
+        $this->assertSame(0, CmsRedirect::query()->count());
+
+        // No 301 loop — the path falls through to the (missing) page.
+        $this->get('/same-page')->assertNotFound();
+    }
+
+    public function test_query_redirect_tolerates_extra_tracking_parameters(): void
+    {
+        $importer = app(RankMathRedirectImporter::class);
+        $importer->import("/old-page?utm=1,/blog/,301\n");
+
+        $permalinks = app(PermalinkService::class);
+
+        $this->get('/old-page?utm=1&gclid=abc')
+            ->assertStatus(301)
+            ->assertHeader('Location', $permalinks->absolute('/blog/'));
+    }
+
+    public function test_duplicate_redirect_path_is_rejected_by_composite_unique(): void
+    {
+        CmsRedirect::query()->create([
+            'from_path' => '/dupe',
+            'from_query' => '',
+            'to_path' => '/a/',
+            'status_code' => 301,
+            'is_active' => true,
+        ]);
+
+        $this->expectException(\Illuminate\Database\UniqueConstraintViolationException::class);
+
+        CmsRedirect::query()->create([
+            'from_path' => '/dupe',
+            'from_query' => '',
+            'to_path' => '/b/',
+            'status_code' => 301,
+            'is_active' => true,
+        ]);
     }
 }

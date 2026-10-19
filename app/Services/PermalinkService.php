@@ -163,4 +163,33 @@ class PermalinkService
     {
         return in_array(mb_strtolower($segment), array_map('mb_strtolower', $this->reservedPrefixes()), true);
     }
+
+    /**
+     * Build an anchored route constraint that accepts any single path segment
+     * except the configured reserved names.
+     *
+     * Only a whole reserved segment is blocked ("build"), never a word that
+     * merely starts with one ("builder-page") — the bug this replaces used a
+     * non-anchored negative lookahead and 404'd every such page.
+     *
+     * @param  list<string>  $exclude  reserved names to allow here (e.g. "blog" for post categories)
+     */
+    public function reservedSegmentPattern(array $exclude = []): string
+    {
+        $prefixes = array_values(array_diff(
+            array_map('mb_strtolower', $this->reservedPrefixes()),
+            array_map('mb_strtolower', $exclude)
+        ));
+
+        if ($prefixes === []) {
+            return '[^/]+';
+        }
+
+        $alternation = implode('|', array_map(
+            static fn (string $prefix): string => preg_quote($prefix, '/').'(?:/|$)',
+            $prefixes
+        ));
+
+        return '^(?!'.$alternation.')[^/]+$';
+    }
 }

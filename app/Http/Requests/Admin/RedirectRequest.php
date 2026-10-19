@@ -17,6 +17,7 @@ class RedirectRequest extends FormRequest
     {
         $redirect = $this->route('redirect');
         $redirectId = $redirect instanceof CmsRedirect ? $redirect->id : null;
+        $fromQuery = (string) $this->input('from_query', '');
 
         return [
             'from_path' => [
@@ -24,12 +25,23 @@ class RedirectRequest extends FormRequest
                 'string',
                 'max:255',
                 Rule::unique('cms_redirects', 'from_path')
-                    ->where(fn ($q) => $q->where('from_query', $this->input('from_query', '')))
+                    ->where(function ($q) use ($fromQuery) {
+                        // Empty query matches both '' and legacy NULL rows, since
+                        // MySQL treats NULL as distinct in the unique index.
+                        if ($fromQuery === '') {
+                            $q->where(function ($q) {
+                                $q->where('from_query', '')->orWhereNull('from_query');
+                            });
+                        } else {
+                            $q->where('from_query', $fromQuery);
+                        }
+                    })
                     ->ignore($redirectId),
             ],
             'from_query' => ['nullable', 'string', 'max:255'],
             'match_query' => ['sometimes', 'boolean'],
-            'to_path' => ['required', 'string', 'max:255', 'regex:/^\/(?!\/)[^\s\\\\]*$/'],
+            // Either a site-relative path (/foo) or an external http(s) URL.
+            'to_path' => ['required', 'string', 'max:255', 'regex:/^(?:https?:\/\/[^\s\\\\]+|\/(?!\/)[^\s\\\\]*)$/i'],
             'status_code' => ['required', 'in:301,302,410'],
             'is_active' => ['sometimes', 'boolean'],
         ];

@@ -47,7 +47,7 @@ class RankMathRedirectImporter
             }
 
             $fromKey = $matchQuery ? $fromPath.'?'.$fromQuery : $fromPath;
-            if ($fromKey === $to) {
+            if ($this->isSelfRedirect($fromKey, $to)) {
                 $skipped++;
 
                 continue;
@@ -176,12 +176,10 @@ class RankMathRedirectImporter
             return '';
         }
 
-        if (str_starts_with($to, 'http://') || str_starts_with($to, 'https://')) {
-            $parts = parse_url($to);
-            $path = $parts['path'] ?? '/';
-            $query = isset($parts['query']) ? '?'.$parts['query'] : '';
-
-            return $path.$query;
+        // External destinations keep scheme + host so the redirect actually
+        // leaves the site (Rank Math allows off-site targets).
+        if (preg_match('#^https?://#i', $to)) {
+            return $to;
         }
 
         if (! str_starts_with($to, '/')) {
@@ -196,6 +194,28 @@ class RankMathRedirectImporter
         $code = (int) preg_replace('/\D+/', '', $code) ?: 301;
 
         return in_array($code, [301, 302, 307, 308, 410], true) ? $code : 301;
+    }
+
+    /**
+     * Detect a redirect that points back at its own source. Trailing-slash
+     * differences are normalised so "/x" → "/x/" is treated as a self-loop
+     * (the middleware matches both spellings, so it would loop forever).
+     */
+    private function isSelfRedirect(string $from, string $to): bool
+    {
+        if ($from === $to) {
+            return true;
+        }
+
+        // External destinations never loop back through this middleware.
+        if (preg_match('#^https?://#i', $to)) {
+            return false;
+        }
+
+        [$fromPath, $fromQuery] = array_pad(explode('?', $from, 2), 2, '');
+        [$toPath, $toQuery] = array_pad(explode('?', $to, 2), 2, '');
+
+        return rtrim($fromPath, '/') === rtrim($toPath, '/') && $fromQuery === $toQuery;
     }
 
     private function forgetLookup(string $path, string $query): void

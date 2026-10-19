@@ -91,6 +91,19 @@
                         <label class="form-label">کلمات کلیدی</label>
                         <input type="text" name="meta_keywords" value="{{ old('meta_keywords', $post->meta_keywords) }}" class="form-control">
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">آدرس کانونیکال (اختیاری)</label>
+                        <input type="url" name="canonical_url" value="{{ old('canonical_url', $post->canonical_url) }}" class="form-control" dir="ltr" placeholder="https://rahbarhesab.com/...">
+                        <div class="form-text">اگر خالی باشد، آدرس خودکار مقاله استفاده می‌شود.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">ربات‌های جستجو</label>
+                        <select name="robots" class="form-select">
+                            @foreach (['index, follow', 'noindex, follow', 'index, nofollow', 'noindex, nofollow'] as $robots)
+                                <option value="{{ $robots }}" @selected(old('robots', $post->robots ?: 'index, follow') === $robots)>{{ $robots }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                     <div>
                         <label class="form-label">تصویر Open Graph</label>
                         <div class="input-group">

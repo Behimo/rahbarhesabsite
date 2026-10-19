@@ -157,14 +157,18 @@ Route::controller(CafeQuestionController::class)->prefix('cafe-soal')->name('caf
 });
 
 // WP-style post permalink /{category}/{slug}/ then CMS pages /{slug}/
+// Reserved first segments are excluded by whole-segment match so slugs like
+// "builder-page" or "productivity" still resolve (see config/seo.php).
+$permalinks = app(\App\Services\PermalinkService::class);
+
 Route::get('/{category}/{slug}', [BlogController::class, 'show'])
     // "blog" is allowed as category segment so /blog/{post-slug}/ works for uncategorized fallback.
-    ->where('category', '^(?!admin|panel|api|login|logout|cart|checkout|search|courses|laws|cafe-soal|product|product-category|category|tag|feed|wp-admin|wp-content|wp-includes|wp-json|my-login|about-us|contact-us|sanctum|storage|build|site|themes).*$')
-    ->where('slug', '^(?!page$).+$')
+    ->where('category', $permalinks->reservedSegmentPattern(['blog']))
+    ->where('slug', '^(?!page$)[^/]+$')
     ->name('blog.show');
 
 Route::get('/{slug}', [PageController::class, 'show'])
-    ->where('slug', '^(?!admin|panel|api|login|logout|cart|checkout|search|courses|laws|cafe-soal|product|product-category|category|tag|blog|feed|wp-admin|wp-content|wp-includes|wp-json|my-login|sanctum|storage|build|site|themes).*$')
+    ->where('slug', $permalinks->reservedSegmentPattern())
     ->name('pages.show');
 
 /*

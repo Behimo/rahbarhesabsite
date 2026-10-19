@@ -5,7 +5,10 @@ namespace Tests\Feature;
 use App\Models\CmsMenu;
 use App\Models\CmsPage;
 use App\Models\CmsPopup;
+use App\Models\CmsPost;
+use App\Models\CmsRedirect;
 use App\Models\CmsSetting;
+use App\Models\ShopProduct;
 use App\Models\User;
 use App\Support\AccessCatalog;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -255,5 +258,67 @@ class AdminContentRegressionTest extends TestCase
             ->assertSee('window.pageBuilderConfig')
             ->assertSee('previewUrl')
             ->assertDontSee('function renderCanvas');
+    }
+
+    public function test_admin_can_create_a_redirect_with_a_query_match(): void
+    {
+        $admin = $this->makeAdmin();
+
+        $this->actingAs($admin)
+            ->post(route('admin.redirects.store'), [
+                'from_path' => '/from-query',
+                'from_query' => 'utm=1',
+                'to_path' => '/to/',
+                'status_code' => 301,
+                'is_active' => 1,
+            ])
+            ->assertRedirect();
+
+        $redirect = CmsRedirect::query()->where('from_path', '/from-query')->first();
+        $this->assertNotNull($redirect);
+        $this->assertSame('utm=1', $redirect->from_query);
+        $this->assertTrue($redirect->match_query);
+    }
+
+    public function test_admin_can_save_canonical_and_robots_on_a_post(): void
+    {
+        $admin = $this->makeAdmin();
+
+        $this->actingAs($admin)
+            ->post(route('admin.posts.store'), [
+                'title' => 'مقاله سئو',
+                'slug' => 'seo-post',
+                'canonical_url' => 'https://example.com/canonical',
+                'robots' => 'noindex, follow',
+                'is_published' => 1,
+            ])
+            ->assertRedirect();
+
+        $post = CmsPost::query()->where('slug', 'seo-post')->first();
+        $this->assertNotNull($post);
+        $this->assertSame('https://example.com/canonical', $post->canonical_url);
+        $this->assertSame('noindex, follow', $post->robots);
+    }
+
+    public function test_admin_can_save_canonical_and_robots_on_a_course(): void
+    {
+        $admin = $this->makeAdmin();
+
+        $this->actingAs($admin)
+            ->post(route('admin.courses.store'), [
+                'title' => 'دوره سئو',
+                'slug' => 'seo-course',
+                'price' => 0,
+                'level' => 'beginner',
+                'canonical_url' => 'https://example.com/course-canonical',
+                'robots' => 'noindex, follow',
+                'is_published' => 1,
+            ])
+            ->assertRedirect();
+
+        $course = ShopProduct::query()->where('slug', 'seo-course')->first();
+        $this->assertNotNull($course);
+        $this->assertSame('https://example.com/course-canonical', $course->canonical_url);
+        $this->assertSame('noindex, follow', $course->robots);
     }
 }

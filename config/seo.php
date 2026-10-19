@@ -40,15 +40,31 @@ return [
     ],
 
     /*
-    | Path prefixes reserved for Laravel systems — never treated as WP pages/posts.
+    | Exact first-segment names reserved for Laravel systems, institutional
+    | routes and SEO endpoints. A CMS page/post may not claim these as its
+    | slug, and the frontend routes exclude them so real routes always win.
+    |
+    | Matching is anchored: only the whole segment is reserved, so e.g.
+    | "builder-page" or "productivity" are still valid page slugs.
     */
     'reserved_prefixes' => [
-        'admin', 'panel', 'api', 'login', 'logout', 'cart', 'checkout', 'search',
-        'courses', 'laws', 'cafe-soal', 'up', 'sanctum', 'livewire', 'vendor',
-        'storage', 'build', 'site', 'themes', 'horizon', 'telescope',
-        'product', 'product-category', 'category', 'tag', 'blog', 'feed',
-        'wp-admin', 'wp-content', 'wp-includes', 'wp-json', 'wp-login.php',
-        'xmlrpc.php', 'my-login',
+        // Laravel / framework
+        'admin', 'panel', 'api', 'login', 'logout', 'register', 'up', 'sanctum',
+        'livewire', 'vendor', 'storage', 'build', 'site', 'themes', 'horizon',
+        'telescope', 'my-login',
+        // Commerce & account
+        'cart', 'checkout', 'products', 'product', 'product-category',
+        // Blog & taxonomies
+        'blog', 'category', 'tag', 'feed',
+        // Content sections
+        'courses', 'laws', 'cafe-soal', 'search',
+        // Institutional routes
+        'about', 'about-us', 'contact', 'contact-us', 'services', 'why-bisan',
+        // Sitemaps & feeds
+        'sitemap_index.xml', 'sitemap.xml', 'post-sitemap.xml', 'page-sitemap.xml',
+        'course-sitemap.xml', 'product-sitemap.xml', 'law-sitemap.xml', 'robots.txt',
+        // WordPress leftovers
+        'wp-admin', 'wp-content', 'wp-includes', 'wp-json', 'wp-login.php', 'xmlrpc.php',
     ],
 
     /*

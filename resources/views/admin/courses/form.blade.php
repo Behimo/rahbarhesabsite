@@ -70,9 +70,30 @@
                         <label class="form-label" for="course-meta-title">عنوان سئو</label>
                         <input id="course-meta-title" type="text" name="meta_title" value="{{ old('meta_title', $product->meta_title) }}" class="form-control" maxlength="200">
                     </div>
-                    <div>
+                    <div class="mb-3">
                         <label class="form-label" for="course-meta-description">توضیحات متا</label>
                         <textarea id="course-meta-description" name="meta_description" rows="3" class="form-control" maxlength="500">{{ old('meta_description', $product->meta_description) }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="course-meta-keywords">کلمات کلیدی</label>
+                        <input id="course-meta-keywords" type="text" name="meta_keywords" value="{{ old('meta_keywords', $product->meta_keywords) }}" class="form-control" maxlength="300">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="course-canonical">آدرس کانونیکال (اختیاری)</label>
+                        <input id="course-canonical" type="url" name="canonical_url" value="{{ old('canonical_url', $product->canonical_url) }}" class="form-control" dir="ltr" placeholder="https://rahbarhesab.com/...">
+                        <div class="form-text">اگر خالی باشد، آدرس خودکار دوره استفاده می‌شود.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="course-robots">ربات‌های جستجو</label>
+                        <select id="course-robots" name="robots" class="form-select">
+                            @foreach (['index, follow', 'noindex, follow', 'index, nofollow', 'noindex, nofollow'] as $robots)
+                                <option value="{{ $robots }}" @selected(old('robots', $product->robots ?: 'index, follow') === $robots)>{{ $robots }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" for="course-og">تصویر Open Graph</label>
+                        <input id="course-og" type="text" name="og_image" value="{{ old('og_image', $product->og_image) }}" class="form-control" dir="ltr">
                     </div>
                 </div>
             </div>
