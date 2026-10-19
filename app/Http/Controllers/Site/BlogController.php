@@ -13,14 +13,23 @@ use Illuminate\View\View;
 
 class BlogController extends SiteController
 {
-    public function index(Request $request, CategoryService $categories, PermalinkService $permalinks, ?string $category = null, ?string $tag = null, ?int $page = null): View
+    public function index(Request $request, CategoryService $categories, PermalinkService $permalinks): View
     {
+        $page = $request->route('page');
+        $page = $page !== null ? max(1, (int) $page) : null;
+        $category = $request->route('category');
+        $tag = $request->route('tag');
+
         if ($page !== null) {
-            $request->merge(['page' => max(1, $page)]);
+            $request->merge(['page' => $page]);
         }
 
-        $categoryPath = $category ?: ($request->string('category')->toString() ?: null);
-        $tagSlug = $tag ?: ($request->string('tag')->toString() ?: null);
+        $categoryPath = is_string($category) && $category !== ''
+            ? trim($category, '/')
+            : ($request->string('category')->toString() ?: null);
+        $tagSlug = is_string($tag) && $tag !== ''
+            ? $tag
+            : ($request->string('tag')->toString() ?: null);
 
         // Soft-404 guard: unknown taxonomy must 404, not empty 200.
         $categoryModel = null;

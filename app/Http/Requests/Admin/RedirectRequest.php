@@ -19,7 +19,16 @@ class RedirectRequest extends FormRequest
         $redirectId = $redirect instanceof CmsRedirect ? $redirect->id : null;
 
         return [
-            'from_path' => ['required', 'string', 'max:255', Rule::unique('cms_redirects', 'from_path')->ignore($redirectId)],
+            'from_path' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('cms_redirects', 'from_path')
+                    ->where(fn ($q) => $q->where('from_query', $this->input('from_query', '')))
+                    ->ignore($redirectId),
+            ],
+            'from_query' => ['nullable', 'string', 'max:255'],
+            'match_query' => ['sometimes', 'boolean'],
             'to_path' => ['required', 'string', 'max:255', 'regex:/^\/(?!\/)[^\s\\\\]*$/'],
             'status_code' => ['required', 'in:301,302,410'],
             'is_active' => ['sometimes', 'boolean'],
@@ -46,6 +55,8 @@ class RedirectRequest extends FormRequest
     {
         $data = $this->validated();
         $data['from_path'] = '/'.ltrim($data['from_path'], '/');
+        $data['from_query'] = (string) ($data['from_query'] ?? '');
+        $data['match_query'] = $this->boolean('match_query', $data['from_query'] !== '');
         $data['is_active'] = $this->boolean('is_active', true);
 
         return $data;

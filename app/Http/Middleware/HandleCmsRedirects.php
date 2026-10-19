@@ -3,7 +3,9 @@
 namespace App\Http\Middleware;
 
 use App\Models\CmsRedirect;
+use App\Services\PermalinkService;
 use Closure;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
@@ -48,7 +50,7 @@ class HandleCmsRedirects
                     $code = 301;
                 }
 
-                return redirect($target, $code);
+                return new RedirectResponse($this->absoluteTarget($target), $code);
             }
         }
 
@@ -64,6 +66,9 @@ class HandleCmsRedirects
                 ->where(function ($q) {
                     $q->where('match_query', false)->orWhereNull('match_query');
                 })
+                ->where(function ($q) {
+                    $q->whereNull('from_query')->orWhere('from_query', '');
+                })
                 ->first();
         });
     }
@@ -73,12 +78,19 @@ class HandleCmsRedirects
         $p = $request->query('p');
         if ($p !== null && $p !== '' && ($path === '/' || $path === '')) {
             $lookup = '/?p='.(int) $p;
+            $query = 'p='.(int) $p;
 
-            return Cache::remember(self::cacheKey($lookup), 3600, function () use ($lookup) {
+            return Cache::remember(self::cacheKey($lookup), 3600, function () use ($lookup, $query) {
                 return CmsRedirect::query()
                     ->where('from_path', $lookup)
                     ->where('is_active', true)
-                    ->first();
+                    ->first()
+                    ?? CmsRedirect::query()
+                        ->where('from_path', '/')
+                        ->where('match_query', true)
+                        ->where('from_query', $query)
+                        ->where('is_active', true)
+                        ->first();
             });
         }
 
@@ -89,13 +101,18 @@ class HandleCmsRedirects
         $queryString = $request->getQueryString() ?: '';
         $lookup = $path.($queryString !== '' ? '?'.$queryString : '');
 
-        return Cache::remember(self::cacheKey('q:'.$lookup), 3600, function () use ($path, $queryString) {
+        return Cache::remember(self::cacheKey('q:'.$lookup), 3600, function () use ($path, $queryString, $lookup) {
             return CmsRedirect::query()
                 ->where('from_path', $path)
                 ->where('match_query', true)
                 ->where('from_query', $queryString)
                 ->where('is_active', true)
-                ->first();
+                ->first()
+                // Legacy Rank Math imports stored path?query inside from_path.
+                ?? CmsRedirect::query()
+                    ->where('from_path', $lookup)
+                    ->where('is_active', true)
+                    ->first();
         });
     }
 
@@ -112,5 +129,15 @@ class HandleCmsRedirects
         }
 
         return $to;
+    }
+
+    private function absoluteTarget(string $target): string
+    {
+        $permalinks = app(PermalinkService::class);
+        $parts = parse_url($target);
+        $path = $parts['path'] ?? '/';
+        $query = isset($parts['query']) && $parts['query'] !== '' ? '?'.$parts['query'] : '';
+
+        return $permalinks->absolute($permalinks->normalizePath($path)).$query;
     }
 }

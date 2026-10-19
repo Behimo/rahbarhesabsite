@@ -6,7 +6,7 @@
 
         <div class="news-guides-grid">
             @forelse ($latestPosts as $post)
-                <a href="{{ route('blog.show', $post->slug) }}" class="news-guide-card">
+                <a href="{{ $post->url() }}" class="news-guide-card">
                     <div class="news-guide-icon">
                         <svg viewBox="0 0 80 80" aria-hidden="true">
                             <circle cx="40" cy="40" r="27" />

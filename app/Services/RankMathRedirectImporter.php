@@ -32,29 +32,62 @@ class RankMathRedirectImporter
                 $parts = preg_split('/\s+/', $line) ?: [];
             }
 
-            $from = $this->normalizeFrom((string) ($parts[0] ?? ''));
+            $fromParts = $this->normalizeFrom((string) ($parts[0] ?? ''));
             $to = $this->normalizeTo((string) ($parts[1] ?? ''));
             $code = $this->normalizeCode((string) ($parts[2] ?? '301'));
 
-            if ($from === '' || $to === '' || $from === $to) {
+            $fromPath = $fromParts['path'];
+            $fromQuery = $fromParts['query'];
+            $matchQuery = $fromQuery !== '';
+
+            if ($fromPath === '' || $to === '') {
                 $skipped++;
 
                 continue;
             }
 
+            $fromKey = $matchQuery ? $fromPath.'?'.$fromQuery : $fromPath;
+            if ($fromKey === $to) {
+                $skipped++;
+
+                continue;
+            }
+
+            // Keep legacy WordPress ?p= shortcuts as a single from_path string.
+            if ($fromPath === '/' && str_starts_with($fromQuery, 'p=') && ! str_contains($fromQuery, '&')) {
+                $legacyFrom = '/?'.$fromQuery;
+                CmsRedirect::query()->updateOrCreate(
+                    ['from_path' => $legacyFrom, 'from_query' => ''],
+                    [
+                        'to_path' => $to,
+                        'status_code' => $code,
+                        'is_active' => true,
+                        'source' => 'rankmath',
+                        'match_query' => false,
+                        'from_query' => '',
+                    ]
+                );
+                $this->forgetLookup($legacyFrom, '');
+                $map[$legacyFrom] = $to;
+                $imported++;
+
+                continue;
+            }
+
             CmsRedirect::query()->updateOrCreate(
-                ['from_path' => $from],
+                ['from_path' => $fromPath, 'from_query' => $fromQuery],
                 [
                     'to_path' => $to,
                     'status_code' => $code,
                     'is_active' => true,
                     'source' => 'rankmath',
-                    'match_query' => str_contains($from, '?'),
+                    'match_query' => $matchQuery,
+                    'from_query' => $fromQuery,
                 ]
             );
 
-            Cache::forget(HandleCmsRedirects::cacheKey($from));
-            $map[$from] = $to;
+            $this->forgetLookup($fromPath, $fromQuery);
+            $map[$fromKey] = $to;
             $imported++;
         }
 
@@ -96,11 +129,14 @@ class RankMathRedirectImporter
         return array_values(array_unique($chains));
     }
 
-    private function normalizeFrom(string $from): string
+    /**
+     * @return array{path: string, query: string}
+     */
+    private function normalizeFrom(string $from): array
     {
         $from = trim($from);
         if ($from === '') {
-            return '';
+            return ['path' => '', 'query' => ''];
         }
 
         if (str_starts_with($from, 'http://') || str_starts_with($from, 'https://')) {
@@ -108,14 +144,29 @@ class RankMathRedirectImporter
             $path = $parts['path'] ?? '/';
             $query = $parts['query'] ?? '';
 
-            return $query !== '' ? $path.'?'.$query : $path;
+            return [
+                'path' => $path === '' ? '/' : $path,
+                'query' => $query,
+            ];
         }
 
         if (! str_starts_with($from, '/')) {
             $from = '/'.$from;
         }
 
-        return $from;
+        $parts = parse_url($from);
+        $path = $parts['path'] ?? '/';
+        $query = $parts['query'] ?? '';
+
+        // Relative strings like /old?x=1 are handled by parse_url; also support bare ? in path.
+        if ($query === '' && str_contains($from, '?')) {
+            [$path, $query] = array_pad(explode('?', $from, 2), 2, '');
+        }
+
+        return [
+            'path' => $path === '' ? '/' : $path,
+            'query' => $query,
+        ];
     }
 
     private function normalizeTo(string $to): string
@@ -145,5 +196,14 @@ class RankMathRedirectImporter
         $code = (int) preg_replace('/\D+/', '', $code) ?: 301;
 
         return in_array($code, [301, 302, 307, 308, 410], true) ? $code : 301;
+    }
+
+    private function forgetLookup(string $path, string $query): void
+    {
+        Cache::forget(HandleCmsRedirects::cacheKey($path));
+        if ($query !== '') {
+            Cache::forget(HandleCmsRedirects::cacheKey('q:'.$path.'?'.$query));
+            Cache::forget(HandleCmsRedirects::cacheKey($path.'?'.$query));
+        }
     }
 }

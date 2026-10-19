@@ -3,13 +3,17 @@
         ? rtrim((string) $paginationBase, '/')
         : rtrim(parse_url($paginator->path(), PHP_URL_PATH) ?: '/blog', '/');
 
-    $pageUrl = function (int $page) use ($base): string {
+    $queryString = http_build_query(request()->except('page'));
+
+    $pageUrl = function (int $page) use ($base, $queryString): string {
         $permalinks = app(\App\Services\PermalinkService::class);
         if ($page <= 1) {
-            return $permalinks->normalizePath($base === '' ? '/' : $base);
+            $path = $permalinks->normalizePath($base === '' ? '/' : $base);
+        } else {
+            $path = $permalinks->normalizePath($base.'/page/'.$page);
         }
 
-        return $permalinks->normalizePath($base.'/page/'.$page);
+        return $queryString !== '' ? $path.'?'.$queryString : $path;
     };
 @endphp
 

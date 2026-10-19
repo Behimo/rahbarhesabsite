@@ -29,16 +29,22 @@ class CourseController extends SiteController
         parent::__construct($siteData, $seo);
     }
 
-    public function index(Request $request, CategoryService $categories, ?string $category = null, ?int $page = null): View
+    public function index(Request $request, CategoryService $categories): View
     {
         $permalinks = app(\App\Services\PermalinkService::class);
 
+        $page = $request->route('page');
+        $page = $page !== null ? max(1, (int) $page) : null;
+        $category = $request->route('category');
+
         if ($page !== null) {
-            $request->merge(['page' => max(1, $page)]);
+            $request->merge(['page' => $page]);
         }
 
         $type = $request->query('type');
-        $categoryPath = $category ?: $request->string('category')->toString();
+        $categoryPath = is_string($category) && $category !== ''
+            ? trim($category, '/')
+            : $request->string('category')->toString();
         $categoryModel = $categoryPath !== ''
             ? $categories->findByPath(Category::TYPE_PRODUCT, $categoryPath)
             : null;

@@ -24,18 +24,19 @@ class RedirectController extends Controller
     {
         $data = $request->redirectAttributes();
         CmsRedirect::query()->create($data);
-        $this->forgetPath($data['from_path']);
+        $this->forgetLookup($data['from_path'], (string) ($data['from_query'] ?? ''));
 
         return back()->with('success', 'ریدایرکت افزوده شد.');
     }
 
     public function update(RedirectRequest $request, CmsRedirect $redirect): RedirectResponse
     {
-        $old = $redirect->from_path;
+        $oldPath = $redirect->from_path;
+        $oldQuery = (string) ($redirect->from_query ?? '');
         $data = $request->redirectAttributes();
         $redirect->update($data);
-        $this->forgetPath($old);
-        $this->forgetPath($data['from_path']);
+        $this->forgetLookup($oldPath, $oldQuery);
+        $this->forgetLookup($data['from_path'], (string) ($data['from_query'] ?? ''));
 
         return back()->with('success', 'ریدایرکت به‌روزرسانی شد.');
     }
@@ -43,8 +44,9 @@ class RedirectController extends Controller
     public function destroy(CmsRedirect $redirect): RedirectResponse
     {
         $path = $redirect->from_path;
+        $query = (string) ($redirect->from_query ?? '');
         $redirect->delete();
-        $this->forgetPath($path);
+        $this->forgetLookup($path, $query);
 
         return back()->with('success', 'ریدایرکت حذف شد.');
     }
@@ -66,9 +68,14 @@ class RedirectController extends Controller
         return back()->with('success', $message);
     }
 
-    private function forgetPath(string $path): void
+    private function forgetLookup(string $path, string $query = ''): void
     {
         Cache::forget(\App\Http\Middleware\HandleCmsRedirects::cacheKey($path));
-        Cache::forget(\App\Http\Middleware\HandleCmsRedirects::cacheKey('q:'.$path));
+        if ($query !== '') {
+            Cache::forget(\App\Http\Middleware\HandleCmsRedirects::cacheKey('q:'.$path.'?'.$query));
+            Cache::forget(\App\Http\Middleware\HandleCmsRedirects::cacheKey($path.'?'.$query));
+        } else {
+            Cache::forget(\App\Http\Middleware\HandleCmsRedirects::cacheKey('q:'.$path));
+        }
     }
 }

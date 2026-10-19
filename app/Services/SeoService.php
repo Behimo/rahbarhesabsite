@@ -347,7 +347,7 @@ class SeoService
 
         foreach (\App\Models\CmsPost::query()->published()->get() as $post) {
             $urls[] = [
-                'loc' => route('blog.show', $post->slug),
+                'loc' => $this->permalinks->postAbsolute($post),
                 'priority' => '0.7',
                 'changefreq' => 'monthly',
                 'lastmod' => $post->updated_at?->toAtomString(),

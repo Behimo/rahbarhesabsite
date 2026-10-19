@@ -78,8 +78,13 @@ Route::get('/search', [SearchController::class, 'index'])->name('search');
 Route::get('/product', [CourseController::class, 'index'])->name('courses.index');
 Route::get('/product/page/{page}', [CourseController::class, 'index'])->whereNumber('page')->name('courses.index.paged');
 Route::get('/product/{slug}', [CourseController::class, 'show'])->name('courses.show');
-Route::get('/product-category/{category}', [CourseController::class, 'index'])->name('courses.category');
-Route::get('/product-category/{category}/page/{page}', [CourseController::class, 'index'])->whereNumber('page')->name('courses.category.paged');
+Route::get('/product-category/{category}/page/{page}', [CourseController::class, 'index'])
+    ->where('category', '.+')
+    ->whereNumber('page')
+    ->name('courses.category.paged');
+Route::get('/product-category/{category}', [CourseController::class, 'index'])
+    ->where('category', '.+')
+    ->name('courses.category');
 
 Route::controller(CourseController::class)->prefix('courses')->name('courses.')->group(function () {
     Route::get('/', function () {
@@ -116,8 +121,13 @@ Route::get('/products/{slug}', function (string $slug) {
 // Blog index + taxonomy archives
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
 Route::get('/blog/page/{page}', [BlogController::class, 'index'])->whereNumber('page')->name('blog.index.paged');
-Route::get('/category/{category}', [BlogController::class, 'index'])->name('blog.category');
-Route::get('/category/{category}/page/{page}', [BlogController::class, 'index'])->whereNumber('page')->name('blog.category.paged');
+Route::get('/category/{category}/page/{page}', [BlogController::class, 'index'])
+    ->where('category', '.+')
+    ->whereNumber('page')
+    ->name('blog.category.paged');
+Route::get('/category/{category}', [BlogController::class, 'index'])
+    ->where('category', '.+')
+    ->name('blog.category');
 Route::get('/tag/{tag}', [BlogController::class, 'index'])->name('blog.tag');
 Route::get('/tag/{tag}/page/{page}', [BlogController::class, 'index'])->whereNumber('page')->name('blog.tag.paged');
 
