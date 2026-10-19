@@ -158,7 +158,7 @@ class ZibalService implements PaymentGatewayInterface
 
                 $payload = $response->json();
 
-                return $this->applyZibalVerification($payment, is_array($payload) ? $payload : [], true);
+                return $this->applyZibalVerification($payment, is_array($payload) ? $payload : []);
             });
         } finally {
             $lock->release();
@@ -202,14 +202,14 @@ class ZibalService implements PaymentGatewayInterface
                 return;
             }
 
-            $this->applyZibalVerification($payment, $payload, false);
+            $this->applyZibalVerification($payment, $payload);
         });
     }
 
     /**
      * @param  array<string, mixed>  $payload
      */
-    private function applyZibalVerification(Payment $payment, array $payload, bool $failOnUnknown): ?Payment
+    private function applyZibalVerification(Payment $payment, array $payload): ?Payment
     {
         $result = $payload['result'] ?? null;
 
@@ -253,8 +253,8 @@ class ZibalService implements PaymentGatewayInterface
         // 202 = unpaid or failed, 203 = unknown track id. Other codes can be transient.
         $finalFailure = in_array($result, [202, 203], true);
 
-        if (! $finalFailure && ! $failOnUnknown) {
-            Log::warning('Zibal reconcile left the payment pending.', [
+        if (! $finalFailure) {
+            Log::warning('Zibal verification left the payment pending.', [
                 'payment_id' => $payment->id,
                 'result' => $result,
             ]);

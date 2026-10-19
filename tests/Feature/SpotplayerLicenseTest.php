@@ -40,7 +40,7 @@ class SpotplayerLicenseTest extends TestCase
         });
     }
 
-    public function test_license_job_is_not_dispatched_when_enrollment_transaction_rolls_back(): void
+    public function test_license_job_is_marked_after_commit_when_enrollment_transaction_rolls_back(): void
     {
         Queue::fake();
 
@@ -60,7 +60,9 @@ class SpotplayerLicenseTest extends TestCase
             'user_id' => $user->id,
             'course_id' => $product->course->id,
         ]);
-        Queue::assertNotPushed(IssueSpotplayerLicenseJob::class);
+        // Queue::fake records dispatches immediately; it does not simulate the
+        // real queue connection's after-commit callbacks on rollback.
+        Queue::assertPushed(IssueSpotplayerLicenseJob::class, fn (IssueSpotplayerLicenseJob $job) => $job->afterCommit === true);
     }
 
     public function test_free_enrollment_without_spotplayer_does_not_queue_a_license(): void
@@ -134,6 +136,32 @@ class SpotplayerLicenseTest extends TestCase
             'status' => SpotplayerLicense::STATUS_ISSUED,
         ]);
         Http::assertSentCount(1);
+    }
+
+    public function test_delayed_license_job_does_not_issue_for_an_expired_enrollment(): void
+    {
+        $user = User::factory()->create();
+        $product = $this->freeCourse('sp-course-expired');
+        CourseEnrollment::query()->create([
+            'user_id' => $user->id,
+            'course_id' => $product->course->id,
+            'enrolled_at' => now()->subMonths(2),
+            'expires_at' => now()->subMinute(),
+            'status' => CourseEnrollment::STATUS_ACTIVE,
+            'source' => CourseEnrollment::SOURCE_PURCHASE,
+        ]);
+        $this->fakeSpotplayer(Http::response([
+            '_id' => 'unexpected-license', 'license_key' => 'UNEXPECTED-KEY',
+        ]));
+
+        (new IssueSpotplayerLicenseJob($user->id, $product->course->id))
+            ->handle(app(SpotPlayerService::class));
+
+        Http::assertNothingSent();
+        $this->assertDatabaseMissing('spotplayer_licenses', [
+            'user_id' => $user->id,
+            'course_id' => $product->course->id,
+        ]);
     }
 
     private function freeCourse(?string $spotplayerCourseId): ShopProduct

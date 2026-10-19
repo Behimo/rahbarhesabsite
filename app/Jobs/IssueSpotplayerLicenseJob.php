@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Course;
+use App\Models\CourseEnrollment;
 use App\Models\SpotplayerLicense;
 use App\Models\User;
 use App\Services\SpotPlayerService;
@@ -47,6 +48,17 @@ class IssueSpotplayerLicenseJob implements ShouldQueue
                 'user_found' => (bool) $user,
                 'course_found' => (bool) $course,
             ]);
+
+            return;
+        }
+
+        $enrollment = CourseEnrollment::query()
+            ->where('user_id', $this->userId)
+            ->where('course_id', $this->courseId)
+            ->first();
+
+        if (! $enrollment?->isActive()) {
+            Log::channel('jobs')->info('IssueSpotplayerLicenseJob: ثبت‌نام فعال وجود ندارد', $context);
 
             return;
         }

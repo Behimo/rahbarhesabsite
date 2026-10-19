@@ -293,7 +293,7 @@ class OrderService
     {
         $items->loadMissing('product');
 
-        if ($items->contains(fn ($item) => $item->product === null)) {
+        if ($items->contains(fn ($item) => $item->product === null || ! $item->product->is_published)) {
             return false;
         }
 

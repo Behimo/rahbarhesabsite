@@ -46,6 +46,22 @@ class CourseEnrollmentService
         return $enrollment;
     }
 
+    public function enrollImported(User $user, Course $course, Order $order): CourseEnrollment
+    {
+        $months = (int) config('cms.enrollment_months', 12);
+
+        return CourseEnrollment::query()->firstOrCreate(
+            ['user_id' => $user->id, 'course_id' => $course->id],
+            [
+                'order_id' => $order->id,
+                'enrolled_at' => now(),
+                'expires_at' => $months > 0 ? now()->addMonths($months) : null,
+                'status' => CourseEnrollment::STATUS_ACTIVE,
+                'source' => CourseEnrollment::SOURCE_PURCHASE,
+            ]
+        );
+    }
+
     public function revoke(CourseEnrollment $enrollment): void
     {
         $enrollment->update([

@@ -701,7 +701,7 @@ class WordpressMigrationService
 
         $productsBySlug = ShopProduct::query()->with(['course', 'bundledCourses'])->get()->keyBy('slug');
         $existingOrderWpIds = Order::query()->whereNotNull('wp_id')->pluck('id', 'wp_id');
-        $orderService = app(OrderService::class);
+        $enrollmentService = app(CourseEnrollmentService::class);
 
         $orders = $this->wp()->table('posts')
             ->where('post_type', 'shop_order')
@@ -797,7 +797,7 @@ class WordpressMigrationService
                     $wpCustomerId,
                     $billingPhone,
                     $isOrphan,
-                    $orderService,
+                    $enrollmentService,
                     $existingOrderWpIds,
                     &$enrolled
                 ): void {
@@ -885,12 +885,8 @@ class WordpressMigrationService
 
                         if (! $isOrphan && $user && $shopProduct) {
                             foreach ($shopProduct->relatedCourses() as $course) {
-                                $hadEnrollment = CourseEnrollment::query()
-                                    ->where('user_id', $user->id)
-                                    ->where('course_id', $course->id)
-                                    ->exists();
-                                $orderService->enrollUser($user, $course, $order, CourseEnrollment::SOURCE_PURCHASE);
-                                if (! $hadEnrollment) {
+                                $enrollment = $enrollmentService->enrollImported($user, $course, $order);
+                                if ($enrollment->wasRecentlyCreated) {
                                     $enrolled++;
                                 }
                             }

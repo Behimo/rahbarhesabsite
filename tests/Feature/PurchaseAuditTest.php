@@ -89,7 +89,6 @@ class PurchaseAuditTest extends TestCase
 
     public function test_retry_does_not_request_a_new_payment_using_an_expired_coupon(): void
     {
-        $this->markTestIncomplete('Outside DATABASE-ARCHITECTURE-REVIEW scope: retry must revalidate coupon quotes.');
         $this->cartWithCourse();
         $coupon = $this->coupon(['expires_at' => now()->addHour()]);
         $this->post(route('cart.coupon'), ['code' => $coupon->code])->assertSessionHas('success');
@@ -103,7 +102,7 @@ class PurchaseAuditTest extends TestCase
         $this->get($this->checkoutCallbackUrl(false))->assertRedirect(route('checkout.failed', $order));
         $coupon->update(['expires_at' => now()->subMinute()]);
 
-        $this->post(route('checkout.retry', $order));
+        $this->post(route('checkout.retry', $order))->assertRedirect(route('cart.index'));
 
         // Either reject the expired quote or requote; never charge its old discount again.
         $requests = Http::recorded(fn ($request) => $request->url() === 'https://gateway.zibal.ir/v1/request');
@@ -114,7 +113,6 @@ class PurchaseAuditTest extends TestCase
 
     public function test_a_second_gateway_request_failure_preserves_the_first_attempt(): void
     {
-        $this->markTestIncomplete('Outside DATABASE-ARCHITECTURE-REVIEW scope: failed gateway switch must not fail prior pending payment.');
         $this->cartWithCourse();
         CmsSetting::set('payment_gateways', json_encode(['zibal' => true, 'zarinpal' => true]));
         Http::fake([
@@ -135,7 +133,6 @@ class PurchaseAuditTest extends TestCase
 
     public function test_a_transient_verify_error_can_be_recovered_by_reconciliation(): void
     {
-        $this->markTestIncomplete('Outside DATABASE-ARCHITECTURE-REVIEW scope: reconcile must recover transient verify failures.');
         $this->cartWithCourse();
         Http::fake([
             'https://gateway.zibal.ir/v1/request' => Http::response(['result' => 100, 'trackId' => 701]),
@@ -156,19 +153,18 @@ class PurchaseAuditTest extends TestCase
 
     public function test_an_unpaid_order_does_not_render_a_success_receipt(): void
     {
-        $this->markTestIncomplete('Outside DATABASE-ARCHITECTURE-REVIEW scope: success page must not render paid copy for unpaid orders.');
         [$user] = $this->cartWithCourse();
         $order = app(OrderService::class)->createFromCart($user);
 
         $response = $this->get(route('checkout.success', $order));
 
+        $response->assertRedirect(route('checkout.failed', $order));
         $response->assertDontSee('سفارش با موفقیت تکمیل شد');
         $this->assertSame(Order::STATUS_PENDING, $order->fresh()->status);
     }
 
     public function test_a_reused_pending_order_cannot_start_payment_for_an_unpublished_product(): void
     {
-        $this->markTestIncomplete('Outside DATABASE-ARCHITECTURE-REVIEW scope: reused pending orders must re-check product publication.');
         [$user, $product] = $this->cartWithCourse();
         app(OrderService::class)->createFromCart($user);
         $product->update(['is_published' => false]);
@@ -298,7 +294,7 @@ class PurchaseAuditTest extends TestCase
 
     public function test_a_queued_license_job_cannot_issue_after_enrollment_is_revoked(): void
     {
-        $this->markTestIncomplete('Outside DATABASE-ARCHITECTURE-REVIEW scope: license jobs must respect revoked enrollments.');
+        Http::preventStrayRequests();
         [$user, $product] = $this->cartWithCourse();
         $course = $product->course;
         $course->update(['spotplayer_course_id' => 'audit-course']);
@@ -322,7 +318,7 @@ class PurchaseAuditTest extends TestCase
 
     public function test_failed_remote_revocation_is_not_recorded_as_successful(): void
     {
-        $this->markTestIncomplete('Outside DATABASE-ARCHITECTURE-REVIEW scope: failed SpotPlayer revoke must not mark license revoked.');
+        Http::preventStrayRequests();
         [$user, $product] = $this->cartWithCourse();
         $license = SpotplayerLicense::query()->create([
             'user_id' => $user->id, 'course_id' => $product->course->id,

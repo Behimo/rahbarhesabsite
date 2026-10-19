@@ -192,15 +192,21 @@ class SpotPlayerService
     {
         if ($this->isConfigured() && filled($license->spot_license_id)) {
             try {
-                Http::withHeaders([
+                $response = Http::withHeaders([
                     'Authorization' => 'Bearer '.config('cms.spotplayer.api_key'),
                     'Accept' => 'application/json',
                 ])->delete(rtrim((string) config('cms.spotplayer.base_url'), '/').'/licenses/'.$license->spot_license_id);
+
+                if (! $response->successful()) {
+                    throw new \RuntimeException('لغو لایسنس اسپات‌پلیر ناموفق بود. status='.$response->status());
+                }
             } catch (\Throwable $e) {
                 Log::channel('jobs')->error('SpotPlayer: لغو لایسنس ناموفق بود', [
                     'license_id' => $license->id,
                     'error' => $e->getMessage(),
                 ]);
+
+                throw $e;
             }
         }
 

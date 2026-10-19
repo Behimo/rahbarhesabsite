@@ -48,7 +48,7 @@ class PermalinkService
         }
 
         // Files with extensions keep their form (sitemaps, robots, assets).
-        if (preg_match('/\.[a-zA-Z0-9]{1,8}$/', $path)) {
+        if (preg_match('/\.[a-zA-Z0-9]{1,8}$/', rtrim($path, '/'))) {
             return rtrim($path, '/');
         }
 

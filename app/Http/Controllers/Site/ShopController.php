@@ -165,7 +165,9 @@ class ShopController extends SiteController
 
             return redirect()->away($paymentUrl);
         } catch (\Throwable $e) {
-            $this->orders->markFailed($order);
+            if (! $order->payments()->where('status', Payment::STATUS_PENDING)->exists()) {
+                $this->orders->markFailed($order);
+            }
 
             return redirect()->route('checkout.index')->with('error', $e->getMessage());
         }
@@ -177,6 +179,10 @@ class ShopController extends SiteController
 
         if (! $order->canRetryPayment()) {
             return redirect()->route('panel.orders')->with('error', 'این سفارش قابل پرداخت مجدد نیست.');
+        }
+
+        if ($order->coupon_id && ! $order->coupon?->isValidForCart((float) $order->subtotal, auth()->user(), $order->id)) {
+            return redirect()->route('cart.index')->with('error', 'کد تخفیف این سفارش دیگر معتبر نیست. لطفاً دوباره تسویه کنید.');
         }
 
         $openPayment = $order->payments()->where('status', Payment::STATUS_PENDING)->latest('id')->first();
@@ -233,6 +239,10 @@ class ShopController extends SiteController
     {
         if ($order->user_id !== auth()->id()) {
             abort(403);
+        }
+
+        if (! $order->isPaid()) {
+            return redirect()->route('checkout.failed', $order);
         }
 
         $order->load(['items.product.course', 'payments']);

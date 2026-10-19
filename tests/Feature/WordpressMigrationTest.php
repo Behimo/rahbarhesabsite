@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\IssueSpotplayerLicenseJob;
 use App\Models\Category;
 use App\Models\CmsPost;
 use App\Models\Course;
@@ -14,6 +15,7 @@ use App\Models\User;
 use App\Services\WordpressMigrationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
 use RuntimeException;
 use Tests\TestCase;
@@ -94,6 +96,30 @@ class WordpressMigrationTest extends TestCase
         $this->assertSame(1, Order::query()->where('wp_id', 501)->count());
         $this->assertSame(1, OrderItem::query()->where('order_id', Order::query()->where('wp_id', 501)->value('id'))->count());
         $this->assertSame(1, CourseEnrollment::query()->where('user_id', $user->id)->where('course_id', $course->id)->count());
+    }
+
+    public function test_historical_order_creates_enrollment_without_issuing_a_new_spotplayer_license(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create(['wp_id' => 80]);
+        $product = ShopProduct::query()->create([
+            'slug' => 'historical-spot-course',
+            'title' => 'دوره تاریخی',
+            'price' => 250000,
+            'type' => ShopProduct::TYPE_COURSE,
+            'is_published' => true,
+        ]);
+        $course = $product->course()->create([
+            'level' => 'beginner',
+            'spotplayer_course_id' => 'remote-historical-course',
+        ]);
+        $this->addWordpressOrder(504, 9004, 7004, 80, $product->slug);
+
+        app(WordpressMigrationService::class)->migrateOrders();
+        app(WordpressMigrationService::class)->migrateOrders();
+
+        $this->assertSame(1, CourseEnrollment::query()->where('user_id', $user->id)->where('course_id', $course->id)->count());
+        Queue::assertNotPushed(IssueSpotplayerLicenseJob::class);
     }
 
     public function test_existing_incomplete_order_is_resumed_without_duplicate_rows(): void
