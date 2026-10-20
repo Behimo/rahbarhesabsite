@@ -75,7 +75,9 @@ routes/web.php      ← همه routeهای وب
 
 ادمین‌ها و کاربران عادی در جدول `users` هستند؛ role/permission دسترسی به پنل مدیریت را از دسترسی معمولی کاربران جدا می‌کند.
 
-کاربر سایت با شماره موبایل ثبت‌نام/ورود می‌کنه (`Auth\AuthController`). OTP از IPPanel می‌ره (`config/otp.php`) و ارسال روی `SendOtpSmsJob` است. اگه `IPPANEL_API_KEY` خالی باشه، کد توی log می‌افته — برای dev خوبه، production نه.
+کاربر سایت با شماره موبایل ثبت‌نام/ورود می‌کنه (`Auth\AuthController`). ارسال OTP روی `SendOtpSmsJob` و از طریق `SmsManager` انجام می‌شود؛ درایورهای مجاز و فیلدهایشان در `config/sms.php` ثبت می‌شوند. `SmsDriverRegistry` وضعیت فعال، درایور اصلی و تنظیمات غیرمحرمانه را در `CmsSetting` نگه می‌دارد. کلیدهای API در کلیدهای جداگانه با `Crypt` رمزنگاری می‌شوند و هیچ‌وقت در فرم نمایش داده نمی‌شوند. تا انتخاب درایور اصلی فعال و تکمیل تنظیمات، درخواست ارسال کد در همهٔ محیط‌ها با خطای مشخص رد می‌شود (نه اینکه کد در لاگ نوشته شود). تست‌ها فقط با کلید ساختگی و درخواست HTTP شبیه‌سازی‌شده اجرا می‌شوند.
+
+درایور جدید باید `App\Contracts\OtpSmsDriver` را پیاده کند: ورودی `sendOtp($phone, $code): void` شمارهٔ موبایل ایران در قالب E.164 (`+98...`) و کد OTP است؛ متد فقط پس از پذیرش درخواست توسط سرویس‌دهنده برگردد و هنگام شکست exception پرتاب کند. کلاس و فیلدهای موردنیاز را در `config/sms.php` ثبت و در `/admin/sms` فعال/انتخاب کنید؛ `SMS_DRIVER` فقط تا قبل از ذخیره تنظیمات پنل، انتخاب اولیهٔ اختیاری است. درایور sms.ir شماره را به `09...` تبدیل و به `/v1/send/verify` ارسال می‌کند. عنوان کلید API (مثلاً «otp») به جای شناسهٔ عددی `templateId` یا نام متغیر کد نیست؛ هر دو را از بخش قالب‌های sms.ir تهیه کنید. برای متن شامل `#CODE#` نام پارامتر باید دقیقاً `CODE` باشد، بدون `#` و با حفظ بزرگی/کوچکی حروف. پس از تغییر کد برنامه، worker صف را بازراه‌اندازی کنید. خطاهای ارسال فقط نام درایور، دلیل، کد HTTP و وضعیت عددی سرویس‌دهنده را ثبت می‌کنند؛ بدنهٔ خام پاسخ، کلید و OTP نباید لاگ شوند. اعتبارسنجی پاسخ و timeout مخصوص هر درایور است. پذیرش توسط سرویس‌دهنده به معنای تحویل به گوشی نیست. صف ممکن است در شکست موقت دوباره تلاش کند، پس تکرار احتمالی ارسال را هم در طراحی درایور در نظر بگیرید.
 
 کد OTP فعلاً در جدول `otp_verifications` است نه Redis. Throttle با Cache است (۳ ارسال / ۲ دقیقه per phone). ورود رمز برای کاربران مهاجرت‌شده: `POST /login/password` — هش Phpass در موفقیت به Bcrypt ارتقا می‌یابد.
 
@@ -98,6 +100,7 @@ routes/web.php      ← همه routeهای وب
 | منوها | `/admin/menus` | `MenuController` |
 | قالب‌ها | `/admin/themes` | `ThemeController` |
 | تنظیمات | `/admin/settings` | `SettingController` |
+| درایورهای پیامک | `/admin/sms` | `SmsDriverController` (`settings` view/update) |
 | رسانه | `/admin/media` | `MediaController` |
 
 **نقش‌ها و دسترسی:** `App\Support\Permission`
@@ -435,8 +438,9 @@ ZIBAL_MERCHANT=zibal
 # ZARINPAL_MERCHANT_ID=
 # ZARINPAL_SANDBOX=true
 
-IPPANEL_API_KEY=
-IPPANEL_OTP_PATTERN=
+# انتخاب اولیه اختیاری؛ پس از ذخیره از پنل /admin/sms انتخاب پنل اولویت دارد.
+# کلید API و شناسه قالب را در پنل وارد کنید، نه .env.
+SMS_DRIVER=
 
 SPOTPLAYER_API_KEY=
 
@@ -450,7 +454,7 @@ SPOTPLAYER_API_KEY=
 QUEUE_CONNECTION=database
 ```
 
-بقیه توی `config/cms.php` و `config/otp.php` map شدن.
+تنظیمات در `config/cms.php`، `config/otp.php` و `config/sms.php` قرار دارند.
 
 ---
 
@@ -485,7 +489,7 @@ QUEUE_CONNECTION=database
 3. `php artisan migrate --force`
 4. Scheduler + Queue worker
 5. HTTPS — `AppServiceProvider` forceScheme در production
-6. IPPanel و Zibal واقعی
+6. تنظیم sms.ir در `/admin/sms` (کلید، شناسه عددی قالب، متغیر، فعال‌سازی و انتخاب اصلی) و مرچنت Zibal واقعی؛ بدون تنظیمات کامل، ورود OTP غیرفعال است
 
 CI موجود: `.github/workflows/deploy.yaml` (Chabokan)
 
@@ -502,7 +506,7 @@ Health: `/up`
 کش view: `php artisan view:clear`. `ThemeService` namespace `theme::` رو درست register کرده؟
 
 **۳. OTP نمی‌ره**  
-`IPPANEL_API_KEY` خالیه → log. pattern code درسته؟
+اول در `/admin/sms` فعال و اصلی بودن درایور و کامل بودن کلید، شناسه عددی قالب و نام متغیر را بررسی کن؛ بدون آنها کدی ساخته نمی‌شود. سپس worker صف و خطاهای Job را بررسی کن. هیچ‌وقت کلید، کد یا بدنهٔ پاسخ سرویس‌دهنده را در لاگ ننویس.
 
 **۴. دوره بعد خرید enroll نمی‌شه**  
 callback پرداخت، `OrderService::markPaid()` / `fulfill()`, و **queue worker**. سبد فقط بعد از پرداخت موفق خالی می‌شود؛ اگر درگاه را بستی سبد باید پر بماند.
@@ -540,7 +544,7 @@ role روی `User` با Spatie Permission و `App\Support\AccessCatalog` مدی�
 ۳. مدیریت و کاربران از guard `web` و مدل `User` استفاده می‌کنند؛ role/permission دسترسی پنل را کنترل می‌کند.  
 ۴. LMS روی ShopProduct + Course سوار شده. قیمت تومان است؛ درگاه ریال.  
 ۵. صفحه‌ساز JSON توی `builder_content` — ColumnsBlock nested داره.  
-۶. قبل deploy: build, migrate, scheduler, queue worker, env (مرچنت، IPPanel، SpotPlayer).
+۶. قبل deploy: build, migrate, scheduler, queue worker، تنظیم sms.ir در پنل (مرچنت و SpotPlayer جداگانه).
 
 سؤال داشتی اول `routes/web.php` و `config/cms.php` رو باز کن. نصف جواب‌ها اونجاست.
 

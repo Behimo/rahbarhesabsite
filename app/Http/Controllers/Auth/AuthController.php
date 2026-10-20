@@ -8,14 +8,19 @@ use App\Http\Requests\Auth\SendOtpRequest;
 use App\Http\Requests\Auth\VerifyOtpRequest;
 use App\Models\User;
 use App\Services\CartService;
+use App\Services\OtpRequestException;
 use App\Services\OtpService;
 use App\Services\SeoService;
 use App\Services\SiteDataService;
+use App\Services\Sms\SmsConfigurationException;
+use App\Services\Sms\SmsDeliveryException;
 use App\Support\PhoneNormalizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
+use Throwable;
 
 class AuthController extends SiteController
 {
@@ -59,8 +64,8 @@ class AuthController extends SiteController
 
         try {
             $this->otp->send($validated['phone']);
-        } catch (\Throwable $e) {
-            return back()->withErrors(['phone' => $e->getMessage()])->withInput();
+        } catch (Throwable $exception) {
+            return $this->otpSendFailure($exception);
         }
 
         session([
@@ -69,7 +74,7 @@ class AuthController extends SiteController
         session()->forget('activate_user_id');
 
         return redirect()->route('login.verify')
-            ->with('success', 'کد تأیید ارسال شد.');
+            ->with('success', 'درخواست ارسال کد تأیید ثبت شد.');
     }
 
     public function showVerify(): View|RedirectResponse
@@ -253,8 +258,8 @@ class AuthController extends SiteController
 
         try {
             $this->otp->send($local);
-        } catch (\Throwable $e) {
-            return back()->withErrors(['phone' => $e->getMessage()])->withInput();
+        } catch (Throwable $exception) {
+            return $this->otpSendFailure($exception);
         }
 
         session([
@@ -263,7 +268,21 @@ class AuthController extends SiteController
         ]);
 
         return redirect()->route('login.verify')
-            ->with('success', 'کد تأیید ارسال شد. پس از تأیید، حساب شما فعال می‌شود.');
+            ->with('success', 'درخواست ارسال کد تأیید ثبت شد. پس از دریافت و تأیید کد، حساب شما فعال می‌شود.');
+    }
+
+    private function otpSendFailure(Throwable $exception): RedirectResponse
+    {
+        $message = 'ثبت درخواست کد تأیید ناموفق بود. کمی بعد دوباره تلاش کنید.';
+        if ($exception instanceof OtpRequestException
+            || $exception instanceof SmsConfigurationException
+            || $exception instanceof SmsDeliveryException) {
+            $message = $exception->getMessage();
+        } else {
+            Log::warning('OTP request failed', ['exception' => $exception::class]);
+        }
+
+        return back()->withErrors(['phone' => $message])->withInput(request()->only('phone'));
     }
 
     private function activationUser(): ?User

@@ -143,6 +143,13 @@
                     <a href="{{ route('admin.gateways.index') }}" class="btn btn-outline-primary w-100">مدیریت درگاه‌ها</a>
                 </div>
             </div>
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="mb-1">درایورهای پیامک</h5>
+                    <p class="text-muted mb-3">فعال‌سازی سرویس پیامک، انتخاب درایور اصلی و تنظیم کلید API و قالب کد ورود.</p>
+                    <a href="{{ route('admin.sms.index') }}" class="btn btn-outline-primary w-100">مدیریت پیامک</a>
+                </div>
+            </div>
         </div>
     </div>
 </form>

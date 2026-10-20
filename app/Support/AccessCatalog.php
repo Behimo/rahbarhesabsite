@@ -83,7 +83,7 @@ class AccessCatalog
             'media' => ['label' => 'رسانه', 'actions' => [self::VIEW, self::CREATE, self::DELETE]],
             'messages' => ['label' => 'پیام‌های تماس', 'actions' => [self::VIEW, self::DELETE]],
             'questions' => ['label' => 'کافه سوال', 'actions' => [self::VIEW, self::UPDATE, self::DELETE]],
-            'settings' => ['label' => 'تنظیمات، درگاه و ریدایرکت', 'actions' => [self::VIEW, self::UPDATE]],
+            'settings' => ['label' => 'تنظیمات، پیامک، درگاه و ریدایرکت', 'actions' => [self::VIEW, self::UPDATE]],
             'transfer' => [
                 'label' => 'درون‌ریزی و برون‌بری',
                 'actions' => [
@@ -211,6 +211,7 @@ class AccessCatalog
             'admin.home' => 'pages',
             'admin.settings' => 'settings',
             'admin.gateways' => 'settings',
+            'admin.sms' => 'settings',
             'admin.redirects' => 'settings',
             'admin.menus' => 'menus',
             'admin.tags' => 'taxonomies',

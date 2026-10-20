@@ -44,6 +44,7 @@
 
     { "menuHeader": "سیستم" },
     { "url": "admin/redirects", "name": "ریدایرکت‌ها", "icon": "menu-icon tf-icons ti ti-route", "slug": "admin.redirects" },
-    { "url": "admin/settings", "name": "تنظیمات", "icon": "menu-icon tf-icons ti ti-settings", "slug": "admin.settings" }
+    { "url": "admin/settings", "name": "تنظیمات", "icon": "menu-icon tf-icons ti ti-settings", "slug": "admin.settings" },
+    { "url": "admin/sms", "name": "درایورهای پیامک", "icon": "menu-icon tf-icons ti ti-message", "slug": "admin.sms" }
   ]
 }

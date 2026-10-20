@@ -7,7 +7,9 @@ use App\Models\OtpVerification;
 use App\Models\User;
 use App\Services\OtpService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
+use Tests\Support\FakeOtpSmsDriver;
 use Tests\TestCase;
 
 class OtpAuthFlowTest extends TestCase
@@ -24,9 +26,77 @@ class OtpAuthFlowTest extends TestCase
         ])->assertRedirect(route('login.verify'));
 
         Queue::assertPushed(SendOtpSmsJob::class, function (SendOtpSmsJob $job) {
-            return str_ends_with($job->phone, '9121234567')
-                && strlen($job->code) === (int) config('otp.length', 6);
+            $verification = OtpVerification::query()->find($job->verificationId);
+
+            return $verification
+                && str_ends_with($verification->phone, '9121234567')
+                && strlen($verification->code) === (int) config('otp.length', 6);
         });
+    }
+
+    public function test_generated_codes_match_each_supported_configured_length(): void
+    {
+        Queue::fake();
+        foreach ([4, 6, 8] as $length) {
+            config()->set('otp.length', $length);
+            $phone = '0912123456'.$length;
+            app(OtpService::class)->send($phone);
+            $code = app(OtpService::class)->peekLatestCode($phone);
+            $this->assertMatchesRegularExpression('/\A[0-9]{'.$length.'}\z/', $code);
+            $this->assertTrue(app(OtpService::class)->verify($phone, $code));
+        }
+    }
+
+    public function test_invalid_length_has_no_otp_or_queue_side_effects(): void
+    {
+        Queue::fake();
+        config()->set('otp.length', 3);
+        try {
+            app(OtpService::class)->send('09121234567');
+            $this->fail('Invalid OTP length was accepted.');
+        } catch (\LogicException) {
+            $this->assertDatabaseCount('otp_verifications', 0);
+            $this->assertDatabaseCount('otp_logs', 0);
+            Queue::assertNothingPushed();
+        }
+    }
+
+    public function test_sms_waits_for_transaction_commit_and_is_not_sent_on_rollback(): void
+    {
+        config()->set('queue.default', 'sync');
+        $driver = app(FakeOtpSmsDriver::class);
+        DB::transaction(function () use ($driver): void {
+            app(OtpService::class)->send('09121234567');
+            $this->assertCount(0, $driver->sent);
+        });
+        $this->assertCount(1, $driver->sent);
+
+        DB::beginTransaction();
+        try {
+            app(OtpService::class)->send('09121234568');
+            $this->assertCount(1, $driver->sent);
+        } finally {
+            DB::rollBack();
+        }
+        $this->assertCount(1, $driver->sent);
+        $this->assertDatabaseCount('otp_verifications', 1);
+    }
+
+    public function test_unexpected_send_errors_are_hidden_in_login_and_activation(): void
+    {
+        $this->mock(OtpService::class)->shouldReceive('send')->twice()
+            ->andThrow(new \RuntimeException('synthetic-private-sql-and-bindings'));
+        $message = 'ثبت درخواست کد تأیید ناموفق بود. کمی بعد دوباره تلاش کنید.';
+        $this->from(route('login'))->post(route('login.otp'), ['phone' => '09121234567'])
+            ->assertSessionHasErrors(['phone' => $message]);
+
+        $user = User::factory()->create([
+            'status' => User::STATUS_PENDING_ACTIVATION, 'mobile' => null, 'phone' => null,
+        ]);
+        $this->withSession(['activate_user_id' => $user->id])
+            ->from(route('login.activate'))->post(route('login.activate.submit'), ['phone' => '09121234568'])
+            ->assertSessionHasErrors(['phone' => $message]);
+        $this->assertStringNotContainsString('synthetic-private', session('errors')->first('phone'));
     }
 
     public function test_pending_activation_otp_flow_activates_account(): void

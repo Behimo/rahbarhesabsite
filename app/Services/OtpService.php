@@ -5,14 +5,14 @@ namespace App\Services;
 use App\Jobs\SendOtpSmsJob;
 use App\Models\OtpLog;
 use App\Models\OtpVerification;
-use App\Services\Sms\IpPanelSmsService;
+use App\Services\Sms\SmsManager;
 use App\Support\PhoneNormalizer;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Request;
 
 class OtpService
 {
-    public function __construct(private IpPanelSmsService $sms) {}
+    public function __construct(private SmsManager $sms) {}
 
     public function send(string $phone): void
     {
@@ -28,17 +28,26 @@ class OtpService
 
         $cooldownKey = 'otp:cooldown:'.$normalized;
         if (Cache::has($cooldownKey)) {
-            throw new \RuntimeException('لطفاً یک دقیقه صبر کنید و دوباره تلاش کنید.');
+            throw new OtpRequestException('لطفاً یک دقیقه صبر کنید و دوباره تلاش کنید.');
         }
 
-        $code = str_pad((string) random_int(0, 999999), config('otp.length', 6), '0', STR_PAD_LEFT);
+        $this->sms->ensureConfigured();
+
+        $length = filter_var(config('otp.length', 6), FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 4, 'max_range' => 8],
+        ]);
+        if ($length === false) {
+            throw new \LogicException('OTP length must be between 4 and 8 digits.');
+        }
+
+        $code = str_pad((string) random_int(0, 10 ** $length - 1), $length, '0', STR_PAD_LEFT);
 
         OtpVerification::query()
             ->where('phone', $normalized)
             ->whereNull('verified_at')
             ->delete();
 
-        OtpVerification::query()->create([
+        $verification = OtpVerification::query()->create([
             'phone' => $normalized,
             'code' => $code,
             'expires_at' => now()->addMinutes(config('otp.expires_minutes', 5)),
@@ -54,7 +63,7 @@ class OtpService
             'attempts' => 0,
         ]);
 
-        SendOtpSmsJob::dispatch($normalized, $code);
+        SendOtpSmsJob::dispatch($verification->id)->afterCommit();
 
         Cache::put($cooldownKey, true, config('otp.resend_cooldown_seconds', 60));
         Cache::add('otp:throttle:phone:'.$normalized, 0, 120);
@@ -126,7 +135,7 @@ class OtpService
         $ipHits = (int) Cache::get('otp:throttle:ip:'.$ip, 0);
 
         if ($phoneHits >= 3 || $ipHits >= 8) {
-            throw new \RuntimeException('تعداد درخواست‌ها بیش از حد مجاز است. چند دقیقه دیگر تلاش کنید.');
+            throw new OtpRequestException('تعداد درخواست‌ها بیش از حد مجاز است. چند دقیقه دیگر تلاش کنید.');
         }
     }
 }

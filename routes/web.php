@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\RedirectController as AdminRedirectController;
 use App\Http\Controllers\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Admin\SearchController as AdminSearchController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
+use App\Http\Controllers\Admin\SmsDriverController as AdminSmsDriverController;
 use App\Http\Controllers\Admin\SidebarController as AdminSidebarController;
 use App\Http\Controllers\Admin\TagController as AdminTagController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
@@ -370,6 +371,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('coupons', AdminCouponController::class)->except(['show']);
 
         Route::controller(AdminGatewayController::class)->prefix('gateways')->name('gateways.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::put('/', 'update')->name('update');
+        });
+
+        Route::controller(AdminSmsDriverController::class)->prefix('sms')->name('sms.')->group(function () {
             Route::get('/', 'index')->name('index');
             Route::put('/', 'update')->name('update');
         });
