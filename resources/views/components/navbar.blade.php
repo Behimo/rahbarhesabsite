@@ -5,7 +5,25 @@
     $mobile = $contact['mobile'] ?? '09333658333';
     $mobileDisplay = $contact['mobile_display'] ?? '۰۹۳۳۳۶۵۸۳۳۳';
     $cartCount = (int) ($cartCount ?? 0);
+    $topBarEnabled = filter_var(\App\Models\CmsSetting::get('top_bar_enabled', '0'), FILTER_VALIDATE_BOOLEAN);
+    $topBarText = trim((string) \App\Models\CmsSetting::get('top_bar_text', ''));
+    $topBarButtonText = trim((string) \App\Models\CmsSetting::get('top_bar_button_text', ''));
+    $topBarButtonUrl = trim((string) \App\Models\CmsSetting::get('top_bar_button_url', ''));
+    $showTopBar = $topBarEnabled && ($topBarText !== '' || $topBarButtonText !== '');
 @endphp
+
+@if ($showTopBar)
+    <div class="site-top-bar" role="region" aria-label="اطلاعیه بالای سایت">
+        <div class="site-top-bar__inner">
+            @if ($topBarText !== '')
+                <p class="site-top-bar__text">{{ $topBarText }}</p>
+            @endif
+            @if ($topBarButtonText !== '' && $topBarButtonUrl !== '')
+                <a class="site-top-bar__button" href="{{ $topBarButtonUrl }}">{{ $topBarButtonText }}</a>
+            @endif
+        </div>
+    </div>
+@endif
 
 <header class="main-header">
     <div class="header-top">

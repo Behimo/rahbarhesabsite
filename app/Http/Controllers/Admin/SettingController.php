@@ -28,6 +28,10 @@ class SettingController extends Controller
                 'site_logo' => CmsSetting::get('site_logo', config('cms.branding.logo')),
                 'site_favicon' => CmsSetting::get('site_favicon', config('cms.branding.favicon')),
                 'site_og_image' => CmsSetting::get('site_og_image', config('cms.branding.og_image')),
+                'top_bar_enabled' => filter_var(CmsSetting::get('top_bar_enabled', '0'), FILTER_VALIDATE_BOOLEAN),
+                'top_bar_text' => CmsSetting::get('top_bar_text', ''),
+                'top_bar_button_text' => CmsSetting::get('top_bar_button_text', ''),
+                'top_bar_button_url' => CmsSetting::get('top_bar_button_url', ''),
             ],
         ]);
     }
@@ -35,7 +39,12 @@ class SettingController extends Controller
     public function update(SettingRequest $request): RedirectResponse
     {
         foreach ($request->validated() as $key => $value) {
-            CmsSetting::set($key, $value);
+            if ($key === 'top_bar_enabled') {
+                CmsSetting::set($key, $value ? '1' : '0');
+                continue;
+            }
+
+            CmsSetting::set($key, $value ?? '');
         }
 
         return back()->with('success', 'تنظیمات ذخیره شد.');

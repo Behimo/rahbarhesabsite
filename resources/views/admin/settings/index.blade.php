@@ -4,7 +4,7 @@
 
 @section('heading', 'تنظیمات سایت')
 
-@section('lede', 'اطلاعات تماس، شبکه‌های اجتماعی و برند. ذخیره کنار همین فرم می‌ماند.')
+@section('lede', 'اطلاعات تماس، شبکه‌های اجتماعی، برند و نوار بالای هدر. ذخیره کنار همین فرم می‌ماند.')
 
 @section('content')
 <form method="POST" action="{{ route('admin.settings.update') }}">
@@ -47,7 +47,7 @@
                     </div>
                 </div>
             </div>
-            <div class="card">
+            <div class="card mb-4">
                 <div class="card-header"><h5 class="mb-0">برند</h5></div>
                 <div class="card-body">
                     <div class="row g-3">
@@ -62,6 +62,61 @@
                         <div class="col-md-4">
                             <label class="form-label" for="settings-og">تصویر اشتراک‌گذاری</label>
                             <input id="settings-og" type="text" name="site_og_image" value="{{ old('site_og_image', $settings['site_og_image']) }}" class="form-control" dir="ltr">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h5 class="mb-0">نوار بالای هدر</h5></div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    role="switch"
+                                    id="settings-top-bar-enabled"
+                                    name="top_bar_enabled"
+                                    value="1"
+                                    @checked(old('top_bar_enabled', $settings['top_bar_enabled']))
+                                >
+                                <label class="form-check-label" for="settings-top-bar-enabled">نمایش نوار بالای هدر</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="settings-top-bar-text">متن نوار</label>
+                            <input
+                                id="settings-top-bar-text"
+                                type="text"
+                                name="top_bar_text"
+                                value="{{ old('top_bar_text', $settings['top_bar_text']) }}"
+                                class="form-control"
+                                placeholder="مثلاً: دوره ویژه حسابداری با تخفیف محدود"
+                            >
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="settings-top-bar-button-text">متن دکمه</label>
+                            <input
+                                id="settings-top-bar-button-text"
+                                type="text"
+                                name="top_bar_button_text"
+                                value="{{ old('top_bar_button_text', $settings['top_bar_button_text']) }}"
+                                class="form-control"
+                                placeholder="مثلاً: ثبت‌نام"
+                            >
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="settings-top-bar-button-url">لینک دکمه</label>
+                            <input
+                                id="settings-top-bar-button-url"
+                                type="text"
+                                name="top_bar_button_url"
+                                value="{{ old('top_bar_button_url', $settings['top_bar_button_url']) }}"
+                                class="form-control"
+                                dir="ltr"
+                                placeholder="/courses یا https://..."
+                            >
                         </div>
                     </div>
                 </div>
