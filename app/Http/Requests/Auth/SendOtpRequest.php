@@ -25,7 +25,6 @@ class SendOtpRequest extends FormRequest
     {
         return [
             'phone' => ['required', 'string', 'max:20', 'regex:/^09\d{9}$/'],
-            'name' => ['nullable', 'string', 'max:255'],
         ];
     }
 
@@ -33,7 +32,6 @@ class SendOtpRequest extends FormRequest
     {
         return [
             'phone' => 'شماره موبایل',
-            'name' => 'نام',
         ];
     }
 

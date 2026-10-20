@@ -16,7 +16,12 @@
     <div class="site-top-bar" role="region" aria-label="اطلاعیه بالای سایت">
         <div class="site-top-bar__inner">
             @if ($topBarText !== '')
-                <p class="site-top-bar__text">{{ $topBarText }}</p>
+                <div class="site-top-bar__marquee">
+                    <div class="site-top-bar__track">
+                        <p class="site-top-bar__text">{{ $topBarText }}</p>
+                        <p class="site-top-bar__text" aria-hidden="true">{{ $topBarText }}</p>
+                    </div>
+                </div>
             @endif
             @if ($topBarButtonText !== '' && $topBarButtonUrl !== '')
                 <a class="site-top-bar__button" href="{{ $topBarButtonUrl }}">{{ $topBarButtonText }}</a>

@@ -65,7 +65,6 @@ class AuthController extends SiteController
 
         session([
             'otp_phone' => PhoneNormalizer::toLocal($validated['phone']),
-            'otp_name' => $validated['name'] ?? null,
         ]);
         session()->forget('activate_user_id');
 
@@ -102,7 +101,7 @@ class AuthController extends SiteController
         if ($activateUserId) {
             $user = User::query()->find($activateUserId);
             if (! $user || ! $user->needsActivation()) {
-                session()->forget(['otp_phone', 'otp_name', 'activate_user_id']);
+                session()->forget(['otp_phone', 'activate_user_id']);
 
                 return redirect()->route('login')->withErrors(['phone' => 'نشست فعال‌سازی نامعتبر است. دوباره وارد شوید.']);
             }
@@ -127,7 +126,7 @@ class AuthController extends SiteController
                 'last_login_at' => now(),
             ])->save();
         } else {
-            $user = User::findOrCreateByPhone($phone, session('otp_name'));
+            $user = User::findOrCreateByPhone($phone);
 
             if ($user->needsActivation()) {
                 return redirect()->route('login')->withErrors([
@@ -152,7 +151,7 @@ class AuthController extends SiteController
         $request->session()->regenerate();
         $this->cart->mergeGuestCart($user->id, $guestSessionId);
 
-        session()->forget(['otp_phone', 'otp_name', 'activate_user_id']);
+        session()->forget(['otp_phone', 'activate_user_id']);
 
         return redirect()->intended(route('panel.dashboard'));
     }
@@ -262,7 +261,6 @@ class AuthController extends SiteController
             'otp_phone' => $local,
             'activate_user_id' => $user->id,
         ]);
-        session()->forget('otp_name');
 
         return redirect()->route('login.verify')
             ->with('success', 'کد تأیید ارسال شد. پس از تأیید، حساب شما فعال می‌شود.');

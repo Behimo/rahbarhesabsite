@@ -88,18 +88,6 @@
                             @enderror
                         </div>
 
-                        <div class="rh-auth__field">
-                            <label for="auth-name">نام <span class="rh-auth__optional">(فقط برای ثبت‌نام اول)</span></label>
-                            <input
-                                type="text"
-                                id="auth-name"
-                                name="name"
-                                value="{{ old('name') }}"
-                                autocomplete="name"
-                                placeholder="مثلاً سارا محمدی"
-                            >
-                        </div>
-
                         <button type="submit" class="rh-auth__submit" data-auth-submit>
                             <span data-auth-submit-label>ارسال کد تأیید</span>
                             <span class="rh-auth__spinner" data-auth-spinner hidden aria-hidden="true"></span>
