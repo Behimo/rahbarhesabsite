@@ -21,16 +21,16 @@
   justify-content: center;
   padding: 20px 16px;
   background:
-    radial-gradient(circle at 18% 20%, rgba(255, 185, 17, 0.32), transparent 28%),
-    linear-gradient(135deg, #361e50 0%, #643abc 100%);
-  color: #fff;
+    radial-gradient(circle at 18% 20%, color-mix(in srgb, var(--accent) 32%, transparent), transparent 28%),
+    linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+  color: var(--white);
   text-align: center;
 }
 
 .free-courses-section .course-card:nth-child(2n) .free-course-cover {
   background:
-    radial-gradient(circle at 82% 22%, rgba(255, 185, 17, 0.3), transparent 30%),
-    linear-gradient(135deg, #4d246b 0%, #7d51d5 100%);
+    radial-gradient(circle at 82% 22%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 30%),
+    linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary) 100%);
 }
 
 .free-courses-section .free-course-price {
@@ -71,26 +71,40 @@
 }
 
 :root {
-  --primary: #643abc;
-  --primary-dark: #361e50;
-  --primary-light: #eee8fa;
+  /* Elementor global colors */
+  --e-primary: #361E50;
+  --e-secondary: #643ABC;
+  --e-text: #333333;
+  --e-accent: #FFB911;
+  --e-gray: #CCCCCC;
+  --e-white: #FFFFFF;
+  --e-primary-light: #E8E2F6;
+  --e-border: #EBEBEB;
+  --e-muted: #C5C5C580;
 
-  --yellow: #ffb911;
-  --yellow-dark: #eaa800;
+  /* Site tokens mapped to Elementor palette */
+  --primary: var(--e-secondary);
+  --primary-dark: var(--e-primary);
+  --primary-light: var(--e-primary-light);
+  --secondary: var(--e-secondary);
+  --accent: var(--e-accent);
 
-  --white: #ffffff;
+  --yellow: var(--e-accent);
+  --yellow-dark: #EAA800;
 
-  --text: #242027;
-  --text-light: #8a858b;
-
-  --border: #eae7ec;
+  --white: var(--e-white);
+  --text: var(--e-text);
+  --text-light: var(--e-gray);
+  --gray: var(--e-gray);
+  --border: var(--e-border);
+  --muted: var(--e-muted);
 }
 
 body {
   margin: 0;
   direction: rtl;
   font-family: var(--rh-font, 'Vazirmatn Variable', 'Vazirmatn', Tahoma, sans-serif);
-  background: #f5f5f5;
+  background: var(--border);
   color: var(--text);
 }
 
@@ -2610,7 +2624,7 @@ body.mobile-menu-open {
 
 .rahbar-app-section {
   --app-purple: #361e50;
-  --app-purple-2: #4d246b;
+  --app-purple-2: #643ABC;
   --app-yellow: #ffb911;
   --app-yellow-hover: #f0a900;
   --app-text: #252026;
@@ -4032,7 +4046,7 @@ body.mobile-menu-open {
 }
 
 .price-unit {
-  color: #8a858b;
+  color: var(--gray);
   font-size: 11px;
   font-weight: 700;
 }
@@ -8619,7 +8633,7 @@ body.mobile-menu-open {
 
   border-radius: 10px;
 
-  background: #eee8fa;
+  background: #E8E2F6;
 
   color: var(--footer-purple);
 
@@ -8896,7 +8910,7 @@ body.mobile-menu-open {
 
     padding: 12px 0;
 
-    border-bottom: 1px solid #eee8fa;
+    border-bottom: 1px solid #E8E2F6;
   }
 
   .footer-benefit:last-child {
@@ -9532,7 +9546,7 @@ body.mobile-menu-open {
 }
 
 .about-page .page-hero {
-  background: #eee8fa;
+  background: #E8E2F6;
   padding: 58px 0 25px;
   margin-bottom: 70px;
 }
@@ -9754,7 +9768,7 @@ body.mobile-menu-open {
 }
 
 .about-page .about-cta {
-  background: #eee8fa;
+  background: #E8E2F6;
   text-align: center;
   padding: 18px 25px;
   border-radius: 10px;
@@ -9828,7 +9842,7 @@ body.mobile-menu-open {
   top: 14px;
   left: 14px;
   border: 0;
-  background: #eee8fa;
+  background: #E8E2F6;
   color: #361e50;
   border-radius: 999px;
   padding: 6px 12px;
