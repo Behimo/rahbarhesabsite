@@ -44,11 +44,16 @@ class NormalizeSeoUrl
         $canonicalHost = strtolower((string) config('seo.canonical_host', 'rahbarhesab.com'));
         $host = strtolower($request->getHost());
 
+        $isCanonical = $host === $canonicalHost;
+        $isWwwVariant = $host === 'www.'.$canonicalHost;
+
+        // Only force HTTPS on the configured canonical host. Staging hosts
+        // (e.g. delicollection.ir) must not enter a redirect loop when PHP-FPM
+        // sees plain HTTP behind a TLS-terminating proxy.
         $needsHttps = config('seo.force_https', true)
             && ! $request->secure()
-            && app()->environment('production');
-
-        $isWwwVariant = $host === 'www.'.$canonicalHost;
+            && app()->environment('production')
+            && ($isCanonical || $isWwwVariant);
 
         if (! $needsHttps && ! $isWwwVariant) {
             return null;
