@@ -6,6 +6,10 @@
 
         <div class="news-guides-grid">
             @forelse ($latestPosts as $post)
+                @php
+                    $summary = \Illuminate\Support\Str::squish(strip_tags((string) $post->excerpt));
+                    $summary = $summary !== '' ? $summary : ($post->category?->name ?? 'حسابداری');
+                @endphp
                 <a href="{{ $post->url() }}" class="news-guide-card">
                     <div class="news-guide-icon">
                         <svg viewBox="0 0 80 80" aria-hidden="true">
@@ -20,7 +24,7 @@
                     </div>
                     <div class="news-guide-content">
                         <h3>{{ $post->title }}</h3>
-                        <p>{{ $post->excerpt ?: ($post->category?->name ?? 'حسابداری') }}</p>
+                        <p>{{ \Illuminate\Support\Str::limit($summary, 120) }}</p>
                     </div>
                 </a>
             @empty
@@ -37,7 +41,7 @@
                         </div>
                         <div class="news-guide-content">
                             <h3>{{ $item['title'] }}</h3>
-                            <p>{{ $item['subtitle'] ?? '' }}</p>
+                            <p>{{ \Illuminate\Support\Str::limit(\Illuminate\Support\Str::squish(strip_tags($item['subtitle'] ?? '')), 120) }}</p>
                         </div>
                     </a>
                 @endforeach

@@ -5538,6 +5538,19 @@ body.mobile-menu-open {
   padding-top: 3px;
 }
 
+.news-guide-content h3,
+.news-guide-content p {
+  display: -webkit-box;
+
+  -webkit-box-orient: vertical;
+
+  -webkit-line-clamp: 2;
+
+  overflow: hidden;
+
+  overflow-wrap: anywhere;
+}
+
 /* title */
 
 .news-guide-content h3 {
