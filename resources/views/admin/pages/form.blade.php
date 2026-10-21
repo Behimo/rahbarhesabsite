@@ -38,7 +38,7 @@
                             <div class="col-md-6">
                                 <label class="form-label" for="page-slug">نامک *</label>
                                 <input type="text" name="slug" id="page-slug" value="{{ old('slug', $page->slug) }}" class="form-control" dir="ltr" {{ $page->exists ? '' : 'required' }}>
-                                <div class="form-text">آدرس صفحه: /p/<span dir="ltr">slug</span></div>
+                                <div class="form-text">آدرس صفحه: /<span dir="ltr">slug</span>/</div>
                             </div>
                         @else
                             <div class="col-md-6">

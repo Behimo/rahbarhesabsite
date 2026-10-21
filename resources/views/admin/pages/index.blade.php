@@ -30,7 +30,7 @@
                     <tr>
                         <td>
                             <div class="fw-medium">{{ $page->title }}</div>
-                            <small class="text-muted" dir="ltr">{{ $page->is_system ? '/'.$page->slug : '/p/'.$page->slug }}</small>
+                            <small class="text-muted" dir="ltr">/{{ $page->slug }}{{ $page->slug === 'home' ? '' : '/' }}</small>
                         </td>
                         <td>
                             @if ($page->is_system)

@@ -157,6 +157,13 @@ Route::controller(CafeQuestionController::class)->prefix('cafe-soal')->name('caf
     Route::post('/{slug}/answers', 'storeAnswer')->middleware(['auth', 'throttle:20,1'])->name('answers.store');
 });
 
+// Staging-era CMS page URLs (/p/{slug}) → final WP-parity /{slug}/
+Route::get('/p/{slug}', function (string $slug) {
+    $target = app(\App\Services\PermalinkService::class)->absolute('/'.rawurldecode($slug));
+
+    return new \Illuminate\Http\RedirectResponse($target, 301);
+})->where('slug', '[^/]+')->name('pages.legacy-p');
+
 // WP-style post permalink /{category}/{slug}/ then CMS pages /{slug}/
 // Reserved first segments are excluded by whole-segment match so slugs like
 // "builder-page" or "productivity" still resolve (see config/seo.php).

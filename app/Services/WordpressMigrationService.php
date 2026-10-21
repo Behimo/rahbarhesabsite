@@ -822,6 +822,9 @@ class WordpressMigrationService
 
                 $permalink = app(PermalinkService::class)->page($cmsPage);
                 $this->ensureRedirect('/?p='.$post->ID, $permalink);
+                // Staging Laravel used /p/{slug}; keep a 301 to the final page URL.
+                $this->ensureRedirect('/p/'.$slug, $permalink);
+                $this->ensureRedirect('/p/'.$slug.'/', $permalink);
                 if ($rawSlug !== '' && $this->normalizeWpSlug($rawSlug) !== $slug) {
                     $this->ensureRedirect('/'.$rawSlug.'/', $permalink);
                 }

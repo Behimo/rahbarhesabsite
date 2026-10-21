@@ -108,6 +108,26 @@ class CmsExtensionsTest extends TestCase
             ->assertSee('متن صفحه سفارشی');
     }
 
+    public function test_legacy_p_prefix_redirects_to_page_slug(): void
+    {
+        CmsPage::query()->create([
+            'slug' => 'legacy-landing',
+            'title' => 'لندینگ قدیمی',
+            'template' => 'wp-html',
+            'is_system' => false,
+            'content' => ['body_html' => '<p>ok</p>'],
+            'is_published' => true,
+            'status' => 'published',
+        ]);
+
+        foreach (['/p/legacy-landing', '/p/legacy-landing/'] as $from) {
+            $response = $this->get($from);
+            $response->assertStatus(301);
+            $path = parse_url((string) $response->headers->get('Location'), PHP_URL_PATH);
+            $this->assertSame('/legacy-landing/', $path);
+        }
+    }
+
     public function test_search_route_works(): void
     {
         $this->get(route('search', ['q' => 'test']))->assertOk();

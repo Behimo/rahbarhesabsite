@@ -65,6 +65,8 @@ return [
         'course-sitemap.xml', 'product-sitemap.xml', 'law-sitemap.xml', 'robots.txt',
         // WordPress leftovers
         'wp-admin', 'wp-content', 'wp-includes', 'wp-json', 'wp-login.php', 'xmlrpc.php',
+        // Staging-era CMS page prefix (redirects to /{slug}/)
+        'p',
     ],
 
     /*
