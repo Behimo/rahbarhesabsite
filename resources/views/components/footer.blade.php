@@ -1,10 +1,10 @@
 @php
     $logo = \App\Models\CmsSetting::get('site_logo') ?: asset('site/images/logorahbarhesab.webp');
-    $email = $contact['email'] ?? 'info@rahbarhesab.com';
-    $phone = $contact['phone'] ?? '02191020105';
-    $phoneDisplay = $contact['phone_display'] ?? '021-91020105';
-    $mobile = $contact['mobile'] ?? '09334653933';
-    $mobileDisplay = $contact['mobile_display'] ?? '09334653933';
+    $email = 'Info@rahbarhesab.com';
+    $phone = '02191020105';
+    $phoneDisplay = '021-91020105';
+    $mobile = '09334653933';
+    $mobileDisplay = '09334653933';
     $instagram = $contact['instagram'] ?? '#';
     $telegram = $contact['telegram'] ?? '#';
     $linkedin = $contact['linkedin'] ?? '#';
