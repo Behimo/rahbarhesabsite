@@ -49,6 +49,17 @@ return [
 
     'wordpress' => [
         'prefix' => env('WP_DB_PREFIX', 'wp_'),
+        // Public WP origin for rendered Elementor HTML / CSS (fallback: WP options home/siteurl).
+        'site_url' => env('WP_SITE_URL'),
+        // Functional pages already owned by Laravel routes — skipped unless --include-system.
+        'skip_page_slugs' => [
+            'home', 'خانه',
+            'about-us', 'about', 'contact-us', 'contact',
+            'my-account', 'cart', 'checkout', 'product', 'blog',
+            'my-login', 'edit-your-profile', 'update-billing-card',
+            'account-phone', 'order-tracking',
+            'وضعیت-پرداخت',
+        ],
     ],
 
     'branding' => [

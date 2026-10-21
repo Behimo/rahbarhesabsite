@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Category;
+use App\Models\CmsPage;
 use App\Models\CmsPost;
 use App\Models\CmsRedirect;
 use App\Models\Course;
@@ -19,6 +20,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 class WordpressMigrationService
@@ -75,6 +77,14 @@ class WordpressMigrationService
     {
         return (int) $this->wp()->table('posts')
             ->where('post_type', 'post')
+            ->where('post_status', 'publish')
+            ->count();
+    }
+
+    public function countPages(): int
+    {
+        return (int) $this->wp()->table('posts')
+            ->where('post_type', 'page')
             ->where('post_status', 'publish')
             ->count();
     }
@@ -675,6 +685,161 @@ class WordpressMigrationService
     }
 
     /**
+     * Import WordPress pages (including Elementor) into CmsPage with HTML + stylesheets.
+     *
+     * @param  (callable(): void)|null  $onProgress
+     * @param  array{source?: string, include_system?: bool, download_css?: bool}  $options
+     * @return array{created: int, updated: int, skipped: int, rendered: int, content_fallback: int}
+     */
+    public function migratePages(bool $dryRun = false, ?callable $onProgress = null, array $options = []): array
+    {
+        $created = 0;
+        $updated = 0;
+        $skipped = 0;
+        $rendered = 0;
+        $contentFallback = 0;
+
+        $source = strtolower((string) ($options['source'] ?? 'rendered'));
+        $includeSystem = (bool) ($options['include_system'] ?? false);
+        $downloadCss = (bool) ($options['download_css'] ?? false);
+        $urlRewriter = app(ContentUrlRewriter::class);
+
+        $pages = $this->wp()->table('posts')
+            ->where('post_type', 'page')
+            ->where('post_status', 'publish')
+            ->orderBy('ID')
+            ->lazyById(100, 'ID');
+
+        foreach ($pages->chunk(50) as $batch) {
+            $ids = $batch->pluck('ID')->map(fn ($id) => (int) $id)->all();
+            $postMeta = $this->postMetaForIds($ids);
+
+            foreach ($batch as $post) {
+                $rawSlug = (string) ($post->post_name ?: '');
+                $slug = $this->normalizeWpSlug($rawSlug) ?: (Str::slug((string) $post->post_title).'-'.$post->ID);
+                $slug = mb_substr($slug, 0, 180);
+
+                if (! $includeSystem && $this->shouldSkipWpPage($slug, $rawSlug)) {
+                    $skipped++;
+                    $onProgress && $onProgress();
+
+                    continue;
+                }
+
+                $meta = $postMeta[$post->ID] ?? [];
+                $importSource = 'post_content';
+                $bodyHtml = (string) ($post->post_content ?: '');
+                $stylesheets = [];
+
+                if ($source === 'rendered') {
+                    $fetched = $this->fetchRenderedWpPage($slug, (int) $post->ID);
+                    if ($fetched !== null) {
+                        $bodyHtml = $fetched['html'];
+                        $stylesheets = $fetched['stylesheets'];
+                        $importSource = 'wp-rendered';
+                        $rendered++;
+                    } else {
+                        $contentFallback++;
+                    }
+                }
+
+                $bodyHtml = $this->stripDangerousHtml($bodyHtml);
+                $bodyHtml = wp_shortcodes($bodyHtml);
+                $bodyHtml = $urlRewriter->rewrite($bodyHtml);
+
+                if ($downloadCss && $stylesheets !== [] && ! $dryRun) {
+                    $stylesheets = $this->localizeStylesheets($stylesheets, (int) $post->ID);
+                }
+
+                if ($dryRun) {
+                    CmsPage::withTrashed()
+                        ->where('wp_post_id', (int) $post->ID)
+                        ->orWhere('slug', $slug)
+                        ->exists() ? $updated++ : $created++;
+                    $onProgress && $onProgress();
+
+                    continue;
+                }
+
+                $cmsPage = CmsPage::withTrashed()
+                    ->where('wp_post_id', (int) $post->ID)
+                    ->first();
+
+                if (! $cmsPage) {
+                    $cmsPage = CmsPage::withTrashed()
+                        ->where(function ($q) use ($slug, $rawSlug) {
+                            $q->where('slug', $slug);
+                            $decodedRaw = $this->normalizeWpSlug($rawSlug);
+                            if ($decodedRaw !== '' && $decodedRaw !== $slug) {
+                                $q->orWhere('slug', $decodedRaw);
+                            }
+                            if ($rawSlug !== '' && $rawSlug !== $slug) {
+                                $q->orWhere('slug', $rawSlug);
+                            }
+                        })
+                        ->first();
+                }
+
+                $payload = [
+                    'slug' => $slug,
+                    'title' => mb_substr((string) $post->post_title, 0, 191),
+                    'template' => 'wp-html',
+                    'builder_enabled' => false,
+                    'content' => [
+                        'body_html' => $bodyHtml,
+                        'stylesheet_urls' => $stylesheets,
+                        'import_source' => $importSource,
+                    ],
+                    'is_published' => true,
+                    'status' => 'published',
+                    'published_at' => $post->post_date ? Carbon::parse($post->post_date) : now(),
+                    'is_system' => false,
+                    'show_in_nav' => false,
+                    'wp_post_id' => (int) $post->ID,
+                ];
+
+                if ($cmsPage) {
+                    if ($cmsPage->trashed()) {
+                        $cmsPage->restore();
+                    }
+                    // Keep Laravel-owned system pages from being overwritten into catch-all templates.
+                    if ($cmsPage->is_system) {
+                        $skipped++;
+                        $onProgress && $onProgress();
+
+                        continue;
+                    }
+                    $cmsPage->fill($payload)->save();
+                    $updated++;
+                } else {
+                    $cmsPage = CmsPage::query()->create($payload);
+                    $created++;
+                }
+
+                $this->applyRankMathMeta($cmsPage, $meta);
+                $cmsPage->wp_post_id = (int) $post->ID;
+                $cmsPage->save();
+
+                $permalink = app(PermalinkService::class)->page($cmsPage);
+                $this->ensureRedirect('/?p='.$post->ID, $permalink);
+                if ($rawSlug !== '' && $this->normalizeWpSlug($rawSlug) !== $slug) {
+                    $this->ensureRedirect('/'.$rawSlug.'/', $permalink);
+                }
+
+                $onProgress && $onProgress();
+            }
+        }
+
+        return [
+            'created' => $created,
+            'updated' => $updated,
+            'skipped' => $skipped,
+            'rendered' => $rendered,
+            'content_fallback' => $contentFallback,
+        ];
+    }
+
+    /**
      * @param  (callable(): void)|null  $onProgress  called once per WP paid order
      * @return array{created: int, enrolled: int, needs_review: int, linked_by_phone: int}
      */
@@ -936,6 +1101,9 @@ class WordpressMigrationService
             'local_post_category_links' => DB::table('categoryables')
                 ->where('categoryable_type', CmsPost::class)
                 ->count(),
+            'wp_pages' => $this->wp()->table('posts')->where('post_type', 'page')->where('post_status', 'publish')->count(),
+            'local_pages_with_wp_post_id' => CmsPage::query()->whereNotNull('wp_post_id')->count(),
+            'local_wp_html_pages' => CmsPage::query()->where('template', 'wp-html')->count(),
             'wp_post_tags' => $this->wp()->table('term_taxonomy')->where('taxonomy', 'post_tag')->count(),
             'local_tags' => Tag::query()->count(),
             'local_taggables' => DB::table('taggables')->count(),
@@ -1591,5 +1759,262 @@ class WordpressMigrationService
         }
 
         return mb_substr($first, 0, 100);
+    }
+
+    private function shouldSkipWpPage(string $slug, string $rawSlug = ''): bool
+    {
+        $skip = array_map('mb_strtolower', config('cms.wordpress.skip_page_slugs', []));
+        $candidates = array_filter([
+            mb_strtolower($slug),
+            mb_strtolower($this->normalizeWpSlug($rawSlug)),
+            mb_strtolower($rawSlug),
+        ]);
+
+        foreach ($candidates as $candidate) {
+            if (in_array($candidate, $skip, true)) {
+                return true;
+            }
+        }
+
+        // Reserved route prefixes must not become catch-all CmsPage rows.
+        if (app(PermalinkService::class)->isReservedPrefix($slug)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function wpSiteUrl(): string
+    {
+        $configured = rtrim((string) config('cms.wordpress.site_url', ''), '/');
+        if ($configured !== '') {
+            return $configured;
+        }
+
+        try {
+            $url = (string) ($this->wp()->table('options')->where('option_name', 'home')->value('option_value')
+                ?: $this->wp()->table('options')->where('option_name', 'siteurl')->value('option_value')
+                ?: '');
+            $url = rtrim($url, '/');
+            if ($url !== '') {
+                return $url;
+            }
+        } catch (\Throwable) {
+            // options table may be missing in tests
+        }
+
+        return 'https://rahbarhesab.com';
+    }
+
+    /**
+     * @return array{html: string, stylesheets: list<string>}|null
+     */
+    private function fetchRenderedWpPage(string $slug, int $wpId): ?array
+    {
+        $base = $this->wpSiteUrl();
+        $candidates = array_values(array_unique(array_filter([
+            $base.'/'.rawurlencode($slug).'/',
+            $base.'/'.$slug.'/',
+            $base.'/?page_id='.$wpId,
+            $base.'/?p='.$wpId,
+        ])));
+
+        foreach ($candidates as $url) {
+            try {
+                $response = Http::timeout(25)
+                    ->withHeaders(['User-Agent' => 'RahbarHesabWpMigrate/1.0'])
+                    ->get($url);
+            } catch (\Throwable) {
+                continue;
+            }
+
+            if (! $response->successful()) {
+                continue;
+            }
+
+            $html = (string) $response->body();
+            $root = $this->extractElementorRoot($html);
+            if ($root === null || trim($root) === '') {
+                continue;
+            }
+
+            return [
+                'html' => $root,
+                'stylesheets' => $this->collectElementorStylesheets($html, $wpId, $base),
+            ];
+        }
+
+        return null;
+    }
+
+    private function extractElementorRoot(string $html): ?string
+    {
+        if (! preg_match('/<div[^>]*data-elementor-type=["\']wp-page["\'][^>]*>/i', $html, $match, PREG_OFFSET_CAPTURE)) {
+            // Classic / Gutenberg pages: try main content region.
+            if (preg_match('/<main\\b[^>]*>([\\s\\S]*?)<\\/main>/i', $html, $main)) {
+                return trim($main[1]);
+            }
+            if (preg_match('/<article\\b[^>]*>([\\s\\S]*?)<\\/article>/i', $html, $article)) {
+                return trim($article[1]);
+            }
+
+            return null;
+        }
+
+        $start = (int) $match[0][1];
+        $len = strlen($html);
+        $depth = 0;
+        $i = $start;
+        $end = null;
+
+        while ($i < $len) {
+            $nextOpen = stripos($html, '<div', $i);
+            $nextClose = stripos($html, '</div>', $i);
+            if ($nextClose === false) {
+                break;
+            }
+            if ($nextOpen !== false && $nextOpen < $nextClose) {
+                $depth++;
+                $i = $nextOpen + 4;
+
+                continue;
+            }
+            $depth--;
+            $i = $nextClose + 6;
+            if ($depth === 0) {
+                $end = $i;
+                break;
+            }
+        }
+
+        if ($end === null) {
+            return null;
+        }
+
+        return substr($html, $start, $end - $start);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function collectElementorStylesheets(string $html, int $wpId, string $siteUrl): array
+    {
+        preg_match_all('/<link[^>]+rel=["\']stylesheet["\'][^>]*>/i', $html, $linkTags);
+        $urls = [];
+
+        foreach ($linkTags[0] as $tag) {
+            if (! preg_match('/href=["\']([^"\']+)["\']/i', $tag, $href)) {
+                continue;
+            }
+            $url = html_entity_decode($href[1], ENT_QUOTES | ENT_HTML5);
+            $hay = mb_strtolower($url);
+            $keep = str_contains($hay, 'elementor')
+                || str_contains($hay, 'hello-elementor')
+                || str_contains($hay, '/uploads/elementor/css/')
+                || str_contains($hay, 'font-awesome')
+                || str_contains($hay, 'fontawesome')
+                || preg_match('#/post-'.$wpId.'(?:-|$|\\.)#', $hay);
+
+            if (! $keep) {
+                continue;
+            }
+
+            if (str_starts_with($url, '//')) {
+                $url = 'https:'.$url;
+            } elseif (str_starts_with($url, '/')) {
+                $url = rtrim($siteUrl, '/').$url;
+            }
+
+            $urls[] = $url;
+        }
+
+        // Always try the generated page CSS even if the <link> tag was missed.
+        $urls[] = rtrim($siteUrl, '/').'/wp-content/uploads/elementor/css/post-'.$wpId.'.css';
+
+        return array_values(array_unique($urls));
+    }
+
+    /**
+     * @param  list<string>  $urls
+     * @return list<string>
+     */
+    private function localizeStylesheets(array $urls, int $wpId): array
+    {
+        $localized = [];
+        $dir = public_path('migrated-wp/css/'.$wpId);
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        foreach ($urls as $index => $url) {
+            try {
+                $response = Http::timeout(20)
+                    ->withHeaders(['User-Agent' => 'RahbarHesabWpMigrate/1.0'])
+                    ->get($url);
+            } catch (\Throwable) {
+                $localized[] = $url;
+
+                continue;
+            }
+
+            if (! $response->successful()) {
+                $localized[] = $url;
+
+                continue;
+            }
+
+            $css = (string) $response->body();
+            // Skip HTML error pages mistaken for CSS.
+            if (str_contains(ltrim($css), '<!doctype') || str_contains(ltrim($css), '<html')) {
+                continue;
+            }
+
+            $css = $this->rewriteCssAssetUrls($css, $url);
+            $name = sprintf('%02d-%s.css', $index, substr(sha1($url), 0, 10));
+            file_put_contents($dir.DIRECTORY_SEPARATOR.$name, $css);
+            $localized[] = asset('migrated-wp/css/'.$wpId.'/'.$name);
+        }
+
+        return array_values(array_unique($localized));
+    }
+
+    private function rewriteCssAssetUrls(string $css, string $cssUrl): string
+    {
+        $base = preg_replace('#/[^/]*$#', '/', $cssUrl) ?: $cssUrl;
+        $pattern = '#url\(([\'"]?)([^)\'"]+)\1\)#i';
+
+        return preg_replace_callback(
+            $pattern,
+            function (array $m) use ($base) {
+                $target = trim($m[2]);
+                if ($target === '' || str_starts_with($target, 'data:') || str_starts_with($target, 'http://') || str_starts_with($target, 'https://')) {
+                    return $m[0];
+                }
+                if (str_starts_with($target, '//')) {
+                    return 'url('.$m[1].'https:'.$target.$m[1].')';
+                }
+                if (str_starts_with($target, '/')) {
+                    $origin = parse_url($base, PHP_URL_SCHEME).'://'.parse_url($base, PHP_URL_HOST);
+
+                    return 'url('.$m[1].$origin.$target.$m[1].')';
+                }
+
+                return 'url('.$m[1].$base.$target.$m[1].')';
+            },
+            $css
+        ) ?? $css;
+    }
+
+    private function stripDangerousHtml(string $html): string
+    {
+        if ($html === '') {
+            return '';
+        }
+
+        $html = preg_replace('#<script\b[^>]*>.*?</script>#is', '', $html) ?? $html;
+        $html = preg_replace('#<iframe\b[^>]*>.*?</iframe>#is', '', $html) ?? $html;
+        $html = preg_replace('/\s+on\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/iu', '', $html) ?? $html;
+
+        return $html;
     }
 }

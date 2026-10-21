@@ -37,7 +37,7 @@ class PageRequest extends FormRequest
                 ? ['sometimes', 'nullable']
                 : ['required', 'string', 'max:100', new EnglishSlug, Rule::unique('cms_pages', 'slug')->ignore($page?->id), Rule::notIn($reservedSlugs)],
             'title' => ['required', 'string', 'max:200'],
-            'template' => ['nullable', 'in:system,content'],
+            'template' => ['nullable', 'in:system,content,wp-html'],
             'status' => ['nullable', 'in:draft,published,scheduled'],
             'published_at' => ['nullable', 'date'],
             'meta_title' => ['nullable', 'string', 'max:200'],

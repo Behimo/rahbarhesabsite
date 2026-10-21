@@ -15,6 +15,7 @@
 /public/build
 /public/hot
 /public/storage
+/public/migrated-wp
 /storage/*.key
 /storage/pail
 /vendor

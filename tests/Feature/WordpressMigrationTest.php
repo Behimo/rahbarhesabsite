@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Jobs\IssueSpotplayerLicenseJob;
 use App\Models\Category;
+use App\Models\CmsPage;
 use App\Models\CmsPost;
 use App\Models\Course;
 use App\Models\CourseEnrollment;
@@ -15,6 +16,7 @@ use App\Models\User;
 use App\Services\WordpressMigrationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
 use RuntimeException;
@@ -267,6 +269,101 @@ class WordpressMigrationTest extends TestCase
         $this->assertNotNull($order->user_id);
         $this->assertFalse($order->needs_review);
         $this->assertDatabaseHas('users', ['mobile' => '09351234567']);
+    }
+
+    public function test_pages_are_imported_from_post_content_with_wp_html_template(): void
+    {
+        DB::connection('wordpress')->table('posts')->insert([
+            'ID' => 8801,
+            'post_type' => 'page',
+            'post_status' => 'publish',
+            'post_name' => 'tax-consulting-services',
+            'post_title' => 'خدمات مشاوره مالیاتی',
+            'post_content' => '<div class="elementor"><p>محتوای برگه تست</p></div>',
+            'post_excerpt' => null,
+            'post_date' => '2026-01-01 10:00:00',
+        ]);
+        DB::connection('wordpress')->table('posts')->insert([
+            'ID' => 8802,
+            'post_type' => 'page',
+            'post_status' => 'publish',
+            'post_name' => 'cart',
+            'post_title' => 'سبد خرید',
+            'post_content' => '<p>نباید منتقل شود</p>',
+            'post_excerpt' => null,
+            'post_date' => '2026-01-01 10:00:00',
+        ]);
+        DB::connection('wordpress')->table('postmeta')->insert([
+            'post_id' => 8801,
+            'meta_key' => 'rank_math_title',
+            'meta_value' => 'عنوان سئو مشاوره',
+        ]);
+
+        $stats = app(WordpressMigrationService::class)->migratePages(
+            dryRun: false,
+            options: ['source' => 'content', 'include_system' => false, 'download_css' => false],
+        );
+
+        $this->assertSame(1, $stats['created']);
+        $this->assertSame(1, $stats['skipped']);
+        $this->assertDatabaseHas('cms_pages', [
+            'wp_post_id' => 8801,
+            'slug' => 'tax-consulting-services',
+            'template' => 'wp-html',
+            'meta_title' => 'عنوان سئو مشاوره',
+        ]);
+        $this->assertDatabaseMissing('cms_pages', ['wp_post_id' => 8802]);
+
+        $page = CmsPage::query()->where('wp_post_id', 8801)->firstOrFail();
+        $this->assertStringContainsString('محتوای برگه تست', $page->content['body_html'] ?? '');
+        $this->assertSame('post_content', $page->content['import_source'] ?? null);
+
+        $this->get('/tax-consulting-services/')
+            ->assertOk()
+            ->assertSee('محتوای برگه تست', false)
+            ->assertSee('wp-imported-page', false);
+    }
+
+    public function test_pages_rendered_source_stores_elementor_html_and_stylesheets(): void
+    {
+        config(['cms.wordpress.site_url' => 'https://wp.example.test']);
+
+        DB::connection('wordpress')->table('posts')->insert([
+            'ID' => 8810,
+            'post_type' => 'page',
+            'post_status' => 'publish',
+            'post_name' => 'software',
+            'post_title' => 'نرم افزار',
+            'post_content' => '<p>fallback</p>',
+            'post_excerpt' => null,
+            'post_date' => '2026-01-01 10:00:00',
+        ]);
+
+        Http::fake([
+            'https://wp.example.test/software/' => Http::response(
+                '<html><head>'
+                .'<link rel="stylesheet" href="https://wp.example.test/wp-content/plugins/elementor/assets/css/frontend.min.css">'
+                .'<link rel="stylesheet" href="https://wp.example.test/wp-content/uploads/elementor/css/post-8810.css">'
+                .'</head><body>'
+                .'<div data-elementor-type="wp-page" data-elementor-id="8810" class="elementor elementor-8810">'
+                .'<div class="elementor-element"><p>HTML رندر شده</p></div>'
+                .'</div>'
+                .'</body></html>',
+                200
+            ),
+            'https://wp.example.test/*' => Http::response('not found', 404),
+        ]);
+
+        $stats = app(WordpressMigrationService::class)->migratePages(
+            options: ['source' => 'rendered', 'download_css' => false],
+        );
+
+        $this->assertSame(1, $stats['rendered']);
+        $page = CmsPage::query()->where('wp_post_id', 8810)->firstOrFail();
+        $this->assertSame('wp-rendered', $page->content['import_source'] ?? null);
+        $this->assertStringContainsString('HTML رندر شده', $page->content['body_html'] ?? '');
+        $this->assertStringContainsString('data-elementor-type', $page->content['body_html'] ?? '');
+        $this->assertNotEmpty($page->content['stylesheet_urls'] ?? []);
     }
 
     public function test_term_links_connect_products_and_posts_to_categories_and_tags(): void

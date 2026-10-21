@@ -28,9 +28,16 @@ class PageController extends SiteController
 
         abort_unless($page, 404);
 
-        return $this->renderSystemPage($slug, 'pages.dynamic', [
+        $content = is_array($page->content) ? $page->content : [];
+        $isWpImport = ($page->template === 'wp-html')
+            || (($content['import_source'] ?? '') === 'wp-rendered')
+            || ! empty($content['stylesheet_urls']);
+
+        return $this->renderSystemPage($slug, $isWpImport ? 'pages.wp-imported' : 'pages.dynamic', [
             'page' => $page,
-            'bodyHtml' => $page->content['body_html'] ?? '',
+            'bodyHtml' => $content['body_html'] ?? '',
+            'stylesheets' => array_values(array_filter($content['stylesheet_urls'] ?? [])),
+            'fullBleedContent' => $isWpImport,
             'seo' => $this->seo->meta([
                 'title' => $page->meta_title ?: ($page->title.' | '.config('cms.site_name_fa')),
                 'description' => $page->meta_description,
