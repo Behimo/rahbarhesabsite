@@ -1006,6 +1006,60 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
+    const toLatinDigits = (value) => String(value).replace(/[۰-۹٠-٩]/g, (char) => {
+      const persian = '۰۱۲۳۴۵۶۷۸۹';
+      const arabic = '٠١٢٣٤٥٦٧٨٩';
+      const persianIndex = persian.indexOf(char);
+      return String(persianIndex >= 0 ? persianIndex : arabic.indexOf(char));
+    });
+
+    const digitsOnly = (value) => toLatinDigits(value).replace(/\D/g, '');
+
+    root.querySelectorAll('input[name="phone"]').forEach((input) => {
+      const normalizePhone = () => {
+        let digits = digitsOnly(input.value);
+        if (digits.startsWith('0098')) digits = `0${digits.slice(4)}`;
+        else if (digits.startsWith('98') && digits.length > 10) digits = `0${digits.slice(2)}`;
+        else if (digits.startsWith('9') && digits.length === 10) digits = `0${digits}`;
+        digits = digits.slice(0, 11);
+        if (digits !== input.value) input.value = digits;
+      };
+
+      input.addEventListener('input', normalizePhone);
+      input.addEventListener('change', normalizePhone);
+      input.addEventListener('animationstart', (event) => {
+        if (event.animationName === 'rh-auth-autofill-start') normalizePhone();
+      });
+    });
+
+    const otp = root.querySelector('.rh-auth__otp');
+    const otpCells = [...root.querySelectorAll('.rh-auth__otp-cell')];
+    if (otp && otpCells.length) {
+      const wrap = otp.closest('.rh-auth__otp-wrap');
+      wrap?.classList.add('is-ready');
+
+      const syncOtp = () => {
+        const value = digitsOnly(otp.value).slice(0, otpCells.length);
+        if (otp.value !== value) otp.value = value;
+        const current = value.length >= otpCells.length ? otpCells.length - 1 : value.length;
+        otpCells.forEach((cell, index) => {
+          cell.textContent = value[index] || '';
+          cell.classList.toggle('is-filled', Boolean(value[index]));
+          cell.classList.toggle('is-current', document.activeElement === otp && index === current);
+        });
+      };
+
+      otp.addEventListener('input', syncOtp);
+      otp.addEventListener('change', syncOtp);
+      otp.addEventListener('focus', syncOtp);
+      otp.addEventListener('blur', syncOtp);
+      otp.addEventListener('animationstart', (event) => {
+        if (event.animationName === 'rh-auth-autofill-start') syncOtp();
+      });
+      syncOtp();
+      window.setTimeout(syncOtp, 300);
+    }
+
     root.querySelectorAll('[data-password-toggle]').forEach((button) => {
       button.addEventListener('click', () => {
         const wrap = button.closest('.rh-auth__secret');

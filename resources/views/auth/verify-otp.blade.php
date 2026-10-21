@@ -4,6 +4,10 @@
 @php
     $logo = \App\Models\CmsSetting::get('site_logo') ?: asset('site/images/logorahbarhesab.webp');
     $otpLength = (int) config('otp.length', 6);
+    $phoneDigits = preg_replace('/\D+/', '', (string) $phone) ?? '';
+    $phonePretty = strlen($phoneDigits) === 11
+        ? substr($phoneDigits, 0, 4).' '.substr($phoneDigits, 4, 3).' '.substr($phoneDigits, 7)
+        : $phone;
 @endphp
 
 <section class="rh-auth rh-auth--verify" aria-labelledby="rh-auth-verify-title" data-rh-auth>
@@ -18,7 +22,8 @@
 
             <p class="rh-auth__brand-kicker">تأیید هویت</p>
             <h1 id="rh-auth-verify-title" class="rh-auth__brand-title">کد را وارد کنید</h1>
-            <p class="rh-auth__brand-lede">پیامک به شماره <strong dir="ltr">{{ $phone }}</strong> ارسال شد.</p>
+            <p class="rh-auth__brand-lede">کد تأیید به این شماره پیامک شد.</p>
+            <p class="rh-auth__phone" dir="ltr">{{ $phonePretty }}</p>
         </aside>
 
         <div class="rh-auth__panel">
@@ -42,18 +47,28 @@
                     @csrf
                     <div class="rh-auth__field">
                         <label for="auth-code">کد {{ fa_digits($otpLength) }} رقمی</label>
-                        <input
-                            type="text"
-                            id="auth-code"
-                            name="code"
-                            inputmode="numeric"
-                            autocomplete="one-time-code"
-                            maxlength="{{ $otpLength }}"
-                            required
-                            dir="ltr"
-                            class="rh-auth__otp"
-                            @error('code') aria-invalid="true" @enderror
-                        >
+                        <div class="rh-auth__otp-wrap" style="--otp-count: {{ $otpLength }}">
+                            <div class="rh-auth__otp-cells" aria-hidden="true">
+                                @for ($i = 0; $i < $otpLength; $i++)
+                                    <span class="rh-auth__otp-cell"></span>
+                                @endfor
+                            </div>
+                            <input
+                                type="text"
+                                id="auth-code"
+                                name="code"
+                                inputmode="numeric"
+                                autocomplete="one-time-code"
+                                autocapitalize="off"
+                                autocorrect="off"
+                                spellcheck="false"
+                                maxlength="{{ $otpLength }}"
+                                required
+                                dir="ltr"
+                                class="rh-auth__otp"
+                                @error('code') aria-invalid="true" @enderror
+                            >
+                        </div>
                         @error('code')
                             <p class="rh-auth__field-error">{{ $message }}</p>
                         @enderror

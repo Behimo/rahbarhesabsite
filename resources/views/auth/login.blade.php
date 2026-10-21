@@ -124,7 +124,7 @@
 
                         <div class="rh-auth__field">
                             <label for="auth-password">رمز عبور</label>
-                            <div class="rh-auth__secret">
+                            <div class="rh-auth__secret" dir="ltr">
                                 <input
                                     type="password"
                                     id="auth-password"

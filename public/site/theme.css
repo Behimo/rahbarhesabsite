@@ -1241,7 +1241,8 @@ body.rh-theme select {
     width: min(1040px, 100%);
     margin: 0 auto;
     display: grid;
-    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: stretch;
     gap: 0;
     border-radius: 1.35rem;
     overflow: hidden;
@@ -1253,25 +1254,24 @@ body.rh-theme select {
 }
 
 .rh-auth__stage--narrow {
-    width: min(880px, 100%);
-    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    width: min(960px, 100%);
 }
 
 .rh-auth__brand {
     position: relative;
     isolation: isolate;
-    padding: 2.5rem 2rem 2.25rem;
+    padding: 2.25rem 2rem;
     background: linear-gradient(160deg, #2a1740 0%, #361e50 42%, #4a2880 100%);
     color: #f8f5ff;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     min-height: 100%;
     overflow: hidden;
 }
 
 .rh-auth__brand--compact {
-    padding: 2rem 1.75rem;
+    padding: 2.25rem 2rem;
 }
 
 .rh-auth__brand-glow {
@@ -1359,8 +1359,8 @@ body.rh-theme select {
 
 .rh-auth__trust {
     list-style: none;
-    margin: 1.75rem 0 0;
-    padding: 0;
+    margin: auto 0 0;
+    padding: 1.75rem 0 0;
     display: grid;
     gap: 0.75rem;
 }
@@ -1391,7 +1391,10 @@ body.rh-theme select {
 
 .rh-auth__sheet {
     position: relative;
-    padding: 2.1rem 2rem 2.1rem 2.35rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 2.25rem 2rem 2.25rem 2.35rem;
     min-height: 100%;
 }
 
@@ -1449,11 +1452,13 @@ body.rh-theme select {
     appearance: none;
     border: 0;
     cursor: pointer;
-    min-height: 2.75rem;
+    min-height: 3rem;
     border-radius: 0.75rem;
     padding: 0.55rem 0.75rem;
     font-size: 0.9rem;
     font-weight: 700;
+    line-height: 1.3;
+    white-space: nowrap;
     color: var(--auth-muted);
     background: transparent;
     transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
@@ -1480,6 +1485,7 @@ body.rh-theme select {
 
 .rh-auth__tabpanel.is-active {
     display: block;
+    min-height: 15.5rem;
     animation: rh-auth-panel-in 280ms ease both;
 }
 
@@ -1501,15 +1507,27 @@ body.rh-theme select {
 
 .rh-auth__field input {
     width: 100%;
-    min-height: 2.85rem;
+    min-height: 3rem;
     padding: 0.7rem 0.95rem;
     border: 1px solid #d9d2e3;
     border-radius: 0.8rem;
     background: #fff;
     color: var(--auth-ink);
+    font: inherit;
     font-size: 1rem;
-    line-height: 1.5;
+    font-weight: 600;
+    line-height: 1.4;
     transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.rh-auth__field input[type='tel'],
+.rh-auth__field input[inputmode='numeric'],
+.rh-auth__field input[name='login'] {
+    direction: ltr;
+    text-align: left;
+    unicode-bidi: isolate;
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: 'tnum' 1, 'lnum' 1;
 }
 
 .rh-auth__field input::placeholder {
@@ -1531,12 +1549,117 @@ body.rh-theme select {
     box-shadow: 0 0 0 3px rgba(180, 35, 24, 0.12);
 }
 
+.rh-auth__field input:-webkit-autofill,
+.rh-auth__field input:-webkit-autofill:hover,
+.rh-auth__field input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--auth-ink) !important;
+    caret-color: var(--auth-ink);
+    font-family: inherit !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    box-shadow: 0 0 0 1000px #fff inset !important;
+    transition: background-color 99999s ease-out;
+    animation-name: rh-auth-autofill-start;
+    animation-duration: 0.01s;
+}
+
+.rh-auth__phone {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    max-width: 100%;
+    margin: 1.15rem 0 0;
+    min-height: 2.75rem;
+    padding: 0.4rem 0.95rem;
+    border-radius: 0.8rem;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0.06em;
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: 'tnum' 1, 'lnum' 1;
+    direction: ltr;
+    unicode-bidi: isolate;
+}
+
+.rh-auth__otp-wrap {
+    position: relative;
+}
+
+.rh-auth__otp-cells {
+    display: none;
+}
+
+.rh-auth__otp-wrap.is-ready .rh-auth__otp-cells {
+    display: grid;
+    grid-template-columns: repeat(var(--otp-count, 6), minmax(0, 1fr));
+    gap: 0.5rem;
+    direction: ltr;
+    width: min(100%, 21rem);
+    margin-inline: auto;
+}
+
+.rh-auth__otp-cell {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #d9d2e3;
+    border-radius: 0.8rem;
+    background: #fff;
+    color: var(--auth-ink);
+    font-size: 1.35rem;
+    font-weight: 800;
+    line-height: 1;
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+
+.rh-auth__otp-cell.is-filled {
+    border-color: #c4b5e8;
+}
+
+.rh-auth__otp-wrap.is-ready:focus-within .rh-auth__otp-cell.is-current {
+    border-color: var(--auth-primary);
+    box-shadow: 0 0 0 3px rgba(100, 58, 188, 0.18);
+}
+
+.rh-auth__otp-wrap:has(input[aria-invalid='true']) .rh-auth__otp-cell {
+    border-color: #f97066;
+}
+
 .rh-auth__otp {
     text-align: center;
-    font-size: 1.55rem !important;
-    font-weight: 700;
-    letter-spacing: 0.35em;
-    padding-inline-end: 0.35em !important;
+    direction: ltr;
+    unicode-bidi: isolate;
+    font-size: 1.25rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums lining-nums;
+    letter-spacing: 0.28em;
+    padding-inline: 0.9rem;
+}
+
+.rh-auth__otp-wrap.is-ready .rh-auth__otp {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    border-color: transparent;
+    border-radius: 0;
+    background: transparent;
+    color: transparent;
+    caret-color: transparent;
+    letter-spacing: 0;
+    font-size: 16px;
+    box-shadow: none;
+    opacity: 0;
 }
 
 .rh-auth__secret {
@@ -1638,7 +1761,7 @@ body.rh-theme select {
     justify-content: center;
     gap: 0.55rem;
     width: 100%;
-    min-height: 2.95rem;
+    min-height: 3rem;
     margin-top: 0.25rem;
     border: 0;
     border-radius: 0.9rem;
@@ -1705,6 +1828,11 @@ body.rh-theme select {
     color: var(--auth-primary-dark);
 }
 
+@keyframes rh-auth-autofill-start {
+    from { opacity: 1; }
+    to { opacity: 1; }
+}
+
 @keyframes rh-auth-spin {
     to { transform: rotate(360deg); }
 }
@@ -1756,7 +1884,21 @@ body.rh-theme select {
     }
 
     .rh-auth__tabs {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .rh-auth__tab {
+        font-size: 0.82rem;
+        padding-inline: 0.45rem;
+    }
+
+    .rh-auth__tabpanel.is-active {
+        min-height: 0;
+    }
+
+    .rh-auth__phone {
+        font-size: 1.05rem;
+        letter-spacing: 0.04em;
     }
 }
 
