@@ -25,51 +25,63 @@ class OtpService
 
         $ip = (string) Request::ip();
         $this->assertNotThrottled($normalized, $ip);
+        $length = $this->codeLength();
+        $this->sms->ensureConfigured();
 
-        $cooldownKey = 'otp:cooldown:'.$normalized;
-        if (Cache::has($cooldownKey)) {
+        $lock = Cache::lock('otp:send:'.$normalized, 15);
+        if (! $lock->get()) {
             throw new OtpRequestException('لطفاً یک دقیقه صبر کنید و دوباره تلاش کنید.');
         }
 
-        $this->sms->ensureConfigured();
+        $cooldownKey = 'otp:cooldown:'.$normalized;
+        $cooldownHeld = false;
 
-        $length = filter_var(config('otp.length', 6), FILTER_VALIDATE_INT, [
-            'options' => ['min_range' => 4, 'max_range' => 8],
-        ]);
-        if ($length === false) {
-            throw new \LogicException('OTP length must be between 4 and 8 digits.');
+        try {
+            $cooldownSeconds = max(1, (int) config('otp.resend_cooldown_seconds', 60));
+            if (! Cache::add($cooldownKey, true, $cooldownSeconds)) {
+                throw new OtpRequestException('لطفاً یک دقیقه صبر کنید و دوباره تلاش کنید.');
+            }
+            $cooldownHeld = true;
+
+            $code = str_pad((string) random_int(0, 10 ** $length - 1), $length, '0', STR_PAD_LEFT);
+
+            OtpVerification::query()
+                ->where('phone', $normalized)
+                ->whereNull('verified_at')
+                ->delete();
+
+            $verification = OtpVerification::query()->create([
+                'phone' => $normalized,
+                'code' => $code,
+                'expires_at' => now()->addMinutes(config('otp.expires_minutes', 5)),
+            ]);
+
+            OtpLog::query()->create([
+                'mobile' => $local,
+                'ip_address' => $ip,
+                'user_agent' => Request::userAgent(),
+                'type' => 'login',
+                'sent_at' => now(),
+                'is_used' => false,
+                'attempts' => 0,
+            ]);
+
+            SendOtpSmsJob::dispatch($verification->id)->afterCommit();
+
+            Cache::add('otp:throttle:phone:'.$normalized, 0, 120);
+            Cache::increment('otp:throttle:phone:'.$normalized);
+            Cache::add('otp:throttle:ip:'.$ip, 0, 120);
+            Cache::increment('otp:throttle:ip:'.$ip);
+            $cooldownHeld = false;
+        } catch (\Throwable $exception) {
+            if ($cooldownHeld) {
+                Cache::forget($cooldownKey);
+            }
+
+            throw $exception;
+        } finally {
+            $lock->release();
         }
-
-        $code = str_pad((string) random_int(0, 10 ** $length - 1), $length, '0', STR_PAD_LEFT);
-
-        OtpVerification::query()
-            ->where('phone', $normalized)
-            ->whereNull('verified_at')
-            ->delete();
-
-        $verification = OtpVerification::query()->create([
-            'phone' => $normalized,
-            'code' => $code,
-            'expires_at' => now()->addMinutes(config('otp.expires_minutes', 5)),
-        ]);
-
-        OtpLog::query()->create([
-            'mobile' => $local,
-            'ip_address' => $ip,
-            'user_agent' => Request::userAgent(),
-            'type' => 'login',
-            'sent_at' => now(),
-            'is_used' => false,
-            'attempts' => 0,
-        ]);
-
-        SendOtpSmsJob::dispatch($verification->id)->afterCommit();
-
-        Cache::put($cooldownKey, true, config('otp.resend_cooldown_seconds', 60));
-        Cache::add('otp:throttle:phone:'.$normalized, 0, 120);
-        Cache::increment('otp:throttle:phone:'.$normalized);
-        Cache::add('otp:throttle:ip:'.$ip, 0, 120);
-        Cache::increment('otp:throttle:ip:'.$ip);
     }
 
     public function verify(string $phone, string $code): bool
@@ -81,7 +93,7 @@ class OtpService
         $otp = OtpVerification::query()
             ->where('phone', $normalized)
             ->whereNull('verified_at')
-            ->latest()
+            ->latest('id')
             ->first();
 
         if (! $otp || $otp->isExpired()) {
@@ -89,6 +101,10 @@ class OtpService
         }
 
         if ($otp->attempts >= config('otp.max_attempts', 5)) {
+            return false;
+        }
+
+        if (strlen($otp->code) !== strlen($code)) {
             return false;
         }
 
@@ -125,8 +141,21 @@ class OtpService
         return OtpVerification::query()
             ->where('phone', $normalized)
             ->whereNull('verified_at')
-            ->latest()
+            ->latest('id')
             ->value('code');
+    }
+
+    private function codeLength(): int
+    {
+        $length = filter_var(config('otp.length', 6), FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 4, 'max_range' => 8],
+        ]);
+
+        if ($length === false) {
+            throw new \LogicException('OTP length must be between 4 and 8 digits.');
+        }
+
+        return $length;
     }
 
     private function assertNotThrottled(string $e164, string $ip): void

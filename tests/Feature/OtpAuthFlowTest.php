@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\Jobs\SendOtpSmsJob;
 use App\Models\OtpVerification;
 use App\Models\User;
+use App\Services\OtpRequestException;
 use App\Services\OtpService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Tests\Support\FakeOtpSmsDriver;
@@ -339,5 +341,103 @@ class OtpAuthFlowTest extends TestCase
         $this->from(route('login'))
             ->post(route('login.otp'), ['phone' => '123'])
             ->assertSessionHasErrors('phone');
+    }
+
+    public function test_non_digit_otp_code_is_rejected_without_burning_an_attempt(): void
+    {
+        $this->post(route('login.otp'), ['phone' => '09124440011'])
+            ->assertRedirect(route('login.verify'));
+
+        $this->from(route('login.verify'))
+            ->post(route('login.verify.submit'), ['code' => '12345ش'])
+            ->assertRedirect(route('login.verify'))
+            ->assertSessionHasErrors(['code' => 'کد تأیید باید فقط عدد باشد.']);
+
+        $this->assertGuest();
+        $this->assertSame(0, OtpVerification::query()->value('attempts'));
+        $this->assertFalse(app(OtpService::class)->verify('09124440011', '12345ش'));
+        $this->assertSame(0, OtpVerification::query()->value('attempts'));
+    }
+
+    public function test_persian_digits_verify_the_issued_code(): void
+    {
+        $this->post(route('login.otp'), ['phone' => '09124440022'])
+            ->assertRedirect(route('login.verify'));
+
+        $code = app(OtpService::class)->peekLatestCode('09124440022');
+        $persian = strtr((string) $code, [
+            '0' => '۰', '1' => '۱', '2' => '۲', '3' => '۳', '4' => '۴',
+            '5' => '۵', '6' => '۶', '7' => '۷', '8' => '۸', '9' => '۹',
+        ]);
+
+        $this->post(route('login.verify.submit'), ['code' => $persian])
+            ->assertRedirect(route('panel.dashboard'));
+
+        $this->assertAuthenticated();
+    }
+
+    public function test_overlapping_otp_send_does_not_create_a_second_code(): void
+    {
+        $lock = Cache::lock('otp:send:+989121234567', 15);
+        $this->assertTrue($lock->get());
+
+        try {
+            app(OtpService::class)->send('09121234567');
+            $this->fail('Overlapping OTP send was accepted.');
+        } catch (OtpRequestException $exception) {
+            $this->assertSame('لطفاً یک دقیقه صبر کنید و دوباره تلاش کنید.', $exception->getMessage());
+        } finally {
+            $lock->release();
+        }
+
+        $this->assertDatabaseCount('otp_verifications', 0);
+        $this->assertDatabaseCount('otp_logs', 0);
+        $this->assertFalse(Cache::has('otp:cooldown:+989121234567'));
+    }
+
+    public function test_second_otp_send_during_cooldown_keeps_the_original_code(): void
+    {
+        Queue::fake();
+        $otp = app(OtpService::class);
+        $otp->send('09121234567');
+        $code = $otp->peekLatestCode('09121234567');
+
+        try {
+            $otp->send('09121234567');
+            $this->fail('Cooldown was ignored.');
+        } catch (OtpRequestException $exception) {
+            $this->assertSame('لطفاً یک دقیقه صبر کنید و دوباره تلاش کنید.', $exception->getMessage());
+        }
+
+        $this->assertSame(1, OtpVerification::query()->count());
+        $this->assertSame($code, $otp->peekLatestCode('09121234567'));
+        Queue::assertPushed(SendOtpSmsJob::class, 1);
+    }
+
+    public function test_verify_checks_the_newest_otp_row_when_timestamps_disagree(): void
+    {
+        $phone = '+989121234567';
+        $older = OtpVerification::query()->create([
+            'phone' => $phone,
+            'code' => '111111',
+            'expires_at' => now()->addMinutes(5),
+        ]);
+        $newer = OtpVerification::query()->create([
+            'phone' => $phone,
+            'code' => '222222',
+            'expires_at' => now()->addMinutes(5),
+        ]);
+        $older->forceFill([
+            'created_at' => now()->addMinute(),
+            'updated_at' => now()->addMinute(),
+        ])->save();
+
+        $otp = app(OtpService::class);
+
+        $this->assertSame('222222', $otp->peekLatestCode('09121234567'));
+        $this->assertFalse($otp->verify('09121234567', '111111'));
+        $this->assertSame(0, $older->fresh()->attempts);
+        $this->assertSame(1, $newer->fresh()->attempts);
+        $this->assertTrue($otp->verify('09121234567', '222222'));
     }
 }

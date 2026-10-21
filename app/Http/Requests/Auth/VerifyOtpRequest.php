@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Support\PhoneNormalizer;
 use Illuminate\Foundation\Http\FormRequest;
 
 class VerifyOtpRequest extends FormRequest
@@ -11,10 +12,23 @@ class VerifyOtpRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $code = $this->input('code');
+
+        if (is_string($code)) {
+            $this->merge([
+                'code' => PhoneNormalizer::normalizeOtpCode($code),
+            ]);
+        }
+    }
+
     public function rules(): array
     {
+        $length = max(1, (int) config('otp.length', 6));
+
         return [
-            'code' => ['required', 'string', 'size:'.config('otp.length', 6)],
+            'code' => ['required', 'string', 'size:'.$length, 'regex:/^\d{'.$length.'}$/'],
         ];
     }
 
@@ -22,6 +36,13 @@ class VerifyOtpRequest extends FormRequest
     {
         return [
             'code' => 'کد تأیید',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'code.regex' => 'کد تأیید باید فقط عدد باشد.',
         ];
     }
 }
