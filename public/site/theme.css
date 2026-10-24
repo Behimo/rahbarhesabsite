@@ -196,7 +196,7 @@ body.rh-theme select {
     flex-wrap: wrap;
     align-items: center;
     gap: 6px;
-    margin: 0;
+    margin: 0 0 22px;
     color: #7a7380;
     font-size: 13px;
     font-weight: 600;
@@ -216,8 +216,6 @@ body.rh-theme select {
 .courses-catalog-cats a:focus-visible,
 .courses-catalog-types a:focus-visible,
 .courses-catalog-search button:focus-visible,
-.courses-archive-filter-tag:focus-visible,
-.courses-archive-clear-all:focus-visible,
 .courses-archive-empty-btn:focus-visible {
     outline: 2px solid var(--course-purple-2);
     outline-offset: 2px;
@@ -396,45 +394,6 @@ body.rh-theme select {
 
 .courses-catalog-cats a.is-active::before {
     background: #6f6a74;
-}
-
-.courses-archive-active-filters {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 16px;
-}
-
-.courses-archive-filter-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    min-height: 36px;
-    padding: 4px 10px;
-    border-radius: 999px;
-    background: #eceaee;
-    color: #242027;
-    font-size: 13px;
-    font-weight: 700;
-    text-decoration: none;
-}
-
-.courses-archive-filter-tag:hover {
-    background: #e2dfe6;
-}
-
-.courses-archive-clear-all {
-    padding: 4px 8px;
-    color: #7a7380;
-    font-size: 13px;
-    font-weight: 700;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-}
-
-.courses-archive-clear-all:hover {
-    color: var(--course-purple-2);
 }
 
 .courses-archive-grid {

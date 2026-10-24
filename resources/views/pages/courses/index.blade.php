@@ -22,10 +22,6 @@
 
     $activeCategoryName = $categories->first(fn ($category) => $category->full_slug === $activeCategory || $category->slug === $activeCategory)?->name;
     $pageTitle = $activeCategoryName ?: 'دوره‌های آموزشی حسابداری';
-    $typeLabels = [
-        'paid' => 'دوره‌های تخصصی',
-        'free' => 'رایگان',
-    ];
 @endphp
 
 @section('page')
@@ -47,33 +43,6 @@
 
         <div class="courses-catalog-layout">
             <div class="courses-catalog-main">
-                @if ($hasFilters)
-                    <div class="courses-archive-active-filters" aria-label="فیلترهای فعال">
-                        @if ($searchQuery)
-                            <a href="{{ $filterUrl(['q' => null]) }}" class="courses-archive-filter-tag">
-                                «{{ Str::limit($searchQuery, 24) }}»
-                                <span aria-hidden="true">×</span>
-                                <span class="courses-sr-only">حذف جستجو</span>
-                            </a>
-                        @endif
-                        @if ($activeCategoryName)
-                            <a href="{{ $filterUrl(['category' => null]) }}" class="courses-archive-filter-tag">
-                                {{ $activeCategoryName }}
-                                <span aria-hidden="true">×</span>
-                                <span class="courses-sr-only">حذف دسته</span>
-                            </a>
-                        @endif
-                        @if ($activeType && isset($typeLabels[$activeType]))
-                            <a href="{{ $filterUrl(['type' => null]) }}" class="courses-archive-filter-tag">
-                                {{ $typeLabels[$activeType] }}
-                                <span aria-hidden="true">×</span>
-                                <span class="courses-sr-only">حذف نوع</span>
-                            </a>
-                        @endif
-                        <a href="{{ route('courses.index') }}" class="courses-archive-clear-all">حذف همه</a>
-                    </div>
-                @endif
-
                 @if ($courses->isEmpty())
                     <div class="courses-archive-empty">
                         <strong>دوره‌ای با این مشخصات پیدا نشد</strong>
