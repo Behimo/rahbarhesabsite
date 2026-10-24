@@ -1,131 +1,127 @@
 @extends('layouts.site')
 
-@section('page-banner')
-<div class="blog-page blog-page--masthead">
-    <header class="blog-masthead">
-        <div class="blog-masthead__ledger" aria-hidden="true"></div>
-        <div class="blog-masthead__inner">
-            <p class="blog-masthead__brand">راهبر حساب</p>
-            <h1 class="blog-masthead__title">اخبار و مقالات حسابداری</h1>
-            <p class="blog-masthead__lead">بخشنامه‌ها، راهنماهای مالیاتی و تحلیل‌های کاربردی برای حسابداران و مدیران مالی</p>
-        </div>
-    </header>
-</div>
-@endsection
-
-@section('page')
 @php
-    $listing = $posts->getCollection();
-    if ($featured) {
-        $listing = $listing->reject(fn ($post) => $post->id === $featured->id)->values();
-    }
+    $pageTitle = $pageTitle ?? 'مقالات حسابداری';
 @endphp
 
-<div class="blog-page">
-    <div class="blog-shell">
-        @if ($categories->isNotEmpty())
-            <nav class="blog-filters" aria-label="دسته‌بندی مطالب">
-                <a href="{{ route('blog.index') }}"
-                   class="blog-filter{{ blank($activeCategory) ? ' is-active' : '' }}">
-                    همه مطالب
-                </a>
-                @foreach ($categories as $category)
-                    <a href="{{ route('blog.category', $category->full_slug ?: $category->slug) }}"
-                       class="blog-filter{{ $activeCategory === $category->full_slug || $activeCategory === $category->slug ? ' is-active' : '' }}">
-                        {{ str_repeat('– ', $category->treeDepth) }}{{ $category->name }}
-                    </a>
-                @endforeach
-            </nav>
-        @endif
+@section('page')
+<section class="blog-archive">
+    <div class="blog-archive__wrap">
+        <nav class="courses-catalog-crumb" aria-label="مسیر صفحه">
+            <a href="{{ route('home') }}">صفحه اصلی</a>
+            <span class="courses-catalog-crumb__sep" aria-hidden="true">/</span>
+            <span aria-current="page">{{ $pageTitle }}</span>
+        </nav>
 
-        @if ($posts->isEmpty())
-            <div class="blog-empty" role="status">
-                <svg class="blog-empty__icon" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-                    <rect x="8" y="6" width="32" height="36" rx="3" stroke="currentColor" stroke-width="2"/>
-                    <path d="M16 16h16M16 24h16M16 32h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-                <p>به‌زودی مقالات و بخشنامه‌های جدید منتشر می‌شود.</p>
-            </div>
-        @else
-            @if ($featured)
-                <section class="blog-featured" aria-label="مطالب ویژه">
-                    <a href="{{ $featured->url() }}" class="blog-featured__card">
-                        <div class="blog-featured__media">
-                            @if ($featured->featured_image)
-                                <img src="{{ $featured->featured_image }}" alt="{{ $featured->featured_image_alt ?: $featured->title }}" loading="eager" decoding="async">
-                            @else
-                                <div class="blog-featured__fallback" aria-hidden="true">
-                                    <span>{{ mb_substr($featured->title, 0, 1) }}</span>
-                                </div>
-                            @endif
-                        </div>
-                        <div class="blog-featured__body">
-                            <div class="blog-featured__meta">
-                                @if ($featured->category)
-                                    <span class="blog-tag">{{ $featured->category->name }}</span>
-                                @endif
-                                @if ($featured->published_at)
-                                    <time datetime="{{ $featured->published_at->toDateString() }}">{{ $featured->published_at->format('Y/m/d') }}</time>
-                                @endif
-                            </div>
-                            <h2 class="blog-featured__title">{{ $featured->title }}</h2>
-                            @if ($featured->excerpt)
-                                <p class="blog-featured__excerpt">{{ $featured->excerpt }}</p>
-                            @endif
-                            <span class="blog-featured__cta">
-                                ادامه مطلب
-                                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                                    <path d="M12.5 4.5L7 10l5.5 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                            </span>
-                        </div>
-                    </a>
-                </section>
-            @endif
+        <div class="blog-archive__layout{{ ($sidebars ?? collect())->isEmpty() ? ' is-single' : '' }}">
+            <div class="blog-archive__main">
+                <h1 class="courses-catalog-title">{{ $pageTitle }}</h1>
 
-            @if ($listing->isNotEmpty())
-                <section class="blog-grid" aria-label="فهرست مطالب">
-                    @foreach ($listing as $post)
-                        <article class="blog-card">
-                            <a href="{{ $post->url() }}" class="blog-card__link">
-                                <div class="blog-card__media">
+                @if ($posts->isEmpty())
+                    <div class="blog-archive-empty" role="status">
+                        <strong>مطلبی پیدا نشد</strong>
+                        <p>به‌زودی مقالات جدید منتشر می‌شود.</p>
+                    </div>
+                @else
+                    <div class="blog-archive__grid">
+                        @foreach ($posts as $post)
+                            <article class="blog-archive-card">
+                                <a href="{{ $post->url() }}" class="blog-archive-card__hit" aria-label="{{ $post->title }}"></a>
+                                <div class="blog-archive-card__media">
                                     @if ($post->featured_image)
-                                        <img src="{{ $post->featured_image }}" alt="{{ $post->featured_image_alt ?: $post->title }}" loading="lazy" decoding="async">
+                                        <img src="{{ $post->featured_image }}" alt="" loading="lazy" decoding="async" width="640" height="360">
                                     @else
-                                        <div class="blog-card__fallback" aria-hidden="true">
-                                            <svg viewBox="0 0 40 40" fill="none">
-                                                <path d="M10 8h16l6 6v18H10V8z" stroke="currentColor" stroke-width="1.6"/>
-                                                <path d="M26 8v6h6M14 20h12M14 25h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                                        <span class="blog-archive-card__fallback" aria-hidden="true"></span>
+                                    @endif
+                                </div>
+                                <h2 class="blog-archive-card__title">{{ $post->title }}</h2>
+                                <div class="blog-archive-card__meta">
+                                    @if ($post->published_at)
+                                        <span>
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <rect x="4" y="5" width="16" height="15" rx="2"></rect>
+                                                <path d="M8 3v4M16 3v4M4 10h16"></path>
                                             </svg>
-                                        </div>
+                                            {{ fa_ago($post->published_at) }}
+                                        </span>
                                     @endif
+                                    <span>
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M6 16.5V7.5A2.5 2.5 0 0 1 8.5 5h7A2.5 2.5 0 0 1 18 7.5v6A2.5 2.5 0 0 1 15.5 16H9l-3 3v-2.5z"></path>
+                                        </svg>
+                                        بدون نظرات
+                                    </span>
                                 </div>
-                                <div class="blog-card__body">
-                                    <div class="blog-card__meta">
-                                        @if ($post->category)
-                                            <span class="blog-tag blog-tag--quiet">{{ $post->category->name }}</span>
-                                        @endif
-                                        @if ($post->published_at)
-                                            <time datetime="{{ $post->published_at->toDateString() }}">{{ $post->published_at->format('Y/m/d') }}</time>
-                                        @endif
-                                    </div>
-                                    <h2 class="blog-card__title">{{ $post->title }}</h2>
-                                    @if ($post->excerpt)
-                                        <p class="blog-card__excerpt">{{ $post->excerpt }}</p>
-                                    @endif
-                                </div>
-                            </a>
-                        </article>
-                    @endforeach
-                </section>
-            @endif
+                            </article>
+                        @endforeach
+                    </div>
 
-            @if ($posts->hasPages())
-                <div class="blog-pagination">
-                    {{ $posts->links('pagination.blog', ['paginationBase' => $paginationBase ?? '/blog']) }}
-                </div>
+                    @if ($posts->hasPages())
+                        <div class="courses-catalog-pager blog-archive__pager">
+                            {{ $posts->links('pagination.blog', [
+                                'paginationBase' => $paginationBase ?? '/blog',
+                                'paginationLabel' => 'مطلب',
+                            ]) }}
+                        </div>
+                    @endif
+                @endif
+            </div>
+
+            @if (($sidebars ?? collect())->isNotEmpty())
+                <aside class="blog-archive-side" aria-label="سایدبار">
+                    @foreach ($sidebars as $widget)
+                        <section class="blog-side-card" aria-labelledby="blog-side-{{ $widget['id'] }}">
+                            <h2 id="blog-side-{{ $widget['id'] }}">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M6 9a6 6 0 1 1 12 0c0 7 3 7 3 9H3c0-2 3-2 3-9"></path>
+                                    <path d="M10 20a2 2 0 0 0 4 0"></path>
+                                </svg>
+                                {{ $widget['title'] }}
+                            </h2>
+                            <ul>
+                                @foreach ($widget['items'] as $item)
+                                    <li>
+                                        @if ($item['url'])
+                                            <a href="{{ $item['url'] }}" @class(['blog-side-course', 'has-sale' => ! empty($item['discount'])])>
+                                        @else
+                                            <div @class(['blog-side-course', 'has-sale' => ! empty($item['discount'])])>
+                                        @endif
+                                            <span class="blog-side-course__thumb">
+                                                @if ($item['image'])
+                                                    <img src="{{ $item['image'] }}" alt="" loading="lazy" decoding="async" width="96" height="64">
+                                                @else
+                                                    <span aria-hidden="true"></span>
+                                                @endif
+                                            </span>
+                                            <span class="blog-side-course__price">
+                                                @if (($item['price'] ?? null) === 0)
+                                                    <span>رایگان</span>
+                                                @elseif (isset($item['price']))
+                                                    <span>{{ fa_digits(number_format($item['price'])) }} <small>تومان</small></span>
+                                                    @if (! empty($item['regular']))
+                                                        <del>{{ fa_digits(number_format($item['regular'])) }}</del>
+                                                    @endif
+                                                @elseif (! empty($item['meta']))
+                                                    <span>{{ $item['meta'] }}</span>
+                                                @endif
+                                            </span>
+                                            @if (! empty($item['discount']))
+                                                <b class="blog-side-course__badge">٪{{ fa_digits($item['discount']) }}</b>
+                                            @endif
+                                            <span class="blog-side-course__title">{{ $item['title'] }}</span>
+                                        @if ($item['url'])
+                                            </a>
+                                        @else
+                                            </div>
+                                        @endif
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </section>
+                    @endforeach
+                </aside>
             @endif
-        @endif
+        </div>
     </div>
-</div>
+</section>
 @endsection

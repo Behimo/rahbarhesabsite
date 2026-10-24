@@ -1,7 +1,9 @@
 @php
     $minutes = (int) ($course->course?->duration_minutes ?? 0);
-    if ($minutes >= 60) {
-        $durationLabel = fa_digits((int) floor($minutes / 60)).' ساعت';
+    $hours = intdiv($minutes, 60);
+    $remain = $minutes % 60;
+    if ($hours > 0) {
+        $durationLabel = fa_digits($hours).' ساعت'.($remain > 0 ? ' و '.fa_digits($remain).' دقیقه' : '');
     } elseif ($minutes > 0) {
         $durationLabel = fa_digits($minutes).' دقیقه';
     } else {
@@ -77,7 +79,7 @@
                             <path d="M12 3L3 8L12 13L21 8L12 3Z" />
                             <path d="M6 10V15C6 17 8.7 19 12 19C15.3 19 18 17 18 15V10" />
                         </svg>
-                        <span>{{ $instructor }}</span>
+                        <span>{{ $catalog ? 'مدرس: '.$instructor : $instructor }}</span>
                     </li>
                 @endif
 

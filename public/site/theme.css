@@ -408,8 +408,8 @@ body.rh-theme select {
     max-width: none;
     height: auto;
     min-height: 0;
-    gap: 6px;
-    padding: 8px 8px 10px;
+    gap: 10px;
+    padding: 10px 10px 12px;
     border: 1px solid #ece7f0;
     border-radius: 16px;
     box-shadow: none;
@@ -454,8 +454,8 @@ body.rh-theme select {
     flex: 1;
     height: auto;
     min-height: 0;
-    gap: 6px;
-    padding: 6px 6px 2px;
+    gap: 12px;
+    padding: 10px 8px 4px;
 }
 
 .courses-archive-grid .course-card--linked {
@@ -474,9 +474,9 @@ body.rh-theme select {
     margin: 0;
     min-height: 0;
     color: #333;
-    font-size: 16px;
+    font-size: 14.5px;
     font-weight: 700;
-    line-height: 1.55;
+    line-height: 1.7;
 }
 
 .courses-archive-grid .course-card--linked:focus-within {
@@ -484,29 +484,37 @@ body.rh-theme select {
     outline-offset: 2px;
 }
 
+.courses-archive-grid .course-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
 .courses-archive-grid .course-meta-item {
     color: #4a4550;
     font-size: 13px;
     font-weight: 500;
+    line-height: 1.6;
 }
 
 .courses-archive-grid .course-meta-item svg {
-    width: 18px;
-    height: 18px;
+    width: 15px;
+    height: 15px;
     stroke: #333;
     opacity: 1;
 }
 
 .courses-archive-grid .course-price {
     min-height: 0;
-    padding-top: 2px;
+    margin-top: 4px;
+    padding-top: 8px;
     border-top: 0;
     align-items: center;
 }
 
 .courses-archive-grid .current-price {
     color: #242027;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
 }
 
@@ -522,9 +530,9 @@ body.rh-theme select {
 }
 
 .courses-archive-grid .discount-percent {
-    min-width: 42px;
-    height: 26px;
-    margin-inline-end: -6px;
+    min-width: 36px;
+    height: 22px;
+    margin-inline-end: -18px;
     padding: 0 8px;
     border-start-start-radius: 9px;
     border-end-start-radius: 9px;
@@ -613,6 +621,330 @@ body.rh-theme select {
 
 @media (prefers-reduced-motion: reduce) {
 
+    .courses-archive-grid .course-card,
+    .courses-archive-grid .course-card:hover {
+        transition: none;
+        transform: none;
+    }
+}
+
+.blog-archive {
+    background: #fff;
+    color: #242027;
+}
+
+.blog-archive__wrap {
+    width: min(1180px, calc(100% - 40px));
+    margin: 0 auto;
+    padding: 22px 0 72px;
+}
+
+.blog-archive__layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 28px 22px;
+    align-items: start;
+}
+
+.blog-archive__layout.is-single {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.blog-archive__main {
+    min-width: 0;
+}
+
+.blog-archive__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.blog-archive-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+    padding: 10px 10px 12px;
+    border: 1px solid #ece7f0;
+    border-radius: 16px;
+    background: #fff;
+}
+
+.blog-archive-card:hover {
+    border-color: #ddd6e6;
+    box-shadow: 0 8px 20px rgba(36, 32, 39, 0.06);
+}
+
+.blog-archive-card__hit {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+}
+
+.blog-archive-card:focus-within {
+    outline: 2px solid #643abc;
+    outline-offset: 2px;
+}
+
+.blog-archive-card__media {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    border-radius: 12px;
+    background: #f3f0f5;
+}
+
+.blog-archive-card__media img,
+.blog-archive-card__fallback {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.blog-archive-card__fallback {
+    background: linear-gradient(145deg, #f4f2f5 0%, #e8e5eb 100%);
+}
+
+.blog-archive-card__title {
+    margin: 0;
+    min-height: 2.8em;
+    color: #333;
+    font-size: 14.5px;
+    font-weight: 700;
+    line-height: 1.7;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
+
+.blog-archive-card__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin-top: auto;
+    color: #6f6974;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.blog-archive-card__meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.blog-archive-card__meta svg {
+    width: 15px;
+    height: 15px;
+    flex: 0 0 auto;
+    fill: none;
+    stroke: #8a848e;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.blog-archive__pager .blog-pager__summary {
+    display: none;
+}
+
+.blog-archive-empty {
+    padding: 48px 20px;
+    border: 1px dashed #e4dfe8;
+    border-radius: 16px;
+    background: #faf8fc;
+    text-align: center;
+}
+
+.blog-archive-empty strong {
+    display: block;
+    color: #361e50;
+    font-size: 18px;
+}
+
+.blog-archive-empty p {
+    margin: 6px 0 0;
+    color: #7a7380;
+    font-size: 15px;
+}
+
+.blog-archive-side {
+    position: sticky;
+    top: 16px;
+}
+
+.blog-side-card {
+    padding: 16px 14px 6px;
+    border: 1px solid #ece8ee;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 10px 28px rgba(36, 32, 39, 0.05);
+}
+
+.blog-side-card h2 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 0 4px 8px;
+    color: #2a262e;
+    font-size: 13.5px;
+    font-weight: 800;
+    line-height: 1.7;
+    text-align: center;
+}
+
+.blog-side-card h2 svg {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 auto;
+    fill: none;
+    stroke: #ff7a1a;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.blog-side-card ul {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.blog-side-course {
+    display: grid;
+    grid-template-columns: 86px minmax(0, 1fr);
+    grid-template-areas:
+        "thumb price"
+        "title title";
+    gap: 8px 10px;
+    align-items: center;
+    padding: 12px 2px;
+    border-bottom: 1px solid #f0edf2;
+    color: inherit;
+    text-decoration: none;
+}
+
+.blog-side-course.has-sale {
+    grid-template-columns: 86px minmax(0, 1fr) auto;
+    grid-template-areas:
+        "thumb price badge"
+        "title title title";
+}
+
+.blog-side-card li:last-child .blog-side-course {
+    border-bottom: 0;
+    padding-bottom: 8px;
+}
+
+.blog-side-course__thumb {
+    grid-area: thumb;
+    display: block;
+    width: 86px;
+    height: 58px;
+    overflow: hidden;
+    border-radius: 8px;
+    background: #f3f0f5;
+}
+
+.blog-side-course__thumb img,
+.blog-side-course__thumb span {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.blog-side-course__thumb span {
+    background: linear-gradient(145deg, #f4f2f5 0%, #e8e5eb 100%);
+}
+
+.blog-side-course__price {
+    grid-area: price;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    min-width: 0;
+    color: #242027;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.4;
+}
+
+.blog-side-course__price small {
+    color: #6f6974;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.blog-side-course__price del {
+    color: #b0aab3;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.3;
+    text-decoration: line-through;
+    text-decoration-color: #e2113b;
+}
+
+.blog-side-course__badge {
+    grid-area: badge;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    min-width: 36px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 4px;
+    background: #e2113b;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+    font-style: normal;
+    line-height: 1;
+}
+
+.blog-side-course__title {
+    grid-area: title;
+    color: #3c3740;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.75;
+}
+
+.blog-side-course:hover .blog-side-course__title {
+    color: #643abc;
+}
+
+@media (max-width: 980px) {
+    .blog-archive__layout,
+    .blog-archive__layout.is-single {
+        grid-template-columns: 1fr;
+    }
+
+    .blog-archive__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .blog-archive-side {
+        position: static;
+    }
+}
+
+@media (max-width: 560px) {
+    .blog-archive__grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
     .courses-archive-grid .course-card,
     .courses-archive-grid .course-card:hover {
         transition: none;

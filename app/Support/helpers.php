@@ -108,3 +108,47 @@ if (! function_exists('fa_date')) {
         return fa_digits(Carbon::parse($date)->timezone('Asia/Tehran')->format('Y/m/d'));
     }
 }
+
+if (! function_exists('fa_ago')) {
+    function fa_ago(DateTimeInterface|string|null $value): string
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        $date = $value instanceof DateTimeInterface
+            ? Carbon::parse($value)
+            : Carbon::parse((string) $value);
+        $seconds = max(0, now()->getTimestamp() - $date->getTimestamp());
+
+        if ($seconds < 60) {
+            return 'لحظاتی پیش';
+        }
+
+        $minutes = intdiv($seconds, 60);
+        if ($minutes < 60) {
+            return fa_digits($minutes).' دقیقه پیش';
+        }
+
+        $hours = intdiv($minutes, 60);
+        if ($hours < 24) {
+            return fa_digits($hours).' ساعت پیش';
+        }
+
+        $days = intdiv($hours, 24);
+        if ($days < 7) {
+            return fa_digits($days).' روز پیش';
+        }
+
+        if ($days < 30) {
+            return fa_digits(max(1, intdiv($days, 7))).' هفته پیش';
+        }
+
+        $months = max(1, intdiv($days, 30));
+        if ($months < 12) {
+            return fa_digits($months).' ماه پیش';
+        }
+
+        return fa_digits(max(1, intdiv($months, 12))).' سال پیش';
+    }
+}

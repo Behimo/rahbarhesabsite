@@ -60,6 +60,36 @@ class SidebarService
             ->values();
     }
 
+    /**
+     * Course/post widgets for the blog listing, including the widget assigned to the blog index
+     * when the visitor is on a category or tag archive.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    public function blogListing(?Request $request = null): Collection
+    {
+        if (! Schema::hasTable('cms_sidebars')) {
+            return collect();
+        }
+
+        $request ??= request();
+
+        return CmsSidebar::query()
+            ->with('category')
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->filter(function (CmsSidebar $sidebar) use ($request) {
+                $pages = $sidebar->pages ?? [];
+
+                return $this->matches($sidebar, $request) || in_array('blog.index', $pages, true);
+            })
+            ->map(fn (CmsSidebar $sidebar) => $this->present($sidebar))
+            ->filter(fn (array $widget) => $widget['items'] !== [])
+            ->values();
+    }
+
     public function matches(CmsSidebar $sidebar, Request $request): bool
     {
         if ($sidebar->target_mode === CmsSidebar::MODE_RULES) {
@@ -77,6 +107,7 @@ class SidebarService
         return [
             'id' => $sidebar->id,
             'title' => $sidebar->heading(),
+            'source' => $sidebar->source,
             'more_url' => $this->moreUrl($sidebar),
             'items' => $this->items($sidebar),
         ];
@@ -133,21 +164,33 @@ class SidebarService
             ->orderByDesc('id')
             ->limit($limit)
             ->get()
-            ->map(function (ShopProduct $product) {
-                $url = $product->isCourse()
-                    ? app(\App\Services\PermalinkService::class)->productAbsolute($product)
-                    : null;
-
-                return [
-                    'title' => $product->title,
-                    'url' => $url,
-                    'image' => $this->imageUrl($product->featured_image),
-                    'meta' => $product->isFree()
-                        ? 'رایگان'
-                        : fa_digits(number_format($product->effectivePrice())).' تومان',
-                ];
-            })
+            ->map(fn (ShopProduct $product) => $this->productItem($product))
             ->all();
+    }
+
+    /**
+     * @return array{title: string, url: ?string, image: ?string, meta: ?string, price: int, regular: ?int, discount: ?int}
+     */
+    private function productItem(ShopProduct $product): array
+    {
+        $hasDiscount = $product->sale_price && $product->price > $product->sale_price;
+        $url = $product->isCourse()
+            ? app(\App\Services\PermalinkService::class)->productAbsolute($product)
+            : null;
+
+        return [
+            'title' => $product->title,
+            'url' => $url,
+            'image' => $this->imageUrl($product->featured_image),
+            'meta' => $product->isFree()
+                ? 'رایگان'
+                : fa_digits(number_format($product->effectivePrice())).' تومان',
+            'price' => $product->isFree() ? 0 : $product->effectivePrice(),
+            'regular' => $hasDiscount ? (int) $product->price : null,
+            'discount' => $hasDiscount
+                ? (int) round((1 - ($product->sale_price / $product->price)) * 100)
+                : null,
+        ];
     }
 
     /**

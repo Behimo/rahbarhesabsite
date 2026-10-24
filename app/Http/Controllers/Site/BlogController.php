@@ -79,23 +79,16 @@ class BlogController extends SiteController
             ))
             ->orderByDesc('published_at')
             ->orderByDesc('created_at')
-            ->paginate(9);
+            ->paginate(12);
 
         $categoryList = $categories->flat(Category::TYPE_POST, true);
 
-        $featured = $posts->isNotEmpty() && $posts->currentPage() === 1
-            ? $posts->getCollection()->first()
-            : null;
+        $pageTitle = $categoryModel?->name ?? $tagModel?->name ?? 'مقالات حسابداری';
 
         $breadcrumb = [
-            ['name' => 'خانه', 'url' => route('home')],
-            ['name' => 'بلاگ', 'url' => route('blog.index')],
+            ['name' => 'صفحه اصلی', 'url' => route('home')],
+            ['name' => $pageTitle, 'url' => $permalinks->absolute($canonicalPath)],
         ];
-        if ($categoryModel) {
-            $breadcrumb[] = ['name' => $categoryModel->name, 'url' => $permalinks->absolute($permalinks->category($categoryModel))];
-        } elseif ($tagModel) {
-            $breadcrumb[] = ['name' => $tagModel->name, 'url' => $permalinks->absolute($permalinks->tag($tagModel))];
-        }
 
         $paginationBase = $categoryModel
             ? '/category/'.($categoryModel->full_slug ?: $categoryModel->slug)
@@ -107,7 +100,8 @@ class BlogController extends SiteController
             'categories' => $categoryList,
             'activeCategory' => $categoryModel?->full_slug ?: $categoryModel?->slug,
             'activeTag' => $tagModel?->slug,
-            'featured' => $featured,
+            'pageTitle' => $pageTitle,
+            'sidebars' => app(\App\Services\SidebarService::class)->blogListing($request),
             'paginationBase' => $paginationBase,
             'structuredData' => [
                 $this->seo->breadcrumbSchema($breadcrumb),

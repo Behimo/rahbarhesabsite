@@ -66,7 +66,10 @@
     @php $pageSidebars = app(\App\Services\SidebarService::class)->current(); @endphp
     <main @class(['rh-inner-page' => empty($fullBleedContent) && ! request()->routeIs(['home', 'about', 'contact', 'courses.index', 'courses.show', 'blog.*', 'cafe-soal.*', 'laws.*', 'panel.*', 'login', 'login.verify', 'cart.index', 'checkout.index', 'checkout.success', 'checkout.failed', 'search'])])>
         @yield('page-banner')
-        @if ($pageSidebars->isNotEmpty())
+        @php
+            $blogListing = request()->routeIs(['blog.index', 'blog.index.paged', 'blog.category', 'blog.category.paged', 'blog.tag', 'blog.tag.paged']);
+        @endphp
+        @if ($pageSidebars->isNotEmpty() && ! $blogListing)
             <div @class([
                 'rh-sidebar-layout',
                 'rh-sidebar-layout--under-banner' => $__env->hasSection('page-banner'),

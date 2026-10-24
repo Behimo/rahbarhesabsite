@@ -511,13 +511,25 @@ class WordpressMigrationService
 
         foreach ($products->chunk(250) as $batch) {
             $postMeta = $this->postMetaForIds($batch->pluck('ID')->all());
+            $teacherIds = [];
+            foreach ($batch as $post) {
+                $teacherId = (int) ($postMeta[$post->ID]['_herowp_course_teacher'] ?? 0);
+                if ($teacherId > 0) {
+                    $teacherIds[$teacherId] = $teacherId;
+                }
+            }
+            $teacherNames = $teacherIds === []
+                ? collect()
+                : $this->wp()->table('posts')->whereIn('ID', array_values($teacherIds))->pluck('post_title', 'ID');
+            $instructorIds = $teacherNames->filter()->isEmpty()
+                ? collect()
+                : User::query()->whereIn('name', $teacherNames->filter()->unique()->values()->all())->pluck('id', 'name');
 
             foreach ($batch as $post) {
                 $meta = $postMeta[$post->ID] ?? [];
                 $rawSlug = (string) ($post->post_name ?: '');
                 $slug = $this->normalizeWpSlug($rawSlug) ?: (Str::slug($post->post_title).'-'.$post->ID);
-                $price = (int) ($meta['_price'] ?? $meta['_regular_price'] ?? 0);
-                $sale = isset($meta['_sale_price']) && $meta['_sale_price'] !== '' ? (int) $meta['_sale_price'] : null;
+                [$price, $sale] = $this->regularAndSalePrice($meta);
                 $spotCourseId = $this->normalizeSpotplayerCourseId(
                     $meta['_spotplayer_course'] ?? $meta['spotplayer_course'] ?? null
                 );
@@ -559,12 +571,23 @@ class WordpressMigrationService
                     ]);
                 }
 
+                $courseAttributes = [
+                    'spotplayer_course_id' => $spotCourseId,
+                    'level' => 'intermediate',
+                ];
+                $durationMinutes = $this->minutesFromDurationLabel(isset($meta['time']) ? (string) $meta['time'] : null);
+                if ($durationMinutes) {
+                    $courseAttributes['duration_minutes'] = $durationMinutes;
+                }
+                $teacherName = trim((string) ($teacherNames[(int) ($meta['_herowp_course_teacher'] ?? 0)] ?? ''));
+                $instructorId = $teacherName !== '' ? ($instructorIds[$teacherName] ?? null) : null;
+                if ($instructorId) {
+                    $courseAttributes['instructor_id'] = $instructorId;
+                }
+
                 Course::query()->updateOrCreate(
                     ['shop_product_id' => $product->id],
-                    [
-                        'spotplayer_course_id' => $spotCourseId,
-                        'level' => 'intermediate',
-                    ]
+                    $courseAttributes
                 );
 
                 $this->applyRankMathMeta($product, $meta);
@@ -1138,6 +1161,54 @@ class WordpressMigrationService
             ->groupBy('user_id')
             ->map(fn ($rows) => $rows->pluck('meta_value', 'meta_key')->all())
             ->all();
+    }
+
+    private function regularAndSalePrice(array $meta): array
+    {
+        $regular = (int) ($meta['_regular_price'] ?? 0);
+        $current = (int) ($meta['_price'] ?? 0);
+        $saleRaw = $meta['_sale_price'] ?? null;
+        $sale = ($saleRaw !== null && $saleRaw !== '') ? (int) $saleRaw : null;
+
+        if ($sale !== null && $regular > $sale) {
+            return [$regular, $sale];
+        }
+
+        if ($sale !== null && $current > $sale) {
+            return [$current, $sale];
+        }
+
+        return [$current > 0 ? $current : $regular, null];
+    }
+
+    private function minutesFromDurationLabel(?string $label): ?int
+    {
+        $label = trim((string) $label);
+        if ($label === '') {
+            return null;
+        }
+
+        $label = strtr($label, [
+            '۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4',
+            '۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9',
+            '٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4',
+            '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9',
+        ]);
+
+        $hours = 0;
+        $minutes = 0;
+        if (preg_match('/(\d+)\s*ساعت/u', $label, $match)) {
+            $hours = (int) $match[1];
+        }
+        if (preg_match('/(\d+)\s*دقیقه/u', $label, $match)) {
+            $minutes = (int) $match[1];
+        } elseif (preg_match('/ساعت\s*و\s*(\d+)/u', $label, $match)) {
+            $minutes = (int) $match[1];
+        }
+
+        $total = ($hours * 60) + $minutes;
+
+        return $total > 0 ? $total : null;
     }
 
     /** @param array<int, int|string> $postIds
