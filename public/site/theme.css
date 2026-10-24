@@ -472,7 +472,7 @@ body.rh-theme select {
 .courses-archive-grid .course-card--linked .course-title {
     pointer-events: none;
     margin: 0;
-    min-height: 0;
+    min-height: calc(1.7em * 2);
     color: #333;
     font-size: 14.5px;
     font-weight: 700;
@@ -485,9 +485,19 @@ body.rh-theme select {
 }
 
 .courses-archive-grid .course-meta {
-    flex-direction: column;
-    align-items: flex-start;
+    display: grid;
+    grid-template-rows: 21px 21px;
+    align-content: start;
+    align-items: center;
     gap: 8px;
+}
+
+.courses-archive-grid .course-meta-item--instructor {
+    grid-row: 1;
+}
+
+.courses-archive-grid .course-meta-item--duration {
+    grid-row: 2;
 }
 
 .courses-archive-grid .course-meta-item {
@@ -522,6 +532,17 @@ body.rh-theme select {
     color: #5c5662;
     font-size: 12px;
     font-weight: 600;
+}
+
+.courses-archive-grid .course-price-row {
+    align-items: baseline;
+}
+
+.courses-archive-grid .course-price-pair {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
 }
 
 .courses-archive-grid .course-price-old {

@@ -71,10 +71,10 @@
             <a href="{{ $courseUrl }}" class="course-title">{{ $course->title }}</a>
         @endif
 
-        @if ($instructor || $durationLabel)
+        @if ($catalog || $instructor || $durationLabel)
             <ul class="course-meta">
                 @if ($instructor)
-                    <li class="course-meta-item">
+                    <li class="course-meta-item{{ $catalog ? ' course-meta-item--instructor' : '' }}">
                         <svg viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M12 3L3 8L12 13L21 8L12 3Z" />
                             <path d="M6 10V15C6 17 8.7 19 12 19C15.3 19 18 17 18 15V10" />
@@ -84,7 +84,7 @@
                 @endif
 
                 @if ($durationLabel)
-                    <li class="course-meta-item">
+                    <li class="course-meta-item{{ $catalog ? ' course-meta-item--duration' : '' }}">
                         <svg viewBox="0 0 24 24" aria-hidden="true">
                             <circle cx="12" cy="12" r="8" />
                             <path d="M12 7V12L15 14" />
@@ -98,6 +98,17 @@
         <div class="course-price{{ $hasDiscount ? ' has-discount' : '' }}{{ $course->isFree() ? ' is-free' : '' }}">
             @if ($course->isFree())
                 <span class="current-price free-course-price">رایگان</span>
+            @elseif ($hasDiscount && $catalog)
+                <div class="course-price-row">
+                    <span class="course-price-pair">
+                        <span class="current-price">
+                            {{ fa_digits(number_format($course->sale_price)) }}
+                            <span class="price-unit">تومان</span>
+                        </span>
+                        <del class="course-price-old">{{ fa_digits(number_format($course->price)) }} تومان</del>
+                    </span>
+                    <span class="discount-percent">٪{{ fa_digits($discountPercent) }}</span>
+                </div>
             @elseif ($hasDiscount)
                 <div class="course-price-stack">
                     <div class="course-price-row">
