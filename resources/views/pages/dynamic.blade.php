@@ -1,5 +1,7 @@
 @extends('layouts.site')
 
+@include('pages.partials.scoped-page-assets')
+
 @section('page')
 <div class="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
     <nav class="mb-6 text-sm text-slate-500">
@@ -10,7 +12,9 @@
 
     <div class="rh-card p-6 sm:p-8">
         <h1 class="mb-6 text-3xl font-extrabold text-slate-800">{{ $page->title }}</h1>
-        <div class="prose prose-slate max-w-none">{!! $bodyHtml ?? '' !!}</div>
+        <div class="prose prose-slate max-w-none">
+            <div class="wp-imported-page rtl" dir="rtl">{!! $bodyHtml ?? '' !!}</div>
+        </div>
     </div>
 </div>
 @endsection

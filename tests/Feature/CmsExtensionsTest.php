@@ -217,4 +217,66 @@ class CmsExtensionsTest extends TestCase
             ->assertSee('سطح سوم منوی آزمایشی', false)
             ->assertSee('nav-dropdown-sub', false);
     }
+
+    public function test_page_css_is_scoped_so_it_cannot_restyle_the_site(): void
+    {
+        $directory = public_path('migrated-wp/css/page-scope-test');
+        if (! is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
+        $fixture = $directory.DIRECTORY_SEPARATOR.'reset.css';
+        file_put_contents($fixture, 'a{color:#c36}body{margin:0}nav{display:none}header{background:red}');
+
+        $scopedFile = null;
+
+        try {
+            CmsPage::query()->create([
+                'slug' => 'scoped-css-page',
+                'title' => 'صفحه با استایل',
+                'template' => 'content',
+                'is_system' => false,
+                'content' => [
+                    'body_html' => '<style>header{display:none}nav{visibility:hidden}</style><p>متن ایزوله</p>',
+                ],
+                'is_published' => true,
+                'status' => 'published',
+            ]);
+
+            $inline = $this->get(route('pages.show', 'scoped-css-page'));
+            $inline->assertOk()->assertSee('متن ایزوله', false);
+            $inline->assertSee('.wp-imported-page header{display:none}', false);
+            $inline->assertSee('.wp-imported-page nav{visibility:hidden}', false);
+            $inline->assertDontSee('<style>header{display:none}', false);
+            $inline->assertSee('main-header', false);
+
+            CmsPage::query()->where('slug', 'scoped-css-page')->first()->update([
+                'template' => 'wp-html',
+                'content' => [
+                    'import_source' => 'wp-rendered',
+                    'body_html' => '<div class="elementor">فرم ایزوله</div>',
+                    'stylesheet_urls' => [asset('migrated-wp/css/page-scope-test/reset.css')],
+                ],
+            ]);
+
+            $response = $this->get(route('pages.show', 'scoped-css-page'));
+            $response->assertOk()->assertSee('فرم ایزوله', false);
+            $response->assertDontSee('migrated-wp/css/page-scope-test/reset.css', false);
+            $this->assertMatchesRegularExpression('#site/page-scope/[a-f0-9]{20}\.css#', $response->getContent());
+
+            preg_match('#(/site/page-scope/[a-f0-9]{20}\.css)#', $response->getContent(), $match);
+            $scopedFile = public_path(ltrim($match[1], '/'));
+            $css = file_get_contents($scopedFile);
+
+            $this->assertStringContainsString('.wp-imported-page a{color:#c36}', $css);
+            $this->assertStringContainsString('.wp-imported-page{margin:0}', $css);
+            $this->assertStringContainsString('.wp-imported-page nav{display:none}', $css);
+            $this->assertStringContainsString('.wp-imported-page header{background:red}', $css);
+            $this->assertDoesNotMatchRegularExpression('/(?:^|[{}])\s*(?:a|nav|header|body)\{/', $css);
+        } finally {
+            @unlink($fixture);
+            if (is_string($scopedFile)) {
+                @unlink($scopedFile);
+            }
+        }
+    }
 }

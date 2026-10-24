@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\Site;
 
+use App\Services\PageCssIsolator;
 use App\Services\PermalinkService;
 use Illuminate\View\View;
 
 class PageController extends SiteController
 {
-    public function show(string $slug, PermalinkService $permalinks): View
+    public function show(string $slug, PermalinkService $permalinks, PageCssIsolator $pageCss): View
     {
         // Map WordPress page slugs to internal system pages.
         $internal = match ($slug) {
@@ -32,11 +33,16 @@ class PageController extends SiteController
         $isWpImport = ($page->template === 'wp-html')
             || (($content['import_source'] ?? '') === 'wp-rendered')
             || ! empty($content['stylesheet_urls']);
+        $isolated = $pageCss->isolate(
+            (string) ($content['body_html'] ?? ''),
+            array_values(array_filter($content['stylesheet_urls'] ?? [])),
+        );
 
         return $this->renderSystemPage($slug, $isWpImport ? 'pages.wp-imported' : 'pages.dynamic', [
             'page' => $page,
-            'bodyHtml' => $content['body_html'] ?? '',
-            'stylesheets' => array_values(array_filter($content['stylesheet_urls'] ?? [])),
+            'bodyHtml' => $isolated['html'],
+            'scopedStylesheet' => $isolated['stylesheet'],
+            'scopedCss' => $isolated['css'],
             'fullBleedContent' => $isWpImport,
             'seo' => $this->seo->meta([
                 'title' => $page->meta_title ?: ($page->title.' | '.config('cms.site_name_fa')),

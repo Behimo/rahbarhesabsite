@@ -16,6 +16,7 @@
 /public/hot
 /public/storage
 /public/migrated-wp
+/public/site/page-scope
 /storage/*.key
 /storage/pail
 /vendor
