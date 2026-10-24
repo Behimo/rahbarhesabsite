@@ -26,7 +26,7 @@
             <strong>{{ fa_digits($paginator->lastItem()) }}</strong>
             از
             <strong>{{ fa_digits($paginator->total()) }}</strong>
-            مطلب
+            {{ $paginationLabel ?? 'مطلب' }}
         </p>
 
         <ul class="blog-pager__list">

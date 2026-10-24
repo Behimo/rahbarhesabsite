@@ -16,6 +16,8 @@
     $isFreeCard = $isFree ?? $course->isFree();
     $courseUrl = $course->url();
     $linked = $linked ?? false;
+    $catalog = (bool) ($catalog ?? false);
+    $imageClass = 'course-image'.((! $catalog && $isFreeCard && ! $course->featured_image) ? ' free-course-cover' : '');
     $cardClasses = trim(implode(' ', array_filter([
         'course-card',
         $linked ? 'course-card--linked' : null,
@@ -30,11 +32,15 @@
     @endif
 
     @if ($linked)
-        <div class="course-image{{ $isFreeCard && ! $course->featured_image ? ' free-course-cover' : '' }}">
+        <div class="{{ $imageClass }}">
     @else
-        <a href="{{ $courseUrl }}" class="course-image{{ $isFreeCard && ! $course->featured_image ? ' free-course-cover' : '' }}">
+        <a href="{{ $courseUrl }}" class="{{ $imageClass }}">
     @endif
-        @if ($isFreeCard && ! $course->featured_image)
+        @if ($catalog && $course->featured_image)
+            <img src="{{ $course->featured_image }}" alt="" loading="lazy" width="640" height="360" />
+        @elseif ($catalog)
+            <span class="course-image-fallback" aria-hidden="true"></span>
+        @elseif ($isFreeCard && ! $course->featured_image)
             <span class="free-course-cover-title">{{ $course->title }}</span>
         @elseif ($course->featured_image)
             <img src="{{ $course->featured_image }}" alt="{{ $course->title }}" loading="lazy" width="320" height="180" />
@@ -42,7 +48,8 @@
             <span class="free-course-cover-title">{{ $course->title }}</span>
         @endif
 
-        @if ($hasDiscount)
+        @if ($catalog)
+        @elseif ($hasDiscount)
             <span class="course-badge course-badge--sale" title="{{ fa_digits($discountPercent) }} درصد تخفیف">
                 ٪{{ fa_digits($discountPercent) }}
             </span>
