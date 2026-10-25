@@ -296,7 +296,7 @@ class WordpressMigrationTest extends TestCase
         DB::connection('wordpress')->table('postmeta')->insert([
             'post_id' => 8801,
             'meta_key' => 'rank_math_title',
-            'meta_value' => 'عنوان سئو مشاوره',
+            'meta_value' => '%title% %page% از مشاوره تا اجرا با %sitename%',
         ]);
 
         $stats = app(WordpressMigrationService::class)->migratePages(
@@ -310,7 +310,7 @@ class WordpressMigrationTest extends TestCase
             'wp_post_id' => 8801,
             'slug' => 'tax-consulting-services',
             'template' => 'wp-html',
-            'meta_title' => 'عنوان سئو مشاوره',
+            'meta_title' => 'خدمات مشاوره مالیاتی از مشاوره تا اجرا با '.config('cms.site_name_fa'),
         ]);
         $this->assertDatabaseMissing('cms_pages', ['wp_post_id' => 8802]);
 

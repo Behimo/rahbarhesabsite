@@ -1570,8 +1570,14 @@ class WordpressMigrationService
      */
     private function applyRankMathMeta(Model $model, array $meta): void
     {
-        $title = $this->metaString($meta, ['rank_math_title', 'rank_math_facebook_title']);
-        $description = $this->metaString($meta, ['rank_math_description', 'rank_math_facebook_description']);
+        $title = $this->resolveRankMathTemplate(
+            $this->metaString($meta, ['rank_math_title', 'rank_math_facebook_title']),
+            $model,
+        );
+        $description = $this->resolveRankMathTemplate(
+            $this->metaString($meta, ['rank_math_description', 'rank_math_facebook_description']),
+            $model,
+        );
         $robots = $this->rankMathRobots($meta);
         $canonical = $this->metaString($meta, ['rank_math_canonical_url']);
         $ogImage = $this->metaString($meta, ['rank_math_facebook_image', 'rank_math_twitter_image']);
@@ -1591,6 +1597,30 @@ class WordpressMigrationService
         if ($ogImage && $model->isFillable('og_image')) {
             $model->og_image = mb_substr($ogImage, 0, 191);
         }
+    }
+
+    /**
+     * Rank Math stores titles as templates such as "%title% %page% ... %sitename%".
+     * Replace the variables used on single pages so the browser title is readable.
+     */
+    private function resolveRankMathTemplate(?string $template, Model $model): ?string
+    {
+        if ($template === null || $template === '' || ! str_contains($template, '%')) {
+            return $template;
+        }
+
+        $title = trim((string) ($model->title ?? $model->name ?? ''));
+        $resolved = strtr($template, [
+            '%title%' => $title,
+            '%sitename%' => (string) config('cms.site_name_fa'),
+            '%sep%' => '-',
+            '%page%' => '',
+            '%excerpt%' => '',
+            '%excerpt_only%' => '',
+        ]);
+        $resolved = trim((string) preg_replace('/\s+/u', ' ', $resolved));
+
+        return $resolved !== '' ? $resolved : null;
     }
 
     /**
