@@ -108,7 +108,7 @@ class CmsExtensionsTest extends TestCase
             ->assertSee('متن صفحه سفارشی');
     }
 
-    public function test_legacy_p_prefix_redirects_to_page_slug(): void
+    public function test_legacy_p_prefix_is_not_redirected(): void
     {
         CmsPage::query()->create([
             'slug' => 'legacy-landing',
@@ -120,12 +120,12 @@ class CmsExtensionsTest extends TestCase
             'status' => 'published',
         ]);
 
+        // Final path is /{slug}/ only — no /p/... hop.
         foreach (['/p/legacy-landing', '/p/legacy-landing/'] as $from) {
-            $response = $this->get($from);
-            $response->assertStatus(301);
-            $path = parse_url((string) $response->headers->get('Location'), PHP_URL_PATH);
-            $this->assertSame('/legacy-landing/', $path);
+            $this->get($from)->assertNotFound();
         }
+
+        $this->get('/legacy-landing/')->assertOk();
     }
 
     public function test_search_route_works(): void

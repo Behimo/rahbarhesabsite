@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\User;
 use App\Observers\CafeAnswerObserver;
 use App\Observers\CategoryObserver;
+use App\Routing\UrlGenerator;
 use App\Services\BlockRegistry;
 use App\Services\BlockRenderer;
 use App\Services\CacheService;
@@ -42,6 +43,21 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(MenuService::class);
         $this->app->singleton(CategoryService::class);
         $this->app->singleton(SpotPlayerService::class);
+
+        // Override Laravel's URL generator so public route() links already
+        // include the WordPress trailing slash (no in-site 301 hop).
+        $this->app->singleton('url', function ($app) {
+            $routes = $app['router']->getRoutes();
+            $app->instance('routes', $routes);
+
+            return new UrlGenerator(
+                $routes,
+                $app->rebinding('request', function ($app, $request) {
+                    $app['url']->setRequest($request);
+                }),
+                $app['config']['app.asset_url']
+            );
+        });
     }
 
     public function boot(): void
@@ -81,6 +97,7 @@ class AppServiceProvider extends ServiceProvider
                 }
             });
         }
+
     }
 
     protected function registerRateLimiters(): void

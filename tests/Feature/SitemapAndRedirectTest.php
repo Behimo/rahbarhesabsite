@@ -19,7 +19,7 @@ class SitemapAndRedirectTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_active_redirect_sends_visitors_to_the_target(): void
+    public function test_cms_redirect_rows_are_not_executed_on_public_requests(): void
     {
         CmsRedirect::query()->create([
             'from_path' => '/old-tax-guide',
@@ -30,14 +30,11 @@ class SitemapAndRedirectTest extends TestCase
             'match_query' => false,
         ]);
 
-        $permalinks = app(PermalinkService::class);
-
-        $this->get('/old-tax-guide')
-            ->assertStatus(301)
-            ->assertHeader('Location', $permalinks->absolute('/blog/'));
+        // Cutover contract: final WP URLs only — no public 301 hops.
+        $this->get('/old-tax-guide')->assertNotFound();
     }
 
-    public function test_query_p_redirect_resolves(): void
+    public function test_query_p_redirect_rows_are_not_executed_on_public_requests(): void
     {
         CmsRedirect::query()->create([
             'from_path' => '/?p=42',
@@ -48,11 +45,9 @@ class SitemapAndRedirectTest extends TestCase
             'match_query' => false,
         ]);
 
-        $permalinks = app(PermalinkService::class);
-
         $this->get('/?p=42')
-            ->assertStatus(301)
-            ->assertHeader('Location', $permalinks->absolute('/blogs/sample-post/'));
+            ->assertOk()
+            ->assertHeaderMissing('Location');
     }
 
     public function test_inactive_redirect_is_not_followed(): void
@@ -320,7 +315,7 @@ class SitemapAndRedirectTest extends TestCase
         $this->get('/product-category/software/accounting')->assertOk();
     }
 
-    public function test_rankmath_query_redirect_import_and_execution(): void
+    public function test_rankmath_query_redirect_import_is_stored_but_not_executed(): void
     {
         $importer = app(RankMathRedirectImporter::class);
         $result = $importer->import("/old-page?utm=1,/blog/,301\n");
@@ -331,11 +326,7 @@ class SitemapAndRedirectTest extends TestCase
         $this->assertNotNull($row);
         $this->assertTrue($row->match_query);
 
-        $permalinks = app(PermalinkService::class);
-
-        $this->get('/old-page?utm=1')
-            ->assertStatus(301)
-            ->assertHeader('Location', $permalinks->absolute('/blog/'));
+        $this->get('/old-page?utm=1')->assertNotFound();
     }
 
     public function test_course_pagination_preserves_type_filter(): void
@@ -385,7 +376,7 @@ class SitemapAndRedirectTest extends TestCase
         $this->get('/build')->assertNotFound();
     }
 
-    public function test_external_redirect_target_is_imported_and_served(): void
+    public function test_external_redirect_target_is_imported_but_not_executed(): void
     {
         $importer = app(RankMathRedirectImporter::class);
         $result = $importer->import("/go,https://example.com/landing,301\n");
@@ -393,9 +384,7 @@ class SitemapAndRedirectTest extends TestCase
         $this->assertSame(1, $result['imported']);
         $this->assertSame('https://example.com/landing', CmsRedirect::query()->value('to_path'));
 
-        $this->get('/go')
-            ->assertStatus(301)
-            ->assertHeader('Location', 'https://example.com/landing');
+        $this->get('/go')->assertNotFound();
     }
 
     public function test_self_redirect_differing_only_by_trailing_slash_is_skipped(): void
@@ -410,16 +399,12 @@ class SitemapAndRedirectTest extends TestCase
         $this->get('/same-page')->assertNotFound();
     }
 
-    public function test_query_redirect_tolerates_extra_tracking_parameters(): void
+    public function test_query_redirect_rows_do_not_execute_even_with_extra_params(): void
     {
         $importer = app(RankMathRedirectImporter::class);
         $importer->import("/old-page?utm=1,/blog/,301\n");
 
-        $permalinks = app(PermalinkService::class);
-
-        $this->get('/old-page?utm=1&gclid=abc')
-            ->assertStatus(301)
-            ->assertHeader('Location', $permalinks->absolute('/blog/'));
+        $this->get('/old-page?utm=1&gclid=abc')->assertNotFound();
     }
 
     public function test_duplicate_redirect_path_is_rejected_by_composite_unique(): void

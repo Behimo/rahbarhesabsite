@@ -38,7 +38,7 @@
                             @endif
                         </td>
                         <td>
-                            <a href="{{ route('products.show', $product->slug) }}" target="_blank" class="btn btn-sm btn-label-secondary">مشاهده</a>
+                            <a href="{{ route('courses.show', $product->slug) }}" target="_blank" class="btn btn-sm btn-label-secondary">مشاهده</a>
                             @if (admin_can('posts', 'update'))
                                 <a href="{{ route('admin.products.edit', $product) }}" class="btn btn-sm btn-label-primary">ویرایش</a>
                             @endif

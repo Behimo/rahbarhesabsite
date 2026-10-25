@@ -7,7 +7,6 @@ use App\Models\CmsPost;
 use App\Models\Tag;
 use App\Services\CategoryService;
 use App\Services\PermalinkService;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -109,7 +108,7 @@ class BlogController extends SiteController
         ]);
     }
 
-    public function show(string $category, string $slug, PermalinkService $permalinks): View|RedirectResponse
+    public function show(string $category, string $slug, PermalinkService $permalinks): View
     {
         $post = CmsPost::query()
             ->published()
@@ -124,8 +123,9 @@ class BlogController extends SiteController
         $primary = $post->category;
         $expectedCategory = $primary?->slug ?: 'blog';
 
+        // Wrong category segment: 404 (no hop). Canonical URL is the only public path.
         if (rawurldecode($category) !== $expectedCategory && $category !== $expectedCategory) {
-            return redirect()->to($permalinks->post($post), 301);
+            abort(404);
         }
 
         $post->increment('views');

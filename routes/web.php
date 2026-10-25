@@ -76,6 +76,7 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/search', [SearchController::class, 'index'])->name('search');
 
 // Courses at /product/ (WP WooCommerce permalinks) + LMS actions under /courses/
+// Public names always target the final WP path — never a redirect stub.
 Route::get('/product', [CourseController::class, 'index'])->name('courses.index');
 Route::get('/product/page/{page}', [CourseController::class, 'index'])->whereNumber('page')->name('courses.index.paged');
 Route::get('/product/{slug}', [CourseController::class, 'show'])->name('courses.show');
@@ -87,10 +88,8 @@ Route::get('/product-category/{category}', [CourseController::class, 'index'])
     ->where('category', '.+')
     ->name('courses.category');
 
+// LMS actions stay under /courses/... — product pages themselves are only /product/{slug}/.
 Route::controller(CourseController::class)->prefix('courses')->name('courses.')->group(function () {
-    Route::get('/', function () {
-        return new \Illuminate\Http\RedirectResponse(app(\App\Services\PermalinkService::class)->absolute('/product'), 301);
-    });
     Route::get('/{slug}/preview/{lessonSlug}', 'previewLesson')->name('preview');
     Route::get('/{slug}/lessons/{lessonSlug}/file', 'serveLessonFile')->name('lesson.file');
 
@@ -101,23 +100,7 @@ Route::controller(CourseController::class)->prefix('courses')->name('courses.')-
         Route::post('/{slug}/lessons/{lessonSlug}/complete', 'completeLesson')->name('lesson.complete');
         Route::get('/{slug}/lessons/{lessonSlug}/download', 'downloadLesson')->name('lesson.download');
     });
-
-    // Staging-era Laravel course URLs → WP product permalinks (preserve trailing slash)
-    Route::get('/{slug}', function (string $slug) {
-        $target = app(\App\Services\PermalinkService::class)->absolute('/product/'.rawurldecode($slug));
-
-        return new \Illuminate\Http\RedirectResponse($target, 301);
-    });
 });
-
-Route::get('/products', function () {
-    return new \Illuminate\Http\RedirectResponse(app(\App\Services\PermalinkService::class)->absolute('/product'), 301);
-})->name('products.index');
-Route::get('/products/{slug}', function (string $slug) {
-    $target = app(\App\Services\PermalinkService::class)->absolute('/product/'.rawurldecode($slug));
-
-    return new \Illuminate\Http\RedirectResponse($target, 301);
-})->name('products.show');
 
 // Blog index + taxonomy archives
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
@@ -138,15 +121,10 @@ Route::controller(LawController::class)->prefix('laws')->name('laws.')->group(fu
     Route::get('/{slug}', 'show')->name('show');
 });
 
-// Pages & Institutional (WP slugs)
-Route::redirect('/why-bisan', '/about-us/', 301)->name('why-bisan');
-Route::redirect('/services', '/about-us/', 301)->name('services');
+// Pages & Institutional (WP slugs only — no alias redirects)
 Route::get('/about-us', [PageController::class, 'about'])->name('about');
-Route::redirect('/about', '/about-us/', 301);
 Route::get('/contact-us', [PageController::class, 'contact'])->name('contact');
 Route::post('/contact-us', [ContactController::class, 'store'])->middleware('throttle:contact')->name('contact.store');
-Route::redirect('/contact', '/contact-us/', 301);
-Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:contact');
 
 // Cafe Soal (Q&A)
 Route::controller(CafeQuestionController::class)->prefix('cafe-soal')->name('cafe-soal.')->group(function () {
@@ -157,14 +135,8 @@ Route::controller(CafeQuestionController::class)->prefix('cafe-soal')->name('caf
     Route::post('/{slug}/answers', 'storeAnswer')->middleware(['auth', 'throttle:20,1'])->name('answers.store');
 });
 
-// Staging-era CMS page URLs (/p/{slug}) → final WP-parity /{slug}/
-Route::get('/p/{slug}', function (string $slug) {
-    $target = app(\App\Services\PermalinkService::class)->absolute('/'.rawurldecode($slug));
-
-    return new \Illuminate\Http\RedirectResponse($target, 301);
-})->where('slug', '[^/]+')->name('pages.legacy-p');
-
 // WP-style post permalink /{category}/{slug}/ then CMS pages /{slug}/
+
 // Reserved first segments are excluded by whole-segment match so slugs like
 // "builder-page" or "productivity" still resolve (see config/seo.php).
 $permalinks = app(\App\Services\PermalinkService::class);

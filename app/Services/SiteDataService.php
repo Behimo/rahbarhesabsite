@@ -125,10 +125,10 @@ class SiteDataService
     public function heroPills(): array
     {
         return [
-            ['title' => 'راهبر CRM', 'text' => 'قیف فروش، پیگیری و گزارش — برای تیم‌های فروش', 'href' => 'products.show', 'slug' => 'rahbar'],
-            ['title' => 'نوژارو', 'text' => 'پلتفرم SaaS — مجموعه‌ها، ماژول و اشتراک', 'href' => 'products.show', 'slug' => 'nojaro'],
-            ['title' => 'ویلئو', 'text' => 'مدیریت مالی شخصی — حساب‌ها، بودجه و دارایی', 'href' => 'products.show', 'slug' => 'vileo'],
-            ['title' => 'افزونه وردپرس', 'text' => 'اتصال سایت و ووکامرس به CRM — خودکار', 'href' => 'products.show', 'slug' => 'wordpress-plugin'],
+            ['title' => 'راهبر CRM', 'text' => 'قیف فروش، پیگیری و گزارش — برای تیم‌های فروش', 'href' => 'courses.show', 'slug' => 'rahbar'],
+            ['title' => 'نوژارو', 'text' => 'پلتفرم SaaS — مجموعه‌ها، ماژول و اشتراک', 'href' => 'courses.show', 'slug' => 'nojaro'],
+            ['title' => 'ویلئو', 'text' => 'مدیریت مالی شخصی — حساب‌ها، بودجه و دارایی', 'href' => 'courses.show', 'slug' => 'vileo'],
+            ['title' => 'افزونه وردپرس', 'text' => 'اتصال سایت و ووکامرس به CRM — خودکار', 'href' => 'courses.show', 'slug' => 'wordpress-plugin'],
         ];
     }
 
@@ -729,7 +729,7 @@ class SiteDataService
     {
         $defaults = collect($this->defaultProducts())->firstWhere('slug', $product['slug'] ?? '') ?? [];
 
-        $product['href'] = route('products.show', $product['slug']);
+        $product['href'] = route('courses.show', $product['slug']);
         $product['dashboard_image'] = $this->productImageUrl($product['dashboard_image'] ?? null)
             ?? ($defaults['dashboard_image'] ?? null);
         $product['website_url'] ??= $defaults['website_url'] ?? null;

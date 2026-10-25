@@ -53,6 +53,14 @@ class RankMathRedirectImporter
                 continue;
             }
 
+            // Staging once used /courses/{slug}; WP canonical is /product/{slug}/.
+            // Never import the inverted hop that would bounce product pages away.
+            if ($this->isInvertedProductCourseRedirect($fromPath, $to)) {
+                $skipped++;
+
+                continue;
+            }
+
             // Keep legacy WordPress ?p= shortcuts as a single from_path string.
             if ($fromPath === '/' && str_starts_with($fromQuery, 'p=') && ! str_contains($fromQuery, '&')) {
                 $legacyFrom = '/?'.$fromQuery;
@@ -216,6 +224,18 @@ class RankMathRedirectImporter
         [$toPath, $toQuery] = array_pad(explode('?', $to, 2), 2, '');
 
         return rtrim($fromPath, '/') === rtrim($toPath, '/') && $fromQuery === $toQuery;
+    }
+
+    private function isInvertedProductCourseRedirect(string $fromPath, string $to): bool
+    {
+        if (preg_match('#^https?://#i', $to)) {
+            return false;
+        }
+
+        $from = rawurldecode(rtrim($fromPath, '/') ?: '/');
+        $target = rawurldecode(rtrim(parse_url($to, PHP_URL_PATH) ?: $to, '/') ?: '/');
+
+        return str_starts_with($from, '/product/') && str_starts_with($target, '/courses/');
     }
 
     private function forgetLookup(string $path, string $query): void
