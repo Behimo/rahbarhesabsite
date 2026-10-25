@@ -15,14 +15,10 @@
 
 @section('vendor-style')
 @include('admin.partials.composer-styles')
+@include('admin.partials.media-picker-styles')
 <style>
     .ck-editor__editable { min-height: 220px; direction: rtl; text-align: right; font-family: Vazirmatn, Tahoma, sans-serif; line-height: 1.9; }
     .ck.ck-editor { width: 100%; }
-    .media-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: .75rem; max-height: 360px; overflow: auto; }
-    .media-picker-item { border: 1px solid var(--bs-border-color); border-radius: .5rem; padding: .35rem; cursor: pointer; background: #fff; text-align: center; }
-    .media-picker-item.is-selected, .media-picker-item:hover { border-color: var(--bs-primary); box-shadow: 0 0 0 2px rgba(var(--bs-primary-rgb), .15); }
-    .media-picker-item img { width: 100%; height: 80px; object-fit: cover; border-radius: .35rem; }
-    .featured-preview { max-width: 280px; border-radius: .75rem; border: 1px solid var(--bs-border-color); }
 </style>
 @endsection
 
@@ -88,6 +84,12 @@
         </div>
 
         <div class="col-xl-4 admin-form-side">
+            @include('admin.partials.featured-image-card', [
+                'value' => $law->featured_image,
+                'altName' => 'featured_image_alt',
+                'altValue' => $law->featured_image_alt,
+            ])
+
             <div class="card mb-4">
                 <div class="card-header"><h5 class="mb-0">انتشار</h5></div>
                 <div class="card-body">
@@ -141,19 +143,6 @@
                         </div>
                     </div>
                     <button type="submit" class="btn btn-primary w-100">ذخیره ماده</button>
-                </div>
-            </div>
-
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">تصویر شاخص</h5>
-                    <button type="button" class="btn btn-sm btn-outline-primary" data-media-target="#featured-image-input" data-media-preview="#featured-preview">انتخاب رسانه</button>
-                </div>
-                <div class="card-body">
-                    <input type="text" name="featured_image" id="featured-image-input" value="{{ old('featured_image', $law->featured_image) }}" class="form-control mb-2" dir="ltr" placeholder="URL تصویر">
-                    <input type="text" name="featured_image_alt" value="{{ old('featured_image_alt', $law->featured_image_alt) }}" class="form-control mb-3" placeholder="متن جایگزین تصویر">
-                    <img id="featured-preview" class="featured-preview w-100 {{ old('featured_image', $law->featured_image) ? '' : 'd-none' }}"
-                         src="{{ old('featured_image', $law->featured_image) }}" alt="">
                 </div>
             </div>
         </div>

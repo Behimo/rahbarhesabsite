@@ -13,6 +13,7 @@
 
 @section('vendor-style')
 @include('admin.partials.composer-styles')
+@include('admin.partials.media-picker-styles')
 @endsection
 
 @section('content')
@@ -93,7 +94,11 @@
                     </div>
                     <div>
                         <label class="form-label" for="course-og">تصویر Open Graph</label>
-                        <input id="course-og" type="text" name="og_image" value="{{ old('og_image', $product->og_image) }}" class="form-control" dir="ltr">
+                        <div class="input-group">
+                            <input id="course-og" type="text" name="og_image" value="{{ old('og_image', $product->og_image) }}" class="form-control" dir="ltr">
+                            <button type="button" class="btn btn-outline-primary" data-media-target="#course-og">انتخاب</button>
+                        </div>
+                        <div class="form-text">اگر خالی باشد، تصویر شاخص استفاده می‌شود.</div>
                     </div>
                 </div>
             </div>
@@ -107,7 +112,12 @@
         </div>
 
         <div class="col-xl-4 admin-form-side">
-            <div class="card">
+            @include('admin.partials.featured-image-card', [
+                'value' => $product->featured_image,
+                'help' => 'کاور دوره در لیست و صفحه دوره. می‌توانید آپلود کنید یا URL بگذارید.',
+            ])
+
+            <div class="card mb-4">
                 <div class="card-header"><h5 class="mb-0">فروش و انتشار</h5></div>
                 <div class="card-body">
                     <div class="form-check form-switch mb-3">
@@ -208,4 +218,10 @@
         </div>
     @endforeach
 @endif
+
+@include('admin.partials.media-picker-modal')
+@endsection
+
+@section('page-script')
+@include('admin.partials.composer-scripts')
 @endsection

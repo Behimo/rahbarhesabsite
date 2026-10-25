@@ -30,6 +30,7 @@
 @endsection
 
 @section('page-style')
+@include('admin.partials.media-picker-styles')
 <style>
     .cat-form-side { position: sticky; top: 1.25rem; }
     .cat-preview {
@@ -203,19 +204,22 @@
                     </div>
                     <div>
                         <label class="form-label" for="category-image">تصویر</label>
-                        <input
-                            type="text"
-                            name="image"
-                            id="category-image"
-                            value="{{ old('image', $category->image) }}"
-                            class="form-control @error('image') is-invalid @enderror"
-                            dir="ltr"
-                            maxlength="500"
-                            placeholder="https://"
-                            autocomplete="off"
-                            @error('image') aria-invalid="true" aria-describedby="category-image-help category-image-error" @else aria-describedby="category-image-help" @enderror
-                        >
-                        <div class="form-text" id="category-image-help">آدرس تصویر را بگذارید. اگر خالی باشد، دسته بدون تصویر ذخیره می‌شود.</div>
+                        <div class="input-group">
+                            <input
+                                type="text"
+                                name="image"
+                                id="category-image"
+                                value="{{ old('image', $category->image) }}"
+                                class="form-control @error('image') is-invalid @enderror"
+                                dir="ltr"
+                                maxlength="500"
+                                placeholder="https://"
+                                autocomplete="off"
+                                @error('image') aria-invalid="true" aria-describedby="category-image-help category-image-error" @else aria-describedby="category-image-help" @enderror
+                            >
+                            <button type="button" class="btn btn-outline-primary" data-media-target="#category-image" data-media-preview="#category-image-preview">انتخاب</button>
+                        </div>
+                        <div class="form-text" id="category-image-help">از رسانه انتخاب کنید یا URL بگذارید. اگر خالی باشد، دسته بدون تصویر ذخیره می‌شود.</div>
                         @error('image')
                             <div class="invalid-feedback d-block" id="category-image-error">{{ $message }}</div>
                         @enderror
@@ -296,6 +300,11 @@
     </div>
 </form>
 
+@include('admin.partials.media-picker-modal')
+@endsection
+
+@section('page-script')
+@include('admin.partials.composer-scripts')
 <script>
     (function () {
         const form = document.getElementById('category-form');

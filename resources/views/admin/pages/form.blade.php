@@ -17,6 +17,7 @@
 
 @section('vendor-style')
 @include('admin.partials.composer-styles')
+@include('admin.partials.media-picker-styles')
 @endsection
 
 @section('content')
@@ -82,8 +83,11 @@
                         <div class="form-text">اگر خالی باشد، آدرس خودکار صفحه استفاده می‌شود.</div>
                     </div>
                     <div>
-                        <label class="form-label" for="page-og">تصویر Open Graph</label>
-                        <input type="text" name="og_image" id="page-og" value="{{ old('og_image', $page->og_image) }}" class="form-control" dir="ltr">
+                        <label class="form-label" for="page-og">تصویر Open Graph / اشتراک‌گذاری</label>
+                        <div class="input-group">
+                            <input type="text" name="og_image" id="page-og" value="{{ old('og_image', $page->og_image) }}" class="form-control" dir="ltr">
+                            <button type="button" class="btn btn-outline-primary" data-media-target="#page-og">انتخاب</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -120,4 +124,10 @@
         </div>
     </div>
 </form>
+
+@include('admin.partials.media-picker-modal')
+@endsection
+
+@section('page-script')
+@include('admin.partials.composer-scripts')
 @endsection

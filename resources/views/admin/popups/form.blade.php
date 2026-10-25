@@ -17,6 +17,7 @@
 
 @section('vendor-style')
 @include('admin.partials.composer-styles')
+@include('admin.partials.media-picker-styles')
 @endsection
 
 @section('content')
@@ -47,9 +48,13 @@
                             @error('body') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                         <div class="col-12">
-                            <label class="form-label" for="popup-image">آدرس تصویر</label>
-                            <input type="text" name="image_url" id="popup-image" value="{{ old('image_url', $popup->image_url) }}" class="form-control @error('image_url') is-invalid @enderror" dir="ltr" placeholder="/site/images/banner.webp">
-                            @error('image_url') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <label class="form-label" for="popup-image">تصویر</label>
+                            <div class="input-group">
+                                <input type="text" name="image_url" id="popup-image" value="{{ old('image_url', $popup->image_url) }}" class="form-control @error('image_url') is-invalid @enderror" dir="ltr" placeholder="/site/images/banner.webp">
+                                <button type="button" class="btn btn-outline-primary" data-media-target="#popup-image" data-media-preview="#popup-image-preview">انتخاب</button>
+                            </div>
+                            @error('image_url') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                            <img id="popup-image-preview" class="featured-preview w-100 mt-3 {{ old('image_url', $popup->image_url) ? '' : 'd-none' }}" src="{{ old('image_url', $popup->image_url) }}" alt="">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" for="popup-button-label">متن دکمه</label>
@@ -196,6 +201,11 @@
     </div>
 </form>
 
+@include('admin.partials.media-picker-modal')
+@endsection
+
+@section('page-script')
+@include('admin.partials.composer-scripts')
 <script>
 document.querySelectorAll('[name="target_mode"]').forEach((input) => {
     input.addEventListener('change', syncPopupTarget);

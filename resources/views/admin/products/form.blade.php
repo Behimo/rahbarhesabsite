@@ -24,6 +24,7 @@
 
 @section('vendor-style')
 @include('admin.partials.composer-styles')
+@include('admin.partials.media-picker-styles')
 @endsection
 
 @section('content')
@@ -97,8 +98,11 @@
                     </div>
                     <div class="mb-0">
                         <label class="form-label" for="product-image-url">یا آدرس تصویر</label>
-                        <input id="product-image-url" type="text" name="dashboard_image" value="{{ old('dashboard_image', $product->dashboard_image) }}" @class(['form-control', 'is-invalid' => $errors->has('dashboard_image')]) dir="ltr" placeholder="/storage/cms/...">
-                        <div class="form-text">از <a href="{{ route('admin.media.index') }}">رسانه</a> آپلود کنید و آدرس را اینجا بگذارید.</div>
+                        <div class="input-group">
+                            <input id="product-image-url" type="text" name="dashboard_image" value="{{ old('dashboard_image', $product->dashboard_image) }}" @class(['form-control', 'is-invalid' => $errors->has('dashboard_image')]) dir="ltr" placeholder="/storage/cms/...">
+                            <button type="button" class="btn btn-outline-primary" data-media-target="#product-image-url">انتخاب</button>
+                        </div>
+                        <div class="form-text">از کتابخانه رسانه انتخاب کنید یا URL بگذارید.</div>
                         <x-admin.field-error name="dashboard_image" />
                     </div>
                 </div>
@@ -124,7 +128,10 @@
                     </div>
                     <div class="mb-0">
                         <label class="form-label" for="product-og">تصویر Open Graph</label>
-                        <input id="product-og" type="text" name="og_image" value="{{ old('og_image', $product->og_image) }}" @class(['form-control', 'is-invalid' => $errors->has('og_image')]) dir="ltr">
+                        <div class="input-group">
+                            <input id="product-og" type="text" name="og_image" value="{{ old('og_image', $product->og_image) }}" @class(['form-control', 'is-invalid' => $errors->has('og_image')]) dir="ltr">
+                            <button type="button" class="btn btn-outline-primary" data-media-target="#product-og">انتخاب</button>
+                        </div>
                         <x-admin.field-error name="og_image" />
                     </div>
                 </div>
@@ -171,4 +178,10 @@
         </div>
     </div>
 </form>
+
+@include('admin.partials.media-picker-modal')
+@endsection
+
+@section('page-script')
+@include('admin.partials.composer-scripts')
 @endsection

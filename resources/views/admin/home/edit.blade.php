@@ -6,6 +6,10 @@
 
 @section('lede', 'متن معرفی و سوالات در ستون اصلی است. عنوان بخش‌ها و دکمه ذخیره کنار صفحه می‌ماند.')
 
+@section('vendor-style')
+@include('admin.partials.media-picker-styles')
+@endsection
+
 @section('content')
 
 <form method="POST" action="{{ route('admin.home.update') }}">
@@ -30,7 +34,11 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label" for="home-banner">تصویر بنر</label>
-                        <input id="home-banner" type="text" name="banner_image" value="{{ old('banner_image', $content['about']['banner_image'] ?? '') }}" class="form-control" dir="ltr" placeholder="/site/images/...">
+                        <div class="input-group">
+                            <input id="home-banner" type="text" name="banner_image" value="{{ old('banner_image', $content['about']['banner_image'] ?? '') }}" class="form-control" dir="ltr" placeholder="/site/images/...">
+                            <button type="button" class="btn btn-outline-primary" data-media-target="#home-banner" data-media-preview="#home-banner-preview">انتخاب</button>
+                        </div>
+                        <img id="home-banner-preview" class="featured-preview w-100 mt-3 {{ old('banner_image', $content['about']['banner_image'] ?? '') ? '' : 'd-none' }}" src="{{ old('banner_image', $content['about']['banner_image'] ?? '') }}" alt="">
                     </div>
                     <div class="mb-0">
                         <label class="form-label" for="home-app">لینک دانلود اپ</label>
@@ -84,4 +92,10 @@
         </div>
     </div>
 </form>
+
+@include('admin.partials.media-picker-modal')
+@endsection
+
+@section('page-script')
+@include('admin.partials.composer-scripts')
 @endsection

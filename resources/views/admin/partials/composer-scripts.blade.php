@@ -126,16 +126,18 @@ window.RahbarMediaPicker = (function () {
             });
         });
 
-        const featured = document.getElementById('featured-image-input');
-        const preview = document.getElementById('featured-preview');
-        featured?.addEventListener('input', () => {
-            if (!preview) return;
-            if (featured.value) {
-                preview.src = featured.value;
-                preview.classList.remove('d-none');
-            } else {
-                preview.classList.add('d-none');
-            }
+        document.querySelectorAll('[data-media-target][data-media-preview]').forEach((btn) => {
+            const input = document.querySelector(btn.getAttribute('data-media-target'));
+            const preview = document.querySelector(btn.getAttribute('data-media-preview'));
+            input?.addEventListener('input', () => {
+                if (!preview) return;
+                if (input.value) {
+                    preview.src = input.value;
+                    preview.classList.remove('d-none');
+                } else {
+                    preview.classList.add('d-none');
+                }
+            });
         });
 
         fileInput?.addEventListener('change', () => {

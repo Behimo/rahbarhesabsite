@@ -6,6 +6,10 @@
 
 @section('lede', 'اطلاعات تماس، شبکه‌های اجتماعی، برند و نوار بالای هدر. ذخیره کنار همین فرم می‌ماند.')
 
+@section('vendor-style')
+@include('admin.partials.media-picker-styles')
+@endsection
+
 @section('content')
 <form method="POST" action="{{ route('admin.settings.update') }}">
     @csrf
@@ -53,15 +57,24 @@
                     <div class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label" for="settings-logo">لوگو</label>
-                            <input id="settings-logo" type="text" name="site_logo" value="{{ old('site_logo', $settings['site_logo']) }}" class="form-control" dir="ltr">
+                            <div class="input-group">
+                                <input id="settings-logo" type="text" name="site_logo" value="{{ old('site_logo', $settings['site_logo']) }}" class="form-control" dir="ltr">
+                                <button type="button" class="btn btn-outline-primary" data-media-target="#settings-logo">انتخاب</button>
+                            </div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label" for="settings-favicon">فاوآیکون</label>
-                            <input id="settings-favicon" type="text" name="site_favicon" value="{{ old('site_favicon', $settings['site_favicon']) }}" class="form-control" dir="ltr">
+                            <div class="input-group">
+                                <input id="settings-favicon" type="text" name="site_favicon" value="{{ old('site_favicon', $settings['site_favicon']) }}" class="form-control" dir="ltr">
+                                <button type="button" class="btn btn-outline-primary" data-media-target="#settings-favicon">انتخاب</button>
+                            </div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label" for="settings-og">تصویر اشتراک‌گذاری</label>
-                            <input id="settings-og" type="text" name="site_og_image" value="{{ old('site_og_image', $settings['site_og_image']) }}" class="form-control" dir="ltr">
+                            <div class="input-group">
+                                <input id="settings-og" type="text" name="site_og_image" value="{{ old('site_og_image', $settings['site_og_image']) }}" class="form-control" dir="ltr">
+                                <button type="button" class="btn btn-outline-primary" data-media-target="#settings-og">انتخاب</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -169,4 +182,10 @@
         @endif
     </div>
 </div>
+
+@include('admin.partials.media-picker-modal')
+@endsection
+
+@section('page-script')
+@include('admin.partials.composer-scripts')
 @endsection

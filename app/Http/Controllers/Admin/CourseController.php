@@ -214,6 +214,7 @@ class CourseController extends Controller
         $productData['type'] = ShopProduct::TYPE_COURSE;
         $productData['stock'] = null;
         $productData['is_published'] = $request->boolean('is_published');
+        $productData['og_image'] = ($productData['og_image'] ?? null) ?: ($productData['featured_image'] ?? null);
         $courseData['what_you_learn'] = array_values(array_filter(array_map('trim', explode("\n", $courseData['what_you_learn'] ?? ''))));
         $courseData['requirements'] = array_values(array_filter(array_map('trim', explode("\n", $courseData['requirements'] ?? ''))));
 
