@@ -1,6 +1,8 @@
 {
   "editor.formatOnSave": true,
   "files.insertFinalNewline": true,
+  "php.validate.enable": false,
+  "intelephense.environment.phpVersion": "8.4.0",
   "javascript.updateImportsOnFileMove.enabled": "always",
   "[javascript]": {
     "editor.defaultFormatter": "dbaeumer.vscode-eslint"
