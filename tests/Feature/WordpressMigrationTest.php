@@ -437,6 +437,89 @@ class WordpressMigrationTest extends TestCase
         $this->assertTrue($post->fresh()->tags->contains('slug', 'moodian'));
     }
 
+    public function test_course_migration_stores_relative_featured_image(): void
+    {
+        DB::connection('wordpress')->table('posts')->insert([
+            [
+                'ID' => 9101,
+                'post_author' => null,
+                'post_type' => 'product',
+                'post_status' => 'publish',
+                'post_name' => 'course-with-cover',
+                'post_title' => 'دوره با کاور',
+                'guid' => null,
+                'post_content' => 'توضیح',
+                'post_excerpt' => null,
+                'post_date' => '2024-06-01 10:00:00',
+            ],
+            [
+                'ID' => 9102,
+                'post_author' => null,
+                'post_type' => 'attachment',
+                'post_status' => 'inherit',
+                'post_name' => 'cover-image',
+                'post_title' => 'cover',
+                'guid' => 'https://rahbarhesab.com/wp-content/uploads/2024/06/course-cover.webp',
+                'post_content' => null,
+                'post_excerpt' => null,
+                'post_date' => null,
+            ],
+        ]);
+        DB::connection('wordpress')->table('postmeta')->insert([
+            ['post_id' => 9101, 'meta_key' => '_thumbnail_id', 'meta_value' => '9102'],
+            ['post_id' => 9101, 'meta_key' => '_regular_price', 'meta_value' => '100000'],
+            ['post_id' => 9101, 'meta_key' => '_price', 'meta_value' => '100000'],
+        ]);
+
+        $stats = app(WordpressMigrationService::class)->migrateCourses();
+
+        $this->assertSame(1, $stats['created']);
+        $product = ShopProduct::query()->where('slug', 'course-with-cover')->first();
+        $this->assertNotNull($product);
+        $this->assertSame('/wp-content/uploads/2024/06/course-cover.webp', $product->featured_image);
+    }
+
+    public function test_normalize_media_url_and_rewrite_stored_absolute_hosts(): void
+    {
+        $service = app(WordpressMigrationService::class);
+
+        $this->assertSame(
+            '/wp-content/uploads/2022/12/a.webp',
+            $service->normalizeMediaUrl('https://rahbarhesab.com/wp-content/uploads/2022/12/a.webp')
+        );
+        $this->assertSame(
+            '/wp-content/uploads/2022/12/a.webp',
+            $service->normalizeMediaUrl('/wp-content/uploads/2022/12/a.webp')
+        );
+
+        $post = CmsPost::query()->create([
+            'slug' => 'img-rewrite-post',
+            'title' => 'پست',
+            'body' => 'x',
+            'featured_image' => 'https://www.rahbarhesab.com/wp-content/uploads/2023/01/post.webp',
+            'og_image' => 'https://rahbarhesab.com/wp-content/uploads/2023/01/og.webp',
+            'is_published' => true,
+            'status' => CmsPost::STATUS_PUBLISHED,
+            'published_at' => now(),
+        ]);
+        $product = ShopProduct::query()->create([
+            'slug' => 'img-rewrite-product',
+            'title' => 'محصول',
+            'price' => 0,
+            'type' => ShopProduct::TYPE_COURSE,
+            'featured_image' => 'https://rahbarhesab.com/wp-content/uploads/2023/01/course.webp',
+            'is_published' => true,
+        ]);
+
+        $stats = $service->rewriteStoredMediaUrls();
+
+        $this->assertGreaterThanOrEqual(1, $stats['posts']);
+        $this->assertGreaterThanOrEqual(1, $stats['products']);
+        $this->assertSame('/wp-content/uploads/2023/01/post.webp', $post->fresh()->featured_image);
+        $this->assertSame('/wp-content/uploads/2023/01/og.webp', $post->fresh()->og_image);
+        $this->assertSame('/wp-content/uploads/2023/01/course.webp', $product->fresh()->featured_image);
+    }
+
     private function createWordpressTables(): void
     {
         Schema::connection('wordpress')->create('users', function ($table): void {
@@ -456,10 +539,12 @@ class WordpressMigrationTest extends TestCase
 
         Schema::connection('wordpress')->create('posts', function ($table): void {
             $table->unsignedBigInteger('ID')->primary();
+            $table->unsignedBigInteger('post_author')->nullable();
             $table->string('post_type')->nullable();
             $table->string('post_status')->nullable();
             $table->string('post_name')->nullable();
             $table->string('post_title')->nullable();
+            $table->string('guid')->nullable();
             $table->text('post_content')->nullable();
             $table->text('post_excerpt')->nullable();
             $table->string('post_date')->nullable();

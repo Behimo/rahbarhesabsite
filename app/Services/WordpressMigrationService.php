@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AccountingLaw;
 use App\Models\Category;
 use App\Models\CmsPage;
 use App\Models\CmsPost;
@@ -549,6 +550,8 @@ class WordpressMigrationService
                     ->orWhere('slug', $rawSlug)
                     ->first();
 
+                $image = $this->featuredImageUrl($meta);
+
                 if ($product) {
                     $product->fill([
                         'slug' => $slug,
@@ -557,6 +560,7 @@ class WordpressMigrationService
                         'price' => $price,
                         'sale_price' => $sale,
                         'type' => ShopProduct::TYPE_COURSE,
+                        'featured_image' => $image,
                         'is_published' => $post->post_status === 'publish',
                     ])->save();
                 } else {
@@ -567,6 +571,7 @@ class WordpressMigrationService
                         'price' => $price,
                         'sale_price' => $sale,
                         'type' => ShopProduct::TYPE_COURSE,
+                        'featured_image' => $image,
                         'is_published' => $post->post_status === 'publish',
                     ]);
                 }
@@ -1595,7 +1600,7 @@ class WordpressMigrationService
             $model->canonical_url = mb_substr($canonical, 0, 500);
         }
         if ($ogImage && $model->isFillable('og_image')) {
-            $model->og_image = mb_substr($ogImage, 0, 191);
+            $model->og_image = $this->normalizeMediaUrl($ogImage);
         }
     }
 
@@ -1813,12 +1818,94 @@ class WordpressMigrationService
             ->where('post_type', 'attachment')
             ->first(['guid']);
 
-        $url = trim((string) ($attachment->guid ?? ''));
-        if ($url === '' || strlen($url) > 191) {
+        return $this->normalizeMediaUrl(trim((string) ($attachment->guid ?? '')));
+    }
+
+    /**
+     * Store media as site-relative paths so local/staging/production all resolve
+     * against public/wp-content/uploads (or other public assets) via APP_URL.
+     */
+    public function normalizeMediaUrl(?string $url): ?string
+    {
+        $url = trim((string) $url);
+        if ($url === '') {
             return null;
         }
 
-        return $url;
+        if (str_starts_with($url, '/')) {
+            return strlen($url) > 191 ? null : $url;
+        }
+
+        if (! str_starts_with($url, 'http://') && ! str_starts_with($url, 'https://')) {
+            return strlen($url) > 191 ? null : $url;
+        }
+
+        $path = parse_url($url, PHP_URL_PATH);
+        if (! is_string($path) || $path === '') {
+            return null;
+        }
+
+        $uploadsPos = strpos($path, '/wp-content/');
+        if ($uploadsPos !== false) {
+            $path = substr($path, $uploadsPos);
+        } else {
+            $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+            $canonical = strtolower((string) config('seo.canonical_host', 'rahbarhesab.com'));
+            $host = preg_replace('/^www\./', '', $host) ?? $host;
+            $canonical = preg_replace('/^www\./', '', $canonical) ?? $canonical;
+            if ($host !== $canonical) {
+                return strlen($url) > 191 ? null : $url;
+            }
+        }
+
+        return strlen($path) > 191 ? null : $path;
+    }
+
+    /**
+     * Rewrite absolute legacy media hosts already stored in local tables.
+     *
+     * @return array{posts: int, products: int, laws: int}
+     */
+    public function rewriteStoredMediaUrls(): array
+    {
+        $stats = ['posts' => 0, 'products' => 0, 'laws' => 0];
+
+        foreach ([
+            'posts' => [CmsPost::class, ['featured_image', 'og_image']],
+            'products' => [ShopProduct::class, ['featured_image', 'og_image']],
+            'laws' => [AccountingLaw::class, ['featured_image']],
+        ] as $key => [$modelClass, $columns]) {
+            if (! class_exists($modelClass)) {
+                continue;
+            }
+
+            /** @var class-string<Model> $modelClass */
+            $modelClass::query()->orderBy('id')->chunkById(200, function ($rows) use ($columns, $key, &$stats): void {
+                foreach ($rows as $row) {
+                    $dirty = false;
+                    foreach ($columns as $column) {
+                        if (! $row->isFillable($column)) {
+                            continue;
+                        }
+                        $current = $row->getAttribute($column);
+                        if (! is_string($current) || $current === '') {
+                            continue;
+                        }
+                        $normalized = $this->normalizeMediaUrl($current);
+                        if ($normalized !== null && $normalized !== $current) {
+                            $row->setAttribute($column, $normalized);
+                            $dirty = true;
+                        }
+                    }
+                    if ($dirty) {
+                        $row->save();
+                        $stats[$key]++;
+                    }
+                }
+            });
+        }
+
+        return $stats;
     }
 
     /**
