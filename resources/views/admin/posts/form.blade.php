@@ -93,12 +93,7 @@
                         <div class="form-text">اگر خالی باشد، آدرس خودکار مقاله استفاده می‌شود.</div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">ربات‌های جستجو</label>
-                        <select name="robots" class="form-select">
-                            @foreach (['index, follow', 'noindex, follow', 'index, nofollow', 'noindex, nofollow'] as $robots)
-                                <option value="{{ $robots }}" @selected(old('robots', $post->robots ?: 'index, follow') === $robots)>{{ $robots }}</option>
-                            @endforeach
-                        </select>
+                        <x-robots-select :value="$post->robots" id="post-robots" />
                     </div>
                     <div>
                         <label class="form-label">تصویر Open Graph</label>

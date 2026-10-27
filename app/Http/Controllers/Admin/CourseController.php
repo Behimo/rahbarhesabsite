@@ -13,9 +13,11 @@ use App\Models\CourseSection;
 use App\Models\ShopProduct;
 use App\Models\User;
 use App\Rules\EnglishSlug;
+use App\Rules\Robots;
 use App\Services\CategoryService;
 use App\Services\CourseCurriculumService;
 use App\Support\AccessCatalog;
+use App\Support\RobotsDirectives;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -190,7 +192,7 @@ class CourseController extends Controller
             'meta_description' => ['nullable', 'string', 'max:500'],
             'meta_keywords' => ['nullable', 'string', 'max:300'],
             'canonical_url' => ['nullable', 'url', 'max:500'],
-            'robots' => ['nullable', 'string', 'max:50'],
+            'robots' => ['nullable', 'string', 'max:500', new Robots],
             'og_image' => ['nullable', 'string', 'max:500'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'category_ids' => ['nullable', 'array'],
@@ -211,6 +213,9 @@ class CourseController extends Controller
         $primaryCategoryId = isset($productData['primary_category_id']) ? (int) $productData['primary_category_id'] : null;
         unset($productData['category_ids'], $productData['primary_category_id']);
 
+        if (isset($productData['robots'])) {
+            $productData['robots'] = RobotsDirectives::normalize($productData['robots']);
+        }
         $productData['type'] = ShopProduct::TYPE_COURSE;
         $productData['stock'] = null;
         $productData['is_published'] = $request->boolean('is_published');

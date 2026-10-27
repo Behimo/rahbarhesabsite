@@ -1,7 +1,7 @@
 @extends('layouts.site')
 
 @section('page')
-    @include('partials.home.about')
+    @include('partials.home.about', ['smallHeadingTag' => 'h1'])
     @include('partials.home.app')
     @include('partials.home.benefits')
 

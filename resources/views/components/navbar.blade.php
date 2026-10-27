@@ -6,25 +6,48 @@
     $mobileDisplay = $contact['mobile_display'] ?? '۰۹۳۳۳۶۵۸۳۳۳';
     $cartCount = (int) ($cartCount ?? 0);
     $topBarEnabled = filter_var(\App\Models\CmsSetting::get('top_bar_enabled', '0'), FILTER_VALIDATE_BOOLEAN);
+    $topBarMode = \App\Models\CmsSetting::get('top_bar_mode', 'text') === 'image' ? 'image' : 'text';
     $topBarText = trim((string) \App\Models\CmsSetting::get('top_bar_text', ''));
     $topBarButtonText = trim((string) \App\Models\CmsSetting::get('top_bar_button_text', ''));
     $topBarButtonUrl = trim((string) \App\Models\CmsSetting::get('top_bar_button_url', ''));
-    $showTopBar = $topBarEnabled && ($topBarText !== '' || $topBarButtonText !== '');
+    $topBarImage = trim((string) \App\Models\CmsSetting::get('top_bar_image', ''));
+    $topBarImageUrl = trim((string) \App\Models\CmsSetting::get('top_bar_image_url', ''));
+    $showTopBarText = $topBarMode === 'text' && ($topBarText !== '' || ($topBarButtonText !== '' && $topBarButtonUrl !== ''));
+    $showTopBarImage = $topBarMode === 'image' && $topBarImage !== '';
+    $showTopBar = $topBarEnabled && ($showTopBarText || $showTopBarImage);
 @endphp
 
 @if ($showTopBar)
-    <div class="site-top-bar" role="region" aria-label="اطلاعیه بالای سایت">
-        <div class="site-top-bar__inner">
-            @if ($topBarText !== '')
-                <div class="site-top-bar__marquee">
-                    <div class="site-top-bar__track">
-                        <p class="site-top-bar__text">{{ $topBarText }}</p>
-                        <p class="site-top-bar__text" aria-hidden="true">{{ $topBarText }}</p>
+    <div class="site-top-bar{{ $showTopBarImage ? ' site-top-bar--media' : '' }}" role="region" aria-label="اطلاعیه بالای سایت">
+        <div class="site-top-bar__inner{{ $showTopBarImage ? ' site-top-bar__inner--media' : '' }}">
+            @if ($showTopBarImage)
+                @if ($topBarImageUrl !== '')
+                    <a class="site-top-bar__media" href="{{ $topBarImageUrl }}">
+                        <img src="{{ $topBarImage }}" alt="{{ $topBarText !== '' ? $topBarText : 'بنر بالای سایت' }}" loading="lazy">
+                    </a>
+                @else
+                    <div class="site-top-bar__media">
+                        <img src="{{ $topBarImage }}" alt="{{ $topBarText !== '' ? $topBarText : 'بنر بالای سایت' }}" loading="lazy">
                     </div>
-                </div>
-            @endif
-            @if ($topBarButtonText !== '' && $topBarButtonUrl !== '')
-                <a class="site-top-bar__button" href="{{ $topBarButtonUrl }}">{{ $topBarButtonText }}</a>
+                @endif
+            @else
+                @if ($topBarText !== '')
+                    <div class="site-top-bar__marquee">
+                        <div class="site-top-bar__track">
+                            @foreach ([false, true] as $isClone)
+                                <div class="site-top-bar__group" @if ($isClone) aria-hidden="true" @endif>
+                                    @for ($i = 0; $i < 6; $i++)
+                                        <p class="site-top-bar__text">{{ $topBarText }}</p>
+                                        <span class="site-top-bar__dot" aria-hidden="true"></span>
+                                    @endfor
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+                @if ($topBarButtonText !== '' && $topBarButtonUrl !== '')
+                    <a class="site-top-bar__button" href="{{ $topBarButtonUrl }}">{{ $topBarButtonText }}</a>
+                @endif
             @endif
         </div>
     </div>

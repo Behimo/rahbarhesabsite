@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasCategories;
+use App\Models\Concerns\HasTags;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,7 +20,7 @@ class CafeQuestion extends Model
         self::STATUS_REJECTED => 'رد شده',
     ];
 
-    use HasCategories, SoftDeletes;
+    use HasCategories, HasTags, SoftDeletes;
 
     public const STATUS_PENDING = 'pending';
 
@@ -36,6 +37,14 @@ class CafeQuestion extends Model
         'rejection_reason',
         'answered_at',
         'rejected_at',
+        'meta_title',
+        'meta_description',
+        'robots',
+        'canonical_url',
+        'og_image',
+        'featured_image',
+        'video_url',
+        'video_poster',
     ];
 
     protected function casts(): array
@@ -46,6 +55,16 @@ class CafeQuestion extends Model
             'views_count' => 'integer',
             'answers_count' => 'integer',
         ];
+    }
+
+    public function bodyHtml(): string
+    {
+        return $this->wp_post_id ? wp_autop_html($this->body) : nl2br(e($this->body));
+    }
+
+    public function url(): string
+    {
+        return app(\App\Services\PermalinkService::class)->questionAbsolute($this);
     }
 
     public function user(): BelongsTo
@@ -65,7 +84,7 @@ class CafeQuestion extends Model
 
     public function communityAnswers(): HasMany
     {
-        return $this->hasMany(CafeAnswer::class)->where('is_official', false);
+        return $this->hasMany(CafeAnswer::class)->where('is_official', false)->whereNull('parent_id');
     }
 
     public function scopePublished(Builder $query): Builder

@@ -127,6 +127,10 @@ input {
   z-index: 1001;
 }
 
+.site-top-bar--media {
+  background: var(--primary);
+}
+
 .site-top-bar__inner {
   width: min(1440px, calc(100% - 60px));
   margin: 0 auto;
@@ -138,22 +142,66 @@ input {
   padding: 8px 0;
 }
 
+.site-top-bar__inner--media {
+  min-height: 0;
+  padding: 0;
+  gap: 0;
+}
+
+.site-top-bar__media {
+  display: block;
+  width: 100%;
+  line-height: 0;
+}
+
+.site-top-bar__media img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 72px;
+  object-fit: contain;
+  object-position: center;
+}
+
 .site-top-bar__marquee {
-  width: min(420px, 55vw);
+  flex: 1;
+  min-width: 0;
+  width: 100%;
   overflow: hidden;
   direction: ltr;
-  mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 48px,
+    #000 calc(100% - 48px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 48px,
+    #000 calc(100% - 48px),
+    transparent 100%
+  );
 }
 
 .site-top-bar__track {
   display: flex;
   width: max-content;
-  gap: 48px;
-  animation: site-top-bar-marquee 18s linear infinite;
+  animation: site-top-bar-marquee 40s linear infinite;
+  will-change: transform;
 }
 
 .site-top-bar:hover .site-top-bar__track {
   animation-play-state: paused;
+}
+
+.site-top-bar__group {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 28px;
+  padding-inline-end: 28px;
 }
 
 .site-top-bar__text {
@@ -164,6 +212,14 @@ input {
   white-space: nowrap;
   flex-shrink: 0;
   direction: rtl;
+}
+
+.site-top-bar__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  flex-shrink: 0;
 }
 
 .site-top-bar__button {
@@ -189,11 +245,11 @@ input {
 
 @keyframes site-top-bar-marquee {
   from {
-    transform: translateX(0);
+    transform: translateX(-50%);
   }
 
   to {
-    transform: translateX(calc(-50% - 24px));
+    transform: translateX(0);
   }
 }
 
@@ -203,12 +259,14 @@ input {
   }
 
   .site-top-bar__marquee {
-    width: auto;
-    max-width: min(420px, 55vw);
+    width: 100%;
+    -webkit-mask-image: none;
     mask-image: none;
   }
 
-  .site-top-bar__text[aria-hidden="true"] {
+  .site-top-bar__group[aria-hidden="true"],
+  .site-top-bar__group .site-top-bar__text:not(:first-child),
+  .site-top-bar__dot {
     display: none;
   }
 }
@@ -221,33 +279,54 @@ input {
     padding: 7px 0;
   }
 
+  .site-top-bar__inner--media {
+    min-height: 0;
+    padding: 0;
+  }
+
+  .site-top-bar__media img {
+    max-height: 56px;
+  }
+
   .site-top-bar__marquee {
-    width: min(260px, 58vw);
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      transparent 0,
+      #000 28px,
+      #000 calc(100% - 28px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      90deg,
+      transparent 0,
+      #000 28px,
+      #000 calc(100% - 28px),
+      transparent 100%
+    );
   }
 
   .site-top-bar__track {
-    gap: 36px;
-    animation-duration: 14s;
+    animation-duration: 32s;
+  }
+
+  .site-top-bar__group {
+    gap: 20px;
+    padding-inline-end: 20px;
   }
 
   .site-top-bar__text {
     font-size: 15px;
   }
 
+  .site-top-bar__dot {
+    width: 5px;
+    height: 5px;
+  }
+
   .site-top-bar__button {
     height: 32px;
     padding: 0 14px;
     font-size: 14px;
-  }
-
-  @keyframes site-top-bar-marquee {
-    from {
-      transform: translateX(0);
-    }
-
-    to {
-      transform: translateX(calc(-50% - 18px));
-    }
   }
 }
 
@@ -1639,7 +1718,7 @@ body.mobile-menu-open {
   width: 100%;
 }
 
-.about-text h3 {
+.about-text :is(h1, h3) {
   margin: 0 0 28px;
 
   font-size: 22px;
@@ -1960,7 +2039,7 @@ body.mobile-menu-open {
     text-align: center;
   }
 
-  .about-text h3 {
+  .about-text :is(h1, h3) {
     font-size: 18px;
     line-height: 1.7;
 
@@ -2248,7 +2327,7 @@ body.mobile-menu-open {
   width: 100%;
 }
 
-.about-text h3 {
+.about-text :is(h1, h3) {
   margin: 0 0 28px;
 
   font-size: 22px;
@@ -2569,7 +2648,7 @@ body.mobile-menu-open {
     text-align: center;
   }
 
-  .about-text h3 {
+  .about-text :is(h1, h3) {
     font-size: 18px;
     line-height: 1.7;
 

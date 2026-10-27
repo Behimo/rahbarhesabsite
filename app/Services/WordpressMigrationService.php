@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\AccountingLaw;
+use App\Models\CafeAnswer;
+use App\Models\CafeQuestion;
 use App\Models\Category;
 use App\Models\CmsPage;
 use App\Models\CmsPost;
@@ -22,6 +24,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class WordpressMigrationService
@@ -80,6 +83,122 @@ class WordpressMigrationService
             ->where('post_type', 'post')
             ->where('post_status', 'publish')
             ->count();
+    }
+
+    public function countQuestions(): int
+    {
+        return (int) $this->wp()->table('posts')->where('post_type', 'qa')->where('post_status', 'publish')->count();
+    }
+
+    /**
+     * @return array{created: int, updated: int, answers: int, comments: int, redirects: int, conflicts: list<string>}
+     */
+    public function migrateQuestions(bool $dryRun = false, ?int $fallbackUserId = null, ?callable $onProgress = null): array
+    {
+        $stats = ['created' => 0, 'updated' => 0, 'answers' => 0, 'comments' => 0, 'redirects' => 0, 'conflicts' => []];
+        if ($fallbackUserId !== null && ! User::query()->whereKey($fallbackUserId)->exists()) {
+            throw new \RuntimeException('کاربر fallback در Laravel پیدا نشد.');
+        }
+        $posts = $this->wp()->table('posts')->where('post_type', 'qa')->where('post_status', 'publish')->lazyById(250, 'ID');
+        $rewriter = app(ContentUrlRewriter::class);
+        foreach ($posts->chunk(250) as $batch) {
+            $postMeta = $this->postMetaForIds($batch->pluck('ID')->all());
+            $authors = User::query()->whereIn('wp_id', $batch->pluck('post_author')->unique()->all())->pluck('id', 'wp_id');
+            foreach ($batch as $post) {
+                $slug = $this->normalizeWpSlug((string) $post->post_name);
+                $collision = CafeQuestion::withTrashed()->where('slug', $slug)->first();
+                if ($slug === '' || mb_strlen($slug) > 191 || ($collision && (int) $collision->wp_post_id !== (int) $post->ID)) {
+                    $stats['conflicts'][] = 'WP #'.$post->ID.': نامک قابل انتقال نیست یا متعلق به سؤال دیگری است: '.$slug;
+                    $onProgress && $onProgress();
+
+                    continue;
+                }
+                $question = CafeQuestion::withTrashed()->where('wp_post_id', $post->ID)->first() ?? $collision;
+                $counter = $question ? 'updated' : 'created';
+                if ($dryRun) {
+                    $stats[$counter]++;
+                    $onProgress && $onProgress();
+
+                    continue;
+                }
+                $authorId = $authors[$post->post_author] ?? $fallbackUserId
+                    ?? User::query()->whereHas('roles', fn ($query) => $query->where('name', AccessCatalog::ROLE_ADMIN)->where('guard_name', 'web'))->orderBy('id')->value('id');
+                if (! $authorId) {
+                    throw new \RuntimeException('نویسنده‌ی پرسش WP #'.$post->ID.' پیدا نشد؛ --fallback-user را با شناسه‌ی کاربر Laravel مشخص کنید.');
+                }
+                $meta = $postMeta[$post->ID] ?? [];
+                $delta = DB::transaction(function () use ($post, $slug, $question, $authorId, $meta, $rewriter) {
+                    $question ??= new CafeQuestion;
+                    $question->fill([
+                        'user_id' => $authorId, 'title' => $post->post_title, 'slug' => $slug,
+                        'body' => $rewriter->rewrite((string) $post->post_content),
+                        'status' => CafeQuestion::STATUS_ANSWERED, 'answered_at' => $post->post_date,
+                        'rejected_at' => null, 'rejection_reason' => null,
+                        'featured_image' => $this->featuredImageUrl($meta),
+                        'video_url' => $this->normalizeMediaUrl(str_replace('www.dl.rahbarhesab.com', 'dl.rahbarhesab.com', (string) ($meta['reza_video_url'] ?? '')), 500),
+                        'video_poster' => $this->normalizeMediaUrl(str_replace('www.dl.rahbarhesab.com', 'dl.rahbarhesab.com', (string) ($meta['reza_video_poster'] ?? '')), 500),
+                        'meta_title' => null,
+                    ]);
+                    $question->wp_post_id = (int) $post->ID;
+                    $question->deleted_at = null;
+                    $question->created_at = $post->post_date;
+                    $question->updated_at = $post->post_modified ?: $post->post_date;
+                    if (empty($meta['rank_math_title'])) {
+                        unset($meta['rank_math_facebook_title']);
+                    }
+                    $this->applyRankMathMeta($question, $meta, $post->post_excerpt ?? null);
+                    CafeQuestion::withoutTimestamps(fn () => $question->save());
+                    $answers = $comments = $redirects = 0;
+                    if (trim((string) ($meta['_qa_answer'] ?? '')) !== '') {
+                        $answer = CafeAnswer::query()->firstOrNew(['official_for_question_id' => $question->id]);
+                        $answer->forceFill([
+                            'cafe_question_id' => $question->id, 'user_id' => $authorId,
+                            'body' => $rewriter->rewrite($meta['_qa_answer']), 'is_official' => true,
+                            'parent_id' => null, 'created_at' => $post->post_date,
+                            'updated_at' => $post->post_modified ?: $post->post_date,
+                        ]);
+                        CafeAnswer::withoutTimestamps(fn () => $answer->save());
+                        $answers++;
+                    }
+                    $wpComments = $this->wp()->table('comments')->where('comment_post_ID', $post->ID)
+                        ->where('comment_approved', '1')->whereIn('comment_type', ['', 'comment'])->orderBy('comment_ID')->get();
+                    $commentUsers = User::query()->whereIn('wp_id', $wpComments->pluck('user_id')->filter()->unique()->all())->pluck('id', 'wp_id');
+                    $parents = [];
+                    foreach ($wpComments as $comment) {
+                        $answer = CafeAnswer::query()->firstOrNew(['wp_comment_id' => (int) $comment->comment_ID]);
+                        $answer->forceFill([
+                            'cafe_question_id' => $question->id, 'user_id' => $commentUsers[$comment->user_id] ?? null,
+                            'wp_comment_id' => (int) $comment->comment_ID,
+                            'author_name' => mb_substr((string) $comment->comment_author, 0, 191),
+                            'body' => (string) $comment->comment_content, 'is_official' => false,
+                            'parent_id' => $parents[(int) $comment->comment_parent] ?? null,
+                            'created_at' => $comment->comment_date, 'updated_at' => $comment->comment_date,
+                        ]);
+                        CafeAnswer::withoutTimestamps(fn () => $answer->save());
+                        $parents[(int) $comment->comment_ID] = $answer->id;
+                        $comments++;
+                    }
+                    $this->syncModelTags($question, (int) $post->ID, 'post_tag');
+                    $question->refresh();
+                    $question->answers_count = $question->answers()->count();
+                    // Answer observers update the parent timestamp; preserve WordPress lastmod after all answers.
+                    $question->updated_at = $post->post_modified ?: $post->post_date;
+                    CafeQuestion::withoutTimestamps(fn () => $question->save());
+                    $target = app(PermalinkService::class)->question($question);
+                    $redirects += (int) $this->ensureRedirect('/?p='.$post->ID, $target);
+                    $redirects += $this->migrateOldSlugs((int) $post->ID, '/questions', $slug, $target);
+
+                    return compact('answers', 'comments', 'redirects');
+                });
+                $stats[$counter]++;
+                foreach ($delta as $key => $value) {
+                    $stats[$key] += $value;
+                }
+                $onProgress && $onProgress();
+            }
+        }
+
+        return $stats;
     }
 
     public function countPages(): int
@@ -162,6 +281,7 @@ class WordpressMigrationService
                     'slug' => mb_substr($slug, 0, 191),
                     'description' => $term->description ?: null,
                     'is_active' => true,
+                    'robots' => $this->termRobots((int) $term->term_id),
                 ];
 
                 if ($category) {
@@ -286,7 +406,7 @@ class WordpressMigrationService
 
             $catIds = $this->resolveCategoryIdsForWpObject((int) $post->ID, 'product_cat', Category::TYPE_PRODUCT);
             if (! $dryRun) {
-                $product->syncCategories($catIds);
+                $this->syncModelCategories($product, (int) $post->ID, 'product_cat', Category::TYPE_PRODUCT);
             }
             $productsLinked++;
             $productCategoryLinks += count($catIds);
@@ -327,7 +447,7 @@ class WordpressMigrationService
                 if ($cmsPost->trashed()) {
                     $cmsPost->restore();
                 }
-                $cmsPost->syncCategories($catIds);
+                $this->syncModelCategories($cmsPost, (int) $post->ID, 'category', Category::TYPE_POST);
                 $cmsPost->syncTags($tagIds);
             }
 
@@ -595,12 +715,15 @@ class WordpressMigrationService
                     $courseAttributes
                 );
 
-                $this->applyRankMathMeta($product, $meta);
+                $this->applyRankMathMeta($product, $meta, $post->post_excerpt ?? null);
                 $product->wp_post_id = (int) $post->ID;
                 $product->save();
 
                 // URL parity: /product/{slug} stays canonical — only map legacy ?p= IDs.
                 $this->ensureRedirect('/?p='.$post->ID, '/product/'.$slug.'/');
+                if ($post->post_status === 'publish') {
+                    $this->migrateOldSlugs((int) $post->ID, '/product', $slug, '/product/'.$slug.'/');
+                }
 
                 $this->syncModelCategories($product, (int) $post->ID, 'product_cat', Category::TYPE_PRODUCT);
 
@@ -694,7 +817,7 @@ class WordpressMigrationService
                 $this->syncModelCategories($cmsPost, (int) $post->ID, 'category', Category::TYPE_POST);
                 $this->syncModelTags($cmsPost, (int) $post->ID, 'post_tag');
 
-                $this->applyRankMathMeta($cmsPost, $meta);
+                $this->applyRankMathMeta($cmsPost, $meta, $post->post_excerpt ?? null);
                 $cmsPost->wp_post_id = (int) $post->ID;
                 if (! empty($meta['_thumbnail_id'])) {
                     $cmsPost->featured_image_alt = $this->attachmentAlt((int) $meta['_thumbnail_id']) ?: $cmsPost->featured_image_alt;
@@ -704,6 +827,7 @@ class WordpressMigrationService
                 $cmsPost->load('categories');
                 $permalink = app(\App\Services\PermalinkService::class)->post($cmsPost);
                 $this->ensureRedirect('/?p='.$post->ID, $permalink);
+                $this->migrateOldSlugs((int) $post->ID, '/'.($cmsPost->category?->slug ?: 'blog'), $slug, $permalink);
 
                 $onProgress && $onProgress();
             }
@@ -844,7 +968,7 @@ class WordpressMigrationService
                     $created++;
                 }
 
-                $this->applyRankMathMeta($cmsPage, $meta);
+                $this->applyRankMathMeta($cmsPage, $meta, $post->post_excerpt ?? null);
                 $cmsPage->wp_post_id = (int) $post->ID;
                 $cmsPage->save();
 
@@ -1127,6 +1251,8 @@ class WordpressMigrationService
             'local_course_category_links' => DB::table('categoryables')
                 ->where('categoryable_type', ShopProduct::class)
                 ->count(),
+            'wp_questions' => $this->countQuestions(),
+            'local_questions' => CafeQuestion::query()->whereNotNull('wp_post_id')->count(),
             'wp_posts' => $this->wp()->table('posts')->where('post_type', 'post')->where('post_status', 'publish')->count(),
             'local_posts' => CmsPost::query()->count(),
             'local_post_category_links' => DB::table('categoryables')
@@ -1552,10 +1678,25 @@ class WordpressMigrationService
         ]);
     }
 
-    private function ensureRedirect(string $from, string $to): void
+    private function migrateOldSlugs(int $postId, string $prefix, string $slug, string $target): int
     {
-        if (strlen($from) > 191 || strlen($to) > 191) {
-            return;
+        $count = 0;
+        foreach ($this->wp()->table('postmeta')->where('post_id', $postId)->where('meta_key', '_wp_old_slug')->pluck('meta_value')->unique() as $old) {
+            $old = $this->normalizeWpSlug((string) $old);
+            if ($old !== '' && $old !== $slug) {
+                $count += (int) $this->ensureRedirect(rtrim($prefix, '/').'/'.$old, $target);
+            }
+        }
+
+        return $count;
+    }
+
+    private function ensureRedirect(string $from, string $to): bool
+    {
+        if (mb_strlen($from) > 500 || mb_strlen($to) > 500) {
+            \Illuminate\Support\Facades\Log::warning('WordPress redirect exceeds 500 characters.', ['from' => $from, 'to' => $to]);
+
+            return false;
         }
 
         CmsRedirect::query()->updateOrCreate(
@@ -1568,13 +1709,21 @@ class WordpressMigrationService
                 'match_query' => false,
             ]
         );
+
+        return true;
     }
 
     /**
      * @param  array<string, mixed>  $meta
      */
-    private function applyRankMathMeta(Model $model, array $meta): void
+    private function applyRankMathMeta(Model $model, array $meta, ?string $wpExcerpt = null): void
     {
+        // Rank Math's default description is %excerpt%: the whole manual excerpt (WooCommerce short
+        // description) as plain text when present; otherwise the content excerpt built at render time.
+        $excerpt = trim((string) preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags(
+            (string) preg_replace('/<\/(p|li|div|h[1-6])>|<br\s*\/?>/iu', ' ', (string) $wpExcerpt)
+        ), ENT_QUOTES | ENT_HTML5)));
+        $excerpt = $excerpt !== '' ? $excerpt : null;
         $title = $this->resolveRankMathTemplate(
             $this->metaString($meta, ['rank_math_title', 'rank_math_facebook_title']),
             $model,
@@ -1582,7 +1731,8 @@ class WordpressMigrationService
         $description = $this->resolveRankMathTemplate(
             $this->metaString($meta, ['rank_math_description', 'rank_math_facebook_description']),
             $model,
-        );
+            $excerpt,
+        ) ?? $excerpt;
         $robots = $this->rankMathRobots($meta);
         $canonical = $this->metaString($meta, ['rank_math_canonical_url']);
         $ogImage = $this->metaString($meta, ['rank_math_facebook_image', 'rank_math_twitter_image']);
@@ -1608,22 +1758,28 @@ class WordpressMigrationService
      * Rank Math stores titles as templates such as "%title% %page% ... %sitename%".
      * Replace the variables used on single pages so the browser title is readable.
      */
-    private function resolveRankMathTemplate(?string $template, Model $model): ?string
+    private function resolveRankMathTemplate(?string $template, Model $model, ?string $excerpt = null): ?string
     {
         if ($template === null || $template === '' || ! str_contains($template, '%')) {
             return $template;
         }
 
-        $title = trim((string) ($model->title ?? $model->name ?? ''));
-        $resolved = strtr($template, [
-            '%title%' => $title,
-            '%sitename%' => (string) config('cms.site_name_fa'),
-            '%sep%' => '-',
-            '%page%' => '',
-            '%excerpt%' => '',
-            '%excerpt_only%' => '',
-        ]);
-        $resolved = trim((string) preg_replace('/\s+/u', ' ', $resolved));
+        $values = [
+            'title' => trim((string) ($model->title ?? $model->name ?? '')),
+            'sitename' => (string) config('cms.site_name_fa'),
+            'sep' => '-',
+            'excerpt' => (string) $excerpt,
+            'excerpt_only' => (string) $excerpt,
+        ];
+        // Rank Math matches %…% greedily and case-sensitively, drops unknown variables
+        // (e.g. "%SITename%", "%sitename%%") and collapses doubled separators.
+        $resolved = preg_replace_callback(
+            '/%(([a-z0-9_-]+)\(([^)]*)\)|[^\s]+)%/iu',
+            fn (array $match) => $values[$match[1]] ?? '',
+            $template
+        );
+        $resolved = preg_replace('/\s+/u', ' ', (string) $resolved);
+        $resolved = trim((string) preg_replace('/ - (?:- )+/u', ' - ', $resolved));
 
         return $resolved !== '' ? $resolved : null;
     }
@@ -1664,6 +1820,16 @@ class WordpressMigrationService
         return $parts === [] ? null : implode(', ', $parts);
     }
 
+    private function termRobots(int $termId): ?string
+    {
+        if (! Schema::connection('wordpress')->hasTable('termmeta')) {
+            return null;
+        }
+
+        return $this->rankMathRobots(['rank_math_robots' => $this->wp()->table('termmeta')
+            ->where('term_id', $termId)->where('meta_key', 'rank_math_robots')->value('meta_value')]);
+    }
+
     private function attachmentAlt(int $attachmentId): ?string
     {
         if ($attachmentId <= 0) {
@@ -1698,7 +1864,31 @@ class WordpressMigrationService
      */
     private function syncModelCategories(Model $model, int $wpPostId, string $taxonomy, string $categoryType): void
     {
-        $model->syncCategories($this->resolveCategoryIdsForWpObject($wpPostId, $taxonomy, $categoryType));
+        $map = $this->resolveCategoryMapForWpObject($wpPostId, $taxonomy, $categoryType);
+        $model->syncCategories(array_values(array_unique($map)), $this->primaryCategoryId($wpPostId, $taxonomy, $map));
+    }
+
+    /**
+     * Rank Math stores the permalink category as a term id; without it WordPress falls back to the lowest term id.
+     *
+     * @param  array<int, int>  $map
+     */
+    private function primaryCategoryId(int $wpPostId, string $taxonomy, array $map): ?int
+    {
+        $termId = (int) $this->wp()->table('postmeta')
+            ->where('post_id', $wpPostId)
+            ->where('meta_key', $taxonomy === 'product_cat' ? 'rank_math_primary_product_cat' : 'rank_math_primary_category')
+            ->value('meta_value');
+
+        if ($termId > 0 && isset($map[$termId])) {
+            return $map[$termId];
+        }
+        if ($map === []) {
+            return null;
+        }
+        ksort($map);
+
+        return reset($map);
     }
 
     /**
@@ -1713,6 +1903,14 @@ class WordpressMigrationService
      * @return list<int>
      */
     private function resolveCategoryIdsForWpObject(int $wpPostId, string $taxonomy, string $categoryType): array
+    {
+        return array_values(array_unique($this->resolveCategoryMapForWpObject($wpPostId, $taxonomy, $categoryType)));
+    }
+
+    /**
+     * @return array<int, int> WordPress term id => Laravel category id
+     */
+    private function resolveCategoryMapForWpObject(int $wpPostId, string $taxonomy, string $categoryType): array
     {
         $ids = [];
         foreach ($this->wpTermsForObject($wpPostId, $taxonomy) as $row) {
@@ -1736,11 +1934,11 @@ class WordpressMigrationService
             }
 
             if ($category) {
-                $ids[] = $category->id;
+                $ids[(int) $row->term_id] = $category->id;
             }
         }
 
-        return array_values(array_unique($ids));
+        return $ids;
     }
 
     /**
@@ -1795,7 +1993,7 @@ class WordpressMigrationService
         $p = $this->wp()->getTablePrefix();
 
         return collect($this->wp()->select(
-            "SELECT t.slug, t.name
+            "SELECT t.term_id, t.slug, t.name
              FROM {$p}term_relationships tr
              INNER JOIN {$p}term_taxonomy tt ON tt.term_taxonomy_id = tr.term_taxonomy_id
              INNER JOIN {$p}terms t ON t.term_id = tt.term_id
@@ -1825,7 +2023,7 @@ class WordpressMigrationService
      * Store media as site-relative paths so local/staging/production all resolve
      * against public/wp-content/uploads (or other public assets) via APP_URL.
      */
-    public function normalizeMediaUrl(?string $url): ?string
+    public function normalizeMediaUrl(?string $url, int $maxLength = 191): ?string
     {
         $url = trim((string) $url);
         if ($url === '') {
@@ -1833,11 +2031,11 @@ class WordpressMigrationService
         }
 
         if (str_starts_with($url, '/')) {
-            return strlen($url) > 191 ? null : $url;
+            return strlen($url) > $maxLength ? null : $url;
         }
 
         if (! str_starts_with($url, 'http://') && ! str_starts_with($url, 'https://')) {
-            return strlen($url) > 191 ? null : $url;
+            return strlen($url) > $maxLength ? null : $url;
         }
 
         $path = parse_url($url, PHP_URL_PATH);
@@ -1854,11 +2052,11 @@ class WordpressMigrationService
             $host = preg_replace('/^www\./', '', $host) ?? $host;
             $canonical = preg_replace('/^www\./', '', $canonical) ?? $canonical;
             if ($host !== $canonical) {
-                return strlen($url) > 191 ? null : $url;
+                return strlen($url) > $maxLength ? null : $url;
             }
         }
 
-        return strlen($path) > 191 ? null : $path;
+        return strlen($path) > $maxLength ? null : $path;
     }
 
     /**

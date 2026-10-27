@@ -1,1 +1,1 @@
-@include('partials.home.about')
+@include('partials.home.about', ['smallHeadingTag' => 'h1'])

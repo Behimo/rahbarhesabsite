@@ -13,11 +13,11 @@ class SiteDataService
 {
     public function navLinks(): array
     {
-        $menuService = app(\App\Services\MenuService::class);
+        $menuService = app(MenuService::class);
         $location = config('cms.menu_locations.primary', 'primary');
         $menuLinks = $menuService->linksForLocation($location);
 
-        if (!empty($menuLinks)) {
+        if (! empty($menuLinks)) {
             return $this->normalizeNavLinks($menuLinks);
         }
 
@@ -81,7 +81,7 @@ class SiteDataService
     {
         $page = CmsPage::query()->published()->where('slug', $slug)->first();
 
-        if (!$page || empty($page->content)) {
+        if (! $page || empty($page->content)) {
             return $defaults;
         }
 
@@ -471,7 +471,7 @@ class SiteDataService
             $dbProducts = CmsProduct::query()->published()->orderBy('sort_order')->get();
 
             if ($dbProducts->isNotEmpty()) {
-                return $dbProducts->map(fn(CmsProduct $p) => $this->formatProduct($p));
+                return $dbProducts->map(fn (CmsProduct $p) => $this->formatProduct($p));
             }
 
             return collect();
@@ -581,30 +581,34 @@ class SiteDataService
     public function rahbarPageMeta(): array
     {
         return [
+            // Titles/descriptions mirror the live WordPress (Rank Math) output.
             'home' => [
-                'title' => 'راهبر حساب | موسسه آموزش حسابداری و خدمات مالی',
-                'description' => 'موسسه آموزش حسابداری راهبر حساب — دوره‌های کاربردی حسابداری و مالیات در سراسر ایران.',
-                'keywords' => 'راهبر حساب, آموزش حسابداری, مالیات, اظهارنامه, rahbarhesab',
+                'title' => 'موسسه آموزش حسابداری راهبر حساب و اجرای خدمات مالی و مالیاتی',
+                'description' => 'موسسه آموزش حسابداری راهبر حساب ارائه دهنده آموزش، خدمات اجرایی و نرم افزار های مالی و مالیاتی',
+                'keywords' => 'راهبر حساب, آموزش حسابداری, مالیات, اظهارنامه, حسابداری, rahbarhesab',
+                'og_title' => 'راهبر حساب — خالق رهبران حسابداری',
             ],
             'about' => [
-                'title' => 'درباره راهبر حساب | موسسه آموزش حسابداری',
-                'description' => 'آشنایی با موسسه راهبر حساب، تیم آموزشی و خدمات مالی و مالیاتی.',
+                'title' => 'درباره ما - راهبر حساب',
+                'description' => 'ما را بهتر بشناسید',
                 'keywords' => 'درباره راهبر حساب, آموزش حسابداری, موسسه حسابداری',
             ],
             'contact' => [
-                'title' => 'تماس با راهبر حساب | مشاوره رایگان',
-                'description' => 'تماس با موسسه راهبر حساب برای مشاوره آموزشی و خدمات مالی.',
+                'title' => 'تماس با ما - راهبر حساب',
+                'description' => 'ارتباط با راهبر حساب، در سریع‌ترین زمان پاسخگوی شما هستیم. راهنمای استفاده از محصولات خریداری شده در صورتی که محصولات آموزشی خریده اید و در مورد شروع و نحوه',
                 'keywords' => 'تماس راهبر حساب, مشاوره حسابداری, پشتیبانی',
             ],
         ];
     }
 
-    public function pageMeta(string $slug): array
+    public function pageMeta(string $slug, ?CmsPage $page = null, bool $loaded = false): array
     {
         $defaults = $this->defaultPageMeta()[$slug] ?? [];
-        $page = CmsPage::query()->published()->where('slug', $slug)->first();
+        if (! $loaded) {
+            $page = CmsPage::query()->published()->where('slug', $slug)->first();
+        }
 
-        if (!$page) {
+        if (! $page) {
             return $defaults;
         }
 
@@ -614,6 +618,7 @@ class SiteDataService
             'keywords' => $page->meta_keywords ?: ($defaults['keywords'] ?? null),
             'og_title' => $page->meta_title ?: $page->title,
             'og_image' => $page->og_image,
+            'canonical' => $page->canonical_url,
             'robots' => $page->robots ?: ($defaults['robots'] ?? 'index, follow'),
         ]);
     }
@@ -673,7 +678,7 @@ class SiteDataService
 
     public function productImageUrl(?string $image): ?string
     {
-        if (!$image) {
+        if (! $image) {
             return null;
         }
 

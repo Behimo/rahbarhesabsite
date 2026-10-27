@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Site;
 
 use App\Http\Controllers\Controller;
+use App\Services\PermalinkService;
 use App\Services\SeoService;
 use Illuminate\Http\Response;
 
 class SitemapController extends Controller
 {
-    public function __construct(private SeoService $seo) {}
+    public function __construct(private SeoService $seo, private PermalinkService $permalinks) {}
 
     public function index(): Response
     {
@@ -21,7 +22,7 @@ class SitemapController extends Controller
 
     public function legacy(): Response
     {
-        return $this->posts();
+        return $this->index();
     }
 
     public function posts(): Response
@@ -41,7 +42,7 @@ class SitemapController extends Controller
 
     public function products(): Response
     {
-        return $this->renderSitemap($this->seo->productSitemapUrls());
+        return $this->renderSitemap($this->seo->courseSitemapUrls());
     }
 
     public function laws(): Response
@@ -49,9 +50,14 @@ class SitemapController extends Controller
         return $this->renderSitemap($this->seo->lawSitemapUrls());
     }
 
+    public function questions(): Response
+    {
+        return $this->renderSitemap($this->seo->questionSitemapUrls());
+    }
+
     public function robots(): Response
     {
-        $baseUrl = rtrim((string) config('app.url'), '/');
+        $baseUrl = $this->permalinks->rootUrl();
         $content = app()->environment('production')
             ? "User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /panel/\nDisallow: /cart/\nDisallow: /checkout/\nDisallow: /login/\nDisallow: /*?add-to-cart=\n\nSitemap: {$baseUrl}/sitemap_index.xml"
             : "User-agent: *\nDisallow: /";
@@ -61,13 +67,6 @@ class SitemapController extends Controller
 
     private function renderSitemap(array $urls): Response
     {
-        $permalinks = app(\App\Services\PermalinkService::class);
-        $urls = array_map(function (array $item) use ($permalinks): array {
-            $path = parse_url($item['loc'], PHP_URL_PATH) ?: '/';
-            $item['loc'] = $permalinks->absolute($path);
-
-            return $item;
-        }, $urls);
         $xml = view('sitemap', compact('urls'))->render();
 
         return response($xml, 200, ['Content-Type' => 'application/xml; charset=UTF-8']);

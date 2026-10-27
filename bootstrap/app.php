@@ -29,8 +29,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->append(HandleGoneWordpressPaths::class);
-        $middleware->append(NormalizeSeoUrl::class);
         $middleware->append(HandleCmsRedirects::class);
+        $middleware->append(NormalizeSeoUrl::class);
         $middleware->append(PreventIndexingNonProduction::class);
 
         $proxies = env('TRUSTED_PROXIES');
