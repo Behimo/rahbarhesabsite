@@ -30,7 +30,7 @@
                 @if ($post->category)
                     <a href="{{ route('blog.category', $post->category->full_slug ?: $post->category->slug) }}" class="blog-tag">{{ $post->category->name }}</a>
                 @endif
-                <h1 class="blog-article__title">{{ $post->title }}</h1>
+                <h1 class="blog-article__title">{{ wp_texturize($post->title) }}</h1>
                 <div class="blog-article__byline">
                     @if ($post->author)
                         <span class="blog-article__author">{{ $post->author }}</span>

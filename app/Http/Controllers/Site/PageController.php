@@ -44,17 +44,17 @@ class PageController extends SiteController
             'scopedStylesheet' => $isolated['stylesheet'],
             'scopedCss' => $isolated['css'],
             'fullBleedContent' => $isWpImport,
-            'seo' => $this->seo->meta([
-                'title' => $page->meta_title ?: ($page->title.' | '.config('cms.site_name_fa')),
-                'description' => $page->meta_description,
+            'seo' => [
+                'title' => $page->meta_title ?: $this->seo->wpTitle($page->title),
+                'description' => $page->meta_description ?: $this->seo->excerptDescription($content['body_html'] ?? ($content['html'] ?? null)),
                 'keywords' => $page->meta_keywords,
                 'og_image' => $page->og_image,
                 'canonical' => $page->canonical_url ?: $permalinks->pageAbsolute($page),
                 'robots' => $page->robots,
-            ]),
+            ],
             'structuredData' => [
                 $this->seo->breadcrumbSchema([
-                    ['name' => 'خانه', 'url' => route('home')],
+                    ['name' => config('seo.defaults.home_label'), 'url' => route('home')],
                     ['name' => $page->title, 'url' => $permalinks->pageAbsolute($page)],
                 ]),
             ],
@@ -73,7 +73,7 @@ class PageController extends SiteController
             'partners' => $this->siteData->partners(),
             'structuredData' => [
                 $this->seo->breadcrumbSchema([
-                    ['name' => 'خانه', 'url' => route('home')],
+                    ['name' => config('seo.defaults.home_label'), 'url' => route('home')],
                     ['name' => 'درباره ما', 'url' => $permalinks->absolute($permalinks->pageBySlug('about'))],
                 ]),
             ],
@@ -89,7 +89,7 @@ class PageController extends SiteController
             'contactFaq' => $this->siteData->contactFaq(),
             'structuredData' => [
                 $this->seo->breadcrumbSchema([
-                    ['name' => 'خانه', 'url' => route('home')],
+                    ['name' => config('seo.defaults.home_label'), 'url' => route('home')],
                     ['name' => 'تماس', 'url' => $permalinks->absolute($permalinks->pageBySlug('contact'))],
                 ]),
             ],

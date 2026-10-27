@@ -34,7 +34,11 @@ class ShopController extends SiteController
     public function cart(): View
     {
         return $this->render('pages.shop.cart', $this->cartViewData() + [
-            'seo' => $this->seo->meta(['title' => 'سبد خرید']),
+            'seo' => [
+                'title' => 'سبد خرید خدمات و آموزش های '.config('cms.site_name_fa'),
+                'description' => 'سبد خرید برای ثبت نهایی ثبت نام دوره های آموزشی و استفاده از خدمات و نرم افزار های راهبرحساب',
+                'canonical' => app(\App\Services\PermalinkService::class)->rootUrl().'/cart/',
+            ],
         ]);
     }
 
@@ -117,7 +121,7 @@ class ShopController extends SiteController
 
         return $this->render('pages.shop.checkout', $this->cartViewData() + [
             'gateways' => $this->payments->enabledOptions(),
-            'seo' => $this->seo->meta(['title' => 'تسویه حساب']),
+            'seo' => ['title' => 'تسویه حساب'],
         ]);
     }
 
@@ -256,7 +260,7 @@ class ShopController extends SiteController
         return $this->render('pages.shop.success', [
             'order' => $order,
             'licenses' => $licenses,
-            'seo' => $this->seo->meta(['title' => 'پرداخت موفق']),
+            'seo' => ['title' => 'پرداخت موفق'],
         ]);
     }
 
@@ -278,7 +282,7 @@ class ShopController extends SiteController
             'order' => $order,
             'gateways' => $this->payments->enabledOptions(),
             'message' => session('error') ?? 'پرداخت ناموفق یا لغو شد. سبد خرید شما حفظ شده است.',
-            'seo' => $this->seo->meta(['title' => 'پرداخت ناموفق']),
+            'seo' => ['title' => 'پرداخت ناموفق'],
         ]);
     }
 

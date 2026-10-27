@@ -108,12 +108,7 @@
                         </div>
                     @endif
                     <div class="mb-3">
-                        <label class="form-label" for="page-robots">ربات‌های جستجو</label>
-                        <select name="robots" id="page-robots" class="form-select">
-                            @foreach (['index, follow', 'noindex, follow', 'index, nofollow', 'noindex, nofollow'] as $robots)
-                                <option value="{{ $robots }}" @selected(old('robots', $page->robots) === $robots)>{{ $robots }}</option>
-                            @endforeach
-                        </select>
+                        <x-robots-select :value="$page->robots" id="page-robots" />
                     </div>
                     @if ($page->exists)
                         <a href="{{ route('admin.pages.builder', $page) }}" class="btn btn-outline-primary w-100 mb-2">چیدن سکشن‌ها</a>

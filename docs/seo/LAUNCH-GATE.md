@@ -4,6 +4,8 @@ Staging باید password + noindex باشد. تا وقتی موارد زیر س
 
 ## URL و وضعیت HTTP
 
+- [ ] `php artisan seo:compare-wp-urls --with-db --target={staging}` بدون `missing`، `error` و `redirected` تمام می‌شود؛ CSV و گزارش بررسی شده‌اند (هشدارها هم پیش از لانچ تعیین تکلیف شوند). نتیجه‌ی آخرین اجرای محلی و هشدارهای پذیرفته‌شده: `docs/seo/URL-PARITY-REPORT.md`.
+
 - [ ] نمونه نوشته از sitemap وردپرس → 200 روی همان path
 - [ ] نمونه دوره `/product/{slug}/` → 200
 - [ ] `/category/{slug}/` و `/tag/{slug}/` → 200

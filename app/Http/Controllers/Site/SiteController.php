@@ -15,21 +15,18 @@ abstract class SiteController extends Controller
     public function __construct(
         protected SiteDataService $siteData,
         protected SeoService $seo,
-    ) {
-    }
+    ) {}
 
     protected function render(string $view, array $data = []): ViewResponse
     {
-        return view($view, array_merge(
-            $this->siteData->sharedViewData(),
-            $data
-        ));
+        return view($view, $data);
     }
 
     protected function renderSystemPage(string $slug, string $view, array $data = []): ViewResponse
     {
-        $page = $data['page'] ?? CmsPage::query()->where('slug', $slug)->first();
-        $seo = $this->seo->forPage($slug, $data['seo'] ?? []);
+        $page = array_key_exists('page', $data) ? $data['page'] : CmsPage::query()->where('slug', $slug)->first();
+        $seo = array_replace($this->siteData->pageMeta($slug, $page, loaded: true),
+            array_filter($data['seo'] ?? [], fn ($value) => $value !== null && $value !== ''));
         $content = is_array($page?->content) ? $page->content : [];
         $pageBuilder = app(PageBuilderService::class);
 

@@ -23,7 +23,7 @@ class RedirectRequest extends FormRequest
             'from_path' => [
                 'required',
                 'string',
-                'max:255',
+                'max:500',
                 Rule::unique('cms_redirects', 'from_path')
                     ->where(function ($q) use ($fromQuery) {
                         // Empty query matches both '' and legacy NULL rows, since
@@ -41,7 +41,7 @@ class RedirectRequest extends FormRequest
             'from_query' => ['nullable', 'string', 'max:255'],
             'match_query' => ['sometimes', 'boolean'],
             // Either a site-relative path (/foo) or an external http(s) URL.
-            'to_path' => ['required', 'string', 'max:255', 'regex:/^(?:https?:\/\/[^\s\\\\]+|\/(?!\/)[^\s\\\\]*)$/i'],
+            'to_path' => ['required', 'string', 'max:500', 'regex:/^(?:https?:\/\/[^\s\\\\]+|\/(?!\/)[^\s\\\\]*)$/i'],
             'status_code' => ['required', 'in:301,302,410'],
             'is_active' => ['sometimes', 'boolean'],
         ];

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Site;
 
+use App\Models\CmsPage;
 use App\Models\ShopProduct;
 use App\Services\HomeContentService;
 use App\Services\SeoService;
@@ -20,16 +21,10 @@ class HomeController extends SiteController
 
     public function index(): View
     {
-        $content = $this->homeContent->all();
+        $page = CmsPage::query()->where('slug', 'home')->first();
+        $content = $this->homeContent->all($page, loaded: true);
         $about = $content['about'];
         $sections = $content['sections'];
-
-        $seo = $this->seo->forPage('home', [
-            'title' => 'راهبر حساب | موسسه آموزش حسابداری و خدمات مالی',
-            'description' => 'موسسه آموزش حسابداری راهبر حساب — دوره‌های کاربردی حسابداری و مالیات، خدمات مالی و مالیاتی در سراسر ایران.',
-            'keywords' => 'راهبر حساب, آموزش حسابداری, مالیات, اظهارنامه, حسابداری, rahbarhesab',
-            'og_title' => 'راهبر حساب — خالق رهبران حسابداری',
-        ]);
 
         $structuredData = [
             $this->seo->organizationSchema(),
@@ -41,6 +36,7 @@ class HomeController extends SiteController
         }
 
         return $this->renderSystemPage('home', 'pages.home', [
+            'page' => $page,
             'heading_small' => $about['heading_small'],
             'heading' => $about['heading'],
             'description' => $about['description'],
@@ -54,7 +50,6 @@ class HomeController extends SiteController
             'latestPosts' => $this->homeContent->latestPosts(8),
             'courses' => $this->publishedCourses(12),
             'freeCourses' => $this->publishedCourses(6, freeOnly: true),
-            'seo' => $seo,
             'structuredData' => $structuredData,
         ]);
     }

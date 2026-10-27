@@ -79,6 +79,10 @@
                     </div>
                 </div>
             </div>
+            @php
+                $topBarMode = old('top_bar_mode', $settings['top_bar_mode'] ?? 'text');
+                $topBarImage = old('top_bar_image', $settings['top_bar_image'] ?? '');
+            @endphp
             <div class="card">
                 <div class="card-header"><h5 class="mb-0">نوار بالای هدر</h5></div>
                 <div class="card-body">
@@ -98,38 +102,109 @@
                             </div>
                         </div>
                         <div class="col-12">
-                            <label class="form-label" for="settings-top-bar-text">متن نوار</label>
-                            <input
-                                id="settings-top-bar-text"
-                                type="text"
-                                name="top_bar_text"
-                                value="{{ old('top_bar_text', $settings['top_bar_text']) }}"
-                                class="form-control"
-                                placeholder="مثلاً: دوره ویژه حسابداری با تخفیف محدود"
-                            >
+                            <label class="form-label d-block mb-2">نوع نمایش</label>
+                            <div class="d-flex flex-wrap gap-3">
+                                <div class="form-check">
+                                    <input
+                                        class="form-check-input"
+                                        type="radio"
+                                        name="top_bar_mode"
+                                        id="settings-top-bar-mode-text"
+                                        value="text"
+                                        @checked($topBarMode !== 'image')
+                                    >
+                                    <label class="form-check-label" for="settings-top-bar-mode-text">متن و دکمه</label>
+                                </div>
+                                <div class="form-check">
+                                    <input
+                                        class="form-check-input"
+                                        type="radio"
+                                        name="top_bar_mode"
+                                        id="settings-top-bar-mode-image"
+                                        value="image"
+                                        @checked($topBarMode === 'image')
+                                    >
+                                    <label class="form-check-label" for="settings-top-bar-mode-image">تصویر یا گیف</label>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label" for="settings-top-bar-button-text">متن دکمه</label>
-                            <input
-                                id="settings-top-bar-button-text"
-                                type="text"
-                                name="top_bar_button_text"
-                                value="{{ old('top_bar_button_text', $settings['top_bar_button_text']) }}"
-                                class="form-control"
-                                placeholder="مثلاً: ثبت‌نام"
-                            >
+
+                        <div class="col-12" data-top-bar-panel="text" @style(['display: none' => $topBarMode === 'image'])>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label" for="settings-top-bar-text">متن نوار</label>
+                                    <input
+                                        id="settings-top-bar-text"
+                                        type="text"
+                                        name="top_bar_text"
+                                        value="{{ old('top_bar_text', $settings['top_bar_text']) }}"
+                                        class="form-control"
+                                        placeholder="مثلاً: دوره ویژه حسابداری با تخفیف محدود"
+                                    >
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="settings-top-bar-button-text">متن دکمه</label>
+                                    <input
+                                        id="settings-top-bar-button-text"
+                                        type="text"
+                                        name="top_bar_button_text"
+                                        value="{{ old('top_bar_button_text', $settings['top_bar_button_text']) }}"
+                                        class="form-control"
+                                        placeholder="مثلاً: ثبت‌نام"
+                                    >
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="settings-top-bar-button-url">لینک دکمه</label>
+                                    <input
+                                        id="settings-top-bar-button-url"
+                                        type="text"
+                                        name="top_bar_button_url"
+                                        value="{{ old('top_bar_button_url', $settings['top_bar_button_url']) }}"
+                                        class="form-control"
+                                        dir="ltr"
+                                        placeholder="/courses یا https://..."
+                                    >
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label" for="settings-top-bar-button-url">لینک دکمه</label>
-                            <input
-                                id="settings-top-bar-button-url"
-                                type="text"
-                                name="top_bar_button_url"
-                                value="{{ old('top_bar_button_url', $settings['top_bar_button_url']) }}"
-                                class="form-control"
-                                dir="ltr"
-                                placeholder="/courses یا https://..."
-                            >
+
+                        <div class="col-12" data-top-bar-panel="image" @style(['display: none' => $topBarMode !== 'image'])>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label" for="settings-top-bar-image">تصویر یا گیف</label>
+                                    <div class="input-group">
+                                        <input
+                                            id="settings-top-bar-image"
+                                            type="text"
+                                            name="top_bar_image"
+                                            value="{{ $topBarImage }}"
+                                            class="form-control"
+                                            dir="ltr"
+                                            placeholder="آدرس تصویر یا گیف"
+                                        >
+                                        <button type="button" class="btn btn-outline-primary" data-media-target="#settings-top-bar-image">انتخاب</button>
+                                    </div>
+                                    <div class="form-text">فرمت‌های JPG، PNG، WEBP و GIF پشتیبانی می‌شوند.</div>
+                                    @if ($topBarImage)
+                                        <div class="mt-2">
+                                            <img src="{{ $topBarImage }}" alt="پیش‌نمایش نوار بالا" style="max-width: 100%; max-height: 72px; object-fit: contain; border-radius: 8px;">
+                                        </div>
+                                    @endif
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label" for="settings-top-bar-image-url">لینک تصویر / گیف</label>
+                                    <input
+                                        id="settings-top-bar-image-url"
+                                        type="text"
+                                        name="top_bar_image_url"
+                                        value="{{ old('top_bar_image_url', $settings['top_bar_image_url'] ?? '') }}"
+                                        class="form-control"
+                                        dir="ltr"
+                                        placeholder="/courses یا https://..."
+                                    >
+                                    <div class="form-text">با کلیک روی تصویر، کاربر به این آدرس می‌رود.</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -188,4 +263,20 @@
 
 @section('page-script')
 @include('admin.partials.composer-scripts')
+<script>
+    (() => {
+        const radios = document.querySelectorAll('input[name="top_bar_mode"]');
+        const panels = document.querySelectorAll('[data-top-bar-panel]');
+
+        const syncTopBarPanels = () => {
+            const mode = document.querySelector('input[name="top_bar_mode"]:checked')?.value || 'text';
+            panels.forEach((panel) => {
+                panel.style.display = panel.getAttribute('data-top-bar-panel') === mode ? '' : 'none';
+            });
+        };
+
+        radios.forEach((radio) => radio.addEventListener('change', syncTopBarPanels));
+        syncTopBarPanels();
+    })();
+</script>
 @endsection

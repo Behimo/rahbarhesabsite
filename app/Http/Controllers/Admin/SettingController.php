@@ -29,9 +29,12 @@ class SettingController extends Controller
                 'site_favicon' => CmsSetting::get('site_favicon', config('cms.branding.favicon')),
                 'site_og_image' => CmsSetting::get('site_og_image', config('cms.branding.og_image')),
                 'top_bar_enabled' => filter_var(CmsSetting::get('top_bar_enabled', '0'), FILTER_VALIDATE_BOOLEAN),
+                'top_bar_mode' => CmsSetting::get('top_bar_mode', 'text') === 'image' ? 'image' : 'text',
                 'top_bar_text' => CmsSetting::get('top_bar_text', ''),
                 'top_bar_button_text' => CmsSetting::get('top_bar_button_text', ''),
                 'top_bar_button_url' => CmsSetting::get('top_bar_button_url', ''),
+                'top_bar_image' => CmsSetting::get('top_bar_image', ''),
+                'top_bar_image_url' => CmsSetting::get('top_bar_image_url', ''),
             ],
         ]);
     }

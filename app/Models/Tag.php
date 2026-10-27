@@ -14,6 +14,11 @@ class Tag extends Model
         return $this->morphedByMany(CmsPost::class, 'taggable');
     }
 
+    public function questions(): MorphToMany
+    {
+        return $this->morphedByMany(CafeQuestion::class, 'taggable');
+    }
+
     public function shopProducts(): MorphToMany
     {
         return $this->morphedByMany(ShopProduct::class, 'taggable');

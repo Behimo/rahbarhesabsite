@@ -15,6 +15,37 @@ if (! function_exists('clean_html')) {
     }
 }
 
+if (! function_exists('wp_autop_html')) {
+    /**
+     * WordPress runs wpautop on post content and comments, so stored plain text relies on
+     * blank lines for paragraphs. Markup that already has block elements is left as is.
+     */
+    function wp_autop_html(?string $html): string
+    {
+        $html = trim(str_replace("\r", '', (string) $html));
+
+        if ($html !== '' && ! preg_match('/<(p|div|ul|ol|table|h[1-6]|blockquote|pre|figure)[\s>]/iu', $html)) {
+            $paragraphs = array_filter(array_map('trim', preg_split('/\n{2,}/u', $html) ?: []), fn ($part) => $part !== '');
+            $html = implode("\n", array_map(fn ($part) => '<p>'.nl2br($part, false).'</p>', $paragraphs));
+        }
+
+        return clean_html($html);
+    }
+}
+
+if (! function_exists('wp_texturize')) {
+    /**
+     * The subset of WordPress wptexturize that shows up in imported titles (H1s):
+     * " - " becomes an en dash and straight double quotes become curly quotes.
+     */
+    function wp_texturize(?string $text): string
+    {
+        $text = str_replace([' -- ', ' - '], [' — ', ' – '], (string) $text);
+
+        return (string) preg_replace('/"([^"]*)"/u', '“$1”', $text);
+    }
+}
+
 if (! function_exists('wp_shortcodes')) {
     /**
      * Strip or light-transform leftover WordPress shortcodes so they never render raw.
