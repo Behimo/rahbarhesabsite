@@ -52,7 +52,7 @@
             </div>
 
             <div class="about-text">
-              <h3>{{ $heading_small ?? 'راهبر حساب؛ خالق رهبران حسابداری' }}</h3>
+              <{{ $smallHeadingTag ?? 'h3' }}>{{ $heading_small ?? 'راهبر حساب؛ خالق رهبران حسابداری' }}</{{ $smallHeadingTag ?? 'h3' }}>
 
               <h2>{{ $heading ?? 'موسسه آموزشی حسابداری و خدمات مالی و مالیاتی' }}</h2>
 

@@ -3,6 +3,7 @@
 namespace App\Models\Concerns;
 
 use App\Models\Category;
+use App\Services\CacheService;
 use App\Services\CategoryService;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
@@ -60,6 +61,8 @@ trait HasCategories
     /** @param  array<int, string>  $types */
     private function forgetCategoryCaches(array $types): void
     {
+        $this->unsetRelation('categories');
+        app(CacheService::class)->forgetSitemaps();
         $service = app(CategoryService::class);
 
         foreach (array_unique($types) as $type) {

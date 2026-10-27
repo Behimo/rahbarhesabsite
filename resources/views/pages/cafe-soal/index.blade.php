@@ -20,7 +20,7 @@
 
     <div class="cafe-hero__inner">
         <p class="cafe-hero__brand">راهبر حساب</p>
-        <h1 id="cafeHeroTitle" class="cafe-hero__title">کافه سوال</h1>
+        <h1 id="cafeHeroTitle" class="cafe-hero__title">کافه سوال راهبر حساب</h1>
         <p class="cafe-hero__lead">پاسخ دقیق به سوال‌های حسابداری، مالیات و امور مالی — از کارشناسان راهبر حساب</p>
 
         @auth
@@ -179,7 +179,7 @@
                 </ul>
 
                 <div class="cafe-pagination">
-                    {{ $questions->links() }}
+                    {{ $questions->links('pagination.blog', ['paginationBase' => $paginationBase, 'paginationLabel' => 'سوال']) }}
                 </div>
             @endif
         </div>

@@ -25,24 +25,28 @@
                 @else
                     <div class="blog-archive__grid">
                         @foreach ($posts as $post)
+                            @php
+                                $cardImage = $post->featured_image ?: ($post->video_poster ?? null);
+                                $cardDate = $post->published_at ?? $post->answered_at;
+                            @endphp
                             <article class="blog-archive-card">
                                 <a href="{{ $post->url() }}" class="blog-archive-card__hit" aria-label="{{ $post->title }}"></a>
                                 <div class="blog-archive-card__media">
-                                    @if ($post->featured_image)
-                                        <img src="{{ $post->featured_image }}" alt="" loading="lazy" decoding="async" width="640" height="360">
+                                    @if ($cardImage)
+                                        <img src="{{ $cardImage }}" alt="" loading="lazy" decoding="async" width="640" height="360">
                                     @else
                                         <span class="blog-archive-card__fallback" aria-hidden="true"></span>
                                     @endif
                                 </div>
                                 <h2 class="blog-archive-card__title">{{ $post->title }}</h2>
                                 <div class="blog-archive-card__meta">
-                                    @if ($post->published_at)
+                                    @if ($cardDate)
                                         <span>
                                             <svg viewBox="0 0 24 24" aria-hidden="true">
                                                 <rect x="4" y="5" width="16" height="15" rx="2"></rect>
                                                 <path d="M8 3v4M16 3v4M4 10h16"></path>
                                             </svg>
-                                            {{ fa_ago($post->published_at) }}
+                                            {{ fa_ago($cardDate) }}
                                         </span>
                                     @endif
                                     <span>

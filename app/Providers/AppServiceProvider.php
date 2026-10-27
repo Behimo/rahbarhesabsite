@@ -3,11 +3,18 @@
 namespace App\Providers;
 
 use App\Helpers\Helpers;
+use App\Models\AccountingLaw;
 use App\Models\CafeAnswer;
+use App\Models\CafeQuestion;
 use App\Models\Category;
+use App\Models\CmsPage;
+use App\Models\CmsPost;
+use App\Models\ShopProduct;
+use App\Models\Tag;
 use App\Models\User;
 use App\Observers\CafeAnswerObserver;
 use App\Observers\CategoryObserver;
+use App\Observers\SitemapObserver;
 use App\Routing\UrlGenerator;
 use App\Services\BlockRegistry;
 use App\Services\BlockRenderer;
@@ -17,6 +24,7 @@ use App\Services\MenuService;
 use App\Services\PageBuilderService;
 use App\Services\PageRenderContext;
 use App\Services\PaymentGatewayRegistry;
+use App\Services\PermalinkService;
 use App\Services\SpotPlayerService;
 use App\Support\AccessCatalog;
 use App\Support\PhoneNormalizer;
@@ -65,6 +73,10 @@ class AppServiceProvider extends ServiceProvider
         Schema::defaultStringLength(191);
         Category::observe(CategoryObserver::class);
         CafeAnswer::observe(CafeAnswerObserver::class);
+        foreach ([CmsPost::class, CmsPage::class, ShopProduct::class,
+            AccountingLaw::class, CafeQuestion::class, Category::class, Tag::class] as $model) {
+            $model::observe(SitemapObserver::class);
+        }
 
         Gate::before(function ($user, string $ability) {
             if (! $user instanceof User) {
@@ -81,7 +93,9 @@ class AppServiceProvider extends ServiceProvider
         }
 
         if ($this->app->environment('production')) {
-            URL::forceScheme('https');
+            $root = $this->app->make(PermalinkService::class)->rootUrl();
+            URL::forceRootUrl($root);
+            URL::forceScheme(parse_url($root, PHP_URL_SCHEME));
         }
 
         // Keep route()/asset() on the same host:port as the browser (e.g. localhost:8000).

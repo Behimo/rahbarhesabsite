@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    @php $seoMeta = $seo ?? app(\App\Services\SeoService::class)->meta(); @endphp
-
     <title>{{ $seoMeta['title'] ?? config('cms.site_name_fa') }}</title>
     <meta name="description" content="{{ $seoMeta['description'] ?? '' }}">
     @if (!empty($seoMeta['keywords']))
@@ -21,7 +19,7 @@
         <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','{{ $gtm }}');</script>
     @endif
 
-    <meta property="og:type" content="website">
+    <meta property="og:type" content="{{ $seoMeta['og_type'] }}">
     <meta property="og:locale" content="fa_IR">
     <meta property="og:site_name" content="{{ config('cms.site_name_fa') }}">
     <meta property="og:title" content="{{ $seoMeta['og_title'] ?? $seoMeta['title'] ?? '' }}">
@@ -39,7 +37,6 @@
     @endif
 
     <link rel="icon" href="{{ asset('site/images/logorahbarhesab.webp') }}">
-    <link rel="alternate" hreflang="fa-IR" href="{{ $seoMeta['canonical'] ?? url()->current() }}">
     @php
         $sitePublic = public_path('site');
         $siteVer = fn (string $file) => file_exists($sitePublic . '/' . $file) ? filemtime($sitePublic . '/' . $file) : time();
@@ -63,18 +60,14 @@
     @endif
     @include('components.navbar', ['navLinks' => $navLinks ?? []])
 
-    @php $pageSidebars = app(\App\Services\SidebarService::class)->current(); @endphp
-    <main @class(['rh-inner-page' => empty($fullBleedContent) && ! request()->routeIs(['home', 'about', 'contact', 'courses.index', 'courses.show', 'blog.*', 'cafe-soal.*', 'laws.*', 'panel.*', 'login', 'login.verify', 'cart.index', 'checkout.index', 'checkout.success', 'checkout.failed', 'search'])])>
+    <main @class(['rh-inner-page' => $innerPage])>
         @yield('page-banner')
-        @php
-            $blogListing = request()->routeIs(['blog.index', 'blog.index.paged', 'blog.category', 'blog.category.paged', 'blog.tag', 'blog.tag.paged']);
-        @endphp
         @if ($pageSidebars->isNotEmpty() && ! $blogListing)
             <div @class([
                 'rh-sidebar-layout',
                 'rh-sidebar-layout--under-banner' => $__env->hasSection('page-banner'),
-                'rh-sidebar-layout--blog' => request()->routeIs('blog.index'),
-                'rh-sidebar-layout--courses' => request()->routeIs('courses.index'),
+                'rh-sidebar-layout--blog' => $blogSidebarLayout,
+                'rh-sidebar-layout--courses' => $courseSidebarLayout,
             ])>
                 <div class="rh-sidebar-layout__main">
                     @yield('page')

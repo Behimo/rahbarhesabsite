@@ -10,6 +10,7 @@ use App\Models\ShopProduct;
 use App\Models\SpotplayerLicense;
 use App\Services\CategoryService;
 use App\Services\OrderService;
+use App\Services\PermalinkService;
 use App\Services\SeoService;
 use App\Services\SiteDataService;
 use App\Services\SpotPlayerService;
@@ -31,7 +32,7 @@ class CourseController extends SiteController
 
     public function index(Request $request, CategoryService $categories): View
     {
-        $permalinks = app(\App\Services\PermalinkService::class);
+        $permalinks = app(PermalinkService::class);
 
         $page = $request->route('page');
         $page = $page !== null ? max(1, (int) $page) : null;
@@ -70,7 +71,9 @@ class CourseController extends SiteController
             ->when($type === 'free', fn ($q) => $q->whereRaw('COALESCE(sale_price, price) = 0'))
             ->when($type === 'paid', fn ($q) => $q->whereRaw('COALESCE(sale_price, price) > 0'))
             ->orderBy('sort_order')
-            ->paginate(12);
+            ->paginate(config('seo.per_page.products'))->withQueryString();
+
+        abort_if($courses->currentPage() > $courses->lastPage(), 404);
 
         $categoryList = $categories->flat(Category::TYPE_PRODUCT, true);
 
@@ -78,15 +81,17 @@ class CourseController extends SiteController
             ? $permalinks->category($categoryModel, $request->integer('page') ?: null)
             : $permalinks->productIndex($request->integer('page') ?: null);
 
-        $seo = $this->seo->meta([
+        $seo = [
             'title' => $categoryModel
-                ? (($categoryModel->meta_title ?: $categoryModel->name).' | '.config('cms.site_name_fa'))
-                : ('دوره‌های آموزشی حسابداری | '.config('cms.site_name_fa')),
-            'description' => $categoryModel?->meta_description
-                ?: 'دوره‌های کاربردی حسابداری و مالیات — آموزش عملی ویژه بازار کار ایران.',
+                ? ($categoryModel->meta_title ?: $this->seo->wpTitle($categoryModel->name.' Archives', $courses->currentPage(), $courses->lastPage()))
+                : $this->seo->wpTitle('دوره های آموزش حسابداری', $courses->currentPage(), $courses->lastPage()),
+            'description' => $categoryModel
+                ? ($categoryModel->meta_description ?: ($categoryModel->description ?: 'دوره‌های کاربردی حسابداری و مالیات — آموزش عملی ویژه بازار کار ایران.'))
+                : 'دوره های آموزش حسابداری ارائه شده توسط تیم آموزش حسابداری راهبر حساب بر اساس جدیدترین تغییرات مالی و مالیاتی بوده و دارای پشتیبانی 7/24 میباشد.',
             'keywords' => 'دوره حسابداری, آموزش مالیات, اظهارنامه, راهبر حساب',
             'canonical' => $permalinks->absolute($canonicalPath),
-        ]);
+            'robots' => $categoryModel?->robots,
+        ];
 
         return $this->render('pages.courses.index', [
             'courses' => $courses,
@@ -95,7 +100,7 @@ class CourseController extends SiteController
             'seo' => $seo,
             'structuredData' => [
                 $this->seo->breadcrumbSchema([
-                    ['name' => 'خانه', 'url' => route('home')],
+                    ['name' => config('seo.defaults.home_label'), 'url' => route('home')],
                     ['name' => 'دوره‌ها', 'url' => route('courses.index')],
                     ...($categoryModel ? [['name' => $categoryModel->name, 'url' => $permalinks->absolute($permalinks->category($categoryModel))]] : []),
                 ]),
@@ -134,16 +139,16 @@ class CourseController extends SiteController
             }
         }
 
-        $permalinks = app(\App\Services\PermalinkService::class);
+        $permalinks = app(PermalinkService::class);
 
-        $seo = $this->seo->meta([
-            'title' => $product->meta_title ?: ($product->title.' | '.config('cms.site_name_fa')),
-            'description' => $product->meta_description ?: $product->description,
+        $seo = [
+            'title' => $product->meta_title ?: $this->seo->wpTitle($product->title),
+            'description' => $product->meta_description ?: $this->seo->excerptDescription($product->description),
             'keywords' => $product->meta_keywords ?? null,
             'og_image' => $product->og_image ?: $product->featured_image,
             'canonical' => $product->canonical_url ?: $permalinks->productAbsolute($product),
             'robots' => $product->robots ?? null,
-        ]);
+        ];
 
         return $this->render('pages.courses.show', [
             'product' => $product,
@@ -155,7 +160,7 @@ class CourseController extends SiteController
             'structuredData' => [
                 $this->seo->courseSchema($product, $course),
                 $this->seo->breadcrumbSchema([
-                    ['name' => 'خانه', 'url' => route('home')],
+                    ['name' => config('seo.defaults.home_label'), 'url' => route('home')],
                     ['name' => 'دوره‌ها', 'url' => route('courses.index')],
                     ['name' => $product->title, 'url' => $permalinks->productAbsolute($product)],
                 ]),

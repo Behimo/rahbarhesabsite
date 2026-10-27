@@ -50,7 +50,7 @@ class Category extends Model
 
     protected $fillable = [
         'parent_id', 'type', 'name', 'slug', 'full_slug', 'description', 'image',
-        'sort_order', 'is_active', 'meta_title', 'meta_description',
+        'sort_order', 'is_active', 'meta_title', 'meta_description', 'robots',
     ];
 
     protected function casts(): array

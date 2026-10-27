@@ -8,10 +8,12 @@ use Illuminate\Support\Facades\Cache;
 
 class HomeContentService
 {
-    public function all(): array
+    public function all(?CmsPage $page = null, bool $loaded = false): array
     {
-        return Cache::remember('cms_home_content', 3600, function () {
-            $page = CmsPage::query()->where('slug', 'home')->first();
+        return Cache::remember('cms_home_content', 3600, function () use ($page, $loaded) {
+            if (! $loaded) {
+                $page = CmsPage::query()->where('slug', 'home')->first();
+            }
             $stored = is_array($page?->content) ? $page->content : [];
 
             return [
@@ -30,7 +32,7 @@ class HomeContentService
             ['slug' => 'home'],
             [
                 'title' => 'صفحه اصلی',
-                'meta_title' => 'راهبر حساب | موسسه آموزش حسابداری و خدمات مالی',
+                'meta_title' => 'موسسه آموزش حسابداری راهبر حساب و اجرای خدمات مالی و مالیاتی',
                 'is_published' => true,
                 'is_system' => true,
                 'template' => 'system',

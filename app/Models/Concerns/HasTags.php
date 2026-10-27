@@ -3,6 +3,7 @@
 namespace App\Models\Concerns;
 
 use App\Models\Tag;
+use App\Services\CacheService;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 trait HasTags
@@ -17,5 +18,7 @@ trait HasTags
     {
         $ids = array_values(array_unique(array_map('intval', array_filter($tagIds))));
         $this->tags()->sync($ids);
+        $this->unsetRelation('tags');
+        app(CacheService::class)->forgetSitemaps();
     }
 }

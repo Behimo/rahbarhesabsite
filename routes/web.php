@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
+use App\Http\Controllers\Admin\CafeQuestionController as AdminCafeQuestionController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Admin\CourseController as AdminCourseController;
@@ -12,7 +13,6 @@ use App\Http\Controllers\Admin\LawController as AdminLawController;
 use App\Http\Controllers\Admin\LicenseController as AdminLicenseController;
 use App\Http\Controllers\Admin\MediaController as AdminMediaController;
 use App\Http\Controllers\Admin\MenuController as AdminMenuController;
-use App\Http\Controllers\Admin\CafeQuestionController as AdminCafeQuestionController;
 use App\Http\Controllers\Admin\MessageController as AdminMessageController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\PageBuilderController;
@@ -24,8 +24,8 @@ use App\Http\Controllers\Admin\RedirectController as AdminRedirectController;
 use App\Http\Controllers\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Admin\SearchController as AdminSearchController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
-use App\Http\Controllers\Admin\SmsDriverController as AdminSmsDriverController;
 use App\Http\Controllers\Admin\SidebarController as AdminSidebarController;
+use App\Http\Controllers\Admin\SmsDriverController as AdminSmsDriverController;
 use App\Http\Controllers\Admin\TagController as AdminTagController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\AuthController;
@@ -40,6 +40,7 @@ use App\Http\Controllers\Site\PageController;
 use App\Http\Controllers\Site\SearchController;
 use App\Http\Controllers\Site\ShopController;
 use App\Http\Controllers\Site\SitemapController;
+use App\Services\PermalinkService;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -62,6 +63,7 @@ Route::controller(SitemapController::class)->group(function () {
     Route::get('/course-sitemap.xml', 'courses')->name('sitemap.courses');
     Route::get('/product-sitemap.xml', 'products')->name('sitemap.products');
     Route::get('/law-sitemap.xml', 'laws')->name('sitemap.laws');
+    Route::get('/qa-sitemap.xml', 'questions')->name('sitemap.questions');
     Route::get('/robots.txt', 'robots')->name('robots');
 });
 
@@ -70,6 +72,14 @@ Route::controller(SitemapController::class)->group(function () {
 | Public Frontend (Site) — WordPress URL parity
 |--------------------------------------------------------------------------
 */
+
+Route::permanentRedirect('/qa-sitemap1.xml', '/qa-sitemap.xml');
+Route::permanentRedirect('/qa-sitemap2.xml', '/qa-sitemap.xml');
+
+foreach (config('seo.account_redirects') as $from => $to) {
+    Route::permanentRedirect($from, $to);
+}
+Route::get('/my-account/{path}', fn () => redirect('/panel', 301))->where('path', '.+');
 
 // Home & Search
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -127,29 +137,16 @@ Route::get('/contact-us', [PageController::class, 'contact'])->name('contact');
 Route::post('/contact-us', [ContactController::class, 'store'])->middleware('throttle:contact')->name('contact.store');
 
 // Cafe Soal (Q&A)
-Route::controller(CafeQuestionController::class)->prefix('cafe-soal')->name('cafe-soal.')->group(function () {
+Route::permanentRedirect('/cafe-soal', '/questions/');
+Route::get('/cafe-soal/{path}', fn (string $path) => redirect(app(PermalinkService::class)->normalizePath('/questions/'.$path), 301))->where('path', '.*');
+Route::controller(CafeQuestionController::class)->prefix('questions')->name('cafe-soal.')->group(function () {
     Route::get('/', 'index')->name('index');
+    Route::get('/page/{page}', 'index')->whereNumber('page')->name('index.paged');
     Route::get('/ask', 'create')->middleware('auth')->name('ask');
     Route::post('/', 'store')->middleware(['auth', 'throttle:10,1'])->name('store');
-    Route::get('/{slug}', 'show')->name('show');
+    Route::get('/{slug}', 'show')->where('slug', '^(?!page$)[^/]+$')->name('show');
     Route::post('/{slug}/answers', 'storeAnswer')->middleware(['auth', 'throttle:20,1'])->name('answers.store');
 });
-
-// WP-style post permalink /{category}/{slug}/ then CMS pages /{slug}/
-
-// Reserved first segments are excluded by whole-segment match so slugs like
-// "builder-page" or "productivity" still resolve (see config/seo.php).
-$permalinks = app(\App\Services\PermalinkService::class);
-
-Route::get('/{category}/{slug}', [BlogController::class, 'show'])
-    // "blog" is allowed as category segment so /blog/{post-slug}/ works for uncategorized fallback.
-    ->where('category', $permalinks->reservedSegmentPattern(['blog']))
-    ->where('slug', '^(?!page$)[^/]+$')
-    ->name('blog.show');
-
-Route::get('/{slug}', [PageController::class, 'show'])
-    ->where('slug', $permalinks->reservedSegmentPattern())
-    ->name('pages.show');
 
 /*
 |--------------------------------------------------------------------------
@@ -399,3 +396,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
         });
     });
 });
+
+// Catch-all content routes must come after every explicit application route.
+$permalinks = app(PermalinkService::class);
+
+Route::get('/{category}/{slug}', [BlogController::class, 'show'])
+    ->where('category', $permalinks->reservedSegmentPattern(['blog']))
+    ->where('slug', '^(?!page$)[^/]+$')
+    ->name('blog.show');
+
+Route::get('/{slug}', [PageController::class, 'show'])
+    ->where('slug', $permalinks->reservedSegmentPattern())
+    ->name('pages.show');

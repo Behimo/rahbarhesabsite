@@ -38,6 +38,24 @@
 - [x] Article با dateModified
 - [x] BreadcrumbList
 
+## صحت‌سنجی اصلاحات ۲۰۲۶-۱۰-۲۶
+
+- [x] نرمال‌سازی و CMS redirect فقط GET/HEAD عمومی؛ bypass متدهای نوشتنی/OPTIONS، سیستم و فایل
+- [x] سیاست production برای host/scheme/slash؛ query و path فارسی و trusted proxy
+- [x] زنجیره/حلقه/410/query اختصاصی و مقصد www داخلی؛ حفظ `/product/{slug}/`
+- [x] robots سخت‌گیرانه و متای قابل‌ویرایش خانه؛ یک نقطهٔ نهایی ساخت seoMeta
+- [x] شمارندهٔ بازدید بدون تغییر lastmod/dateModified
+- [x] sitemap دسته‌ای با TTL=300، namespace ریشه URL و invalidation مدل/دسته/تگ
+- [x] حذف آرشیو خالی و حفظ والد دارای محتوای زیرشاخه
+- [x] index کامل در `/sitemap.xml` و خروجی واقعی سازگاری `/product-sitemap.xml`
+- [x] صفحه‌بندی خارج از محدوده 404؛ صفحهٔ اول خالی 200
+- [x] Rule و component مشترک robots؛ حفظ directives گستردهٔ پشتیبانی‌شده
+- [x] rollback/reapply مایگریشن‌ها فقط در SQLite حافظه‌ای
+- [ ] اجرای migration جدید افزایش طول robots روی محیط استقرار پس از backup و بررسی staging؛ **اینجا اجرا نشده**
+- [ ] تأیید روی Apache واقعی و موتور MySQL؛ تست داخلی PHP جای آن‌ها نیست
+
+وضعیت هر ۲۲ بند، شواهد و حدود تضمین: [`SEO-CODE-REVIEW.md`](SEO-CODE-REVIEW.md).
+
 ## لانچ
 
 - [ ] تکمیل [`LAUNCH-GATE.md`](LAUNCH-GATE.md) روی staging در برابر production وردپرس

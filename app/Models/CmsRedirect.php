@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Http\Middleware\HandleCmsRedirects;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class CmsRedirect extends Model
 {
@@ -27,5 +29,15 @@ class CmsRedirect extends Model
         static::saving(function (self $redirect): void {
             $redirect->from_query = (string) ($redirect->from_query ?? '');
         });
+
+        $forget = function (self $redirect): void {
+            foreach ([$redirect->from_path, $redirect->getRawOriginal('from_path')] as $path) {
+                if ($path) {
+                    Cache::forget(HandleCmsRedirects::cacheKey($path));
+                }
+            }
+        };
+        static::saved($forget);
+        static::deleted($forget);
     }
 }

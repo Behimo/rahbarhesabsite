@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\CafeQuestion;
 use App\Models\Category;
 use App\Models\CmsPage;
 use App\Models\CmsPost;
@@ -19,13 +20,18 @@ class PermalinkService
     }
 
     /**
-     * Production / SEO: configured APP_URL.
+     * Production / SEO: configured canonical host and scheme policy.
      * Local (artisan serve on :8000, Laragon, etc.): current request host so menus/links keep the port.
      */
     public function rootUrl(): string
     {
         if (app()->environment('production')) {
-            return rtrim((string) config('app.url'), '/');
+            $configured = (string) config('app.url');
+            $host = preg_replace('/^www\./i', '', (string) config('seo.canonical_host', parse_url($configured, PHP_URL_HOST)));
+            $host = config('seo.force_www', false) ? 'www.'.$host : $host;
+            $scheme = config('seo.force_https', true) ? 'https' : (parse_url($configured, PHP_URL_SCHEME) ?: 'https');
+
+            return $scheme.'://'.$host;
         }
 
         try {
@@ -41,22 +47,28 @@ class PermalinkService
 
     public function normalizePath(string $path): string
     {
-        $path = '/'.ltrim(trim($path), '/');
+        preg_match('/^([^?#]*)(.*)$/s', trim($path), $parts);
+        $path = '/'.ltrim($parts[1], '/');
+        $suffix = $parts[2];
+        $path = rtrim($path, '/') ?: '/';
 
-        if ($path === '/') {
-            return '/';
-        }
-
-        // Files with extensions keep their form (sitemaps, robots, assets).
-        if (preg_match('/\.[a-zA-Z0-9]{1,8}$/', rtrim($path, '/'))) {
-            return rtrim($path, '/');
-        }
-
-        if (config('seo.trailing_slash', true) && ! str_ends_with($path, '/')) {
+        if ($path !== '/' && ! $this->isSystemPath($path) && ! $this->isFilePath($path) && config('seo.trailing_slash', true)) {
             $path .= '/';
         }
 
-        return $path;
+        return $path.$suffix;
+    }
+
+    public function isFilePath(string $path): bool
+    {
+        return (bool) preg_match('/\.[a-zA-Z0-9]{1,8}$/', rtrim($path, '/'));
+    }
+
+    public function isSystemPath(string $path): bool
+    {
+        $first = mb_strtolower(explode('/', ltrim(rawurldecode($path), '/'), 2)[0]);
+
+        return in_array($first, config('seo.system_prefixes', []), true);
     }
 
     public function post(CmsPost $post): string
@@ -70,6 +82,16 @@ class PermalinkService
     public function postAbsolute(CmsPost $post): string
     {
         return $this->absolute($this->post($post));
+    }
+
+    public function question(CafeQuestion $question): string
+    {
+        return $this->normalizePath('/questions/'.$question->slug);
+    }
+
+    public function questionAbsolute(CafeQuestion $question): string
+    {
+        return $this->absolute($this->question($question));
     }
 
     public function blogIndex(?int $page = null): string

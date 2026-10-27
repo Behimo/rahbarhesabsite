@@ -18,7 +18,7 @@
     <header class="rh-cart__intro">
         <div class="rh-cart__intro-copy">
             <p class="rh-cart__kicker">خرید امن</p>
-            <h1 id="rh-cart-title" class="rh-cart__title">سبد خرید</h1>
+            <h1 id="rh-cart-title" class="rh-cart__title">سبدخرید شما</h1>
             <p class="rh-cart__lede">
                 @if ($items->isEmpty())
                     هنوز دوره‌ای انتخاب نکرده‌اید. وقتی آماده بودید، از اینجا ادامه دهید.

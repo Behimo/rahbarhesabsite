@@ -57,7 +57,7 @@
                         <span class="course-detail-badge">دوره تخصصی</span>
                     @endif
 
-                    <h1>{{ $product->title }}</h1>
+                    <h1>{{ wp_texturize($product->title) }}</h1>
 
                     @if ($product->subtitle)
                         <p class="course-detail-lead">{{ $product->subtitle }}</p>

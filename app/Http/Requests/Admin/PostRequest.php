@@ -2,8 +2,11 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\Category;
 use App\Models\CmsPost;
+use App\Rules\Robots;
 use App\Support\PersianSlug;
+use App\Support\RobotsDirectives;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -16,7 +19,7 @@ class PostRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $post = $this->post();
+        $post = $this->postModel();
         $title = trim((string) $this->input('title'));
         $slugInput = trim((string) $this->input('slug'));
 
@@ -29,28 +32,31 @@ class PostRequest extends FormRequest
                     ->exists()
             );
         } elseif ($slugInput !== '') {
-            $slugInput = PersianSlug::make($slugInput);
+            $slugInput = trim(preg_replace('/[\s\x{200c}]+/u', '-', mb_strtolower(rawurldecode($slugInput))), '-');
         }
 
         $this->merge(['slug' => $slugInput]);
+        if (is_string($this->input('robots'))) {
+            $this->merge(['robots' => RobotsDirectives::normalize($this->input('robots'))]);
+        }
     }
 
     public function rules(): array
     {
-        $post = $this->post();
+        $post = $this->postModel();
 
         return [
             'slug' => [
                 'required',
                 'string',
                 'max:120',
-                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+                'regex:/^[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)*$/u',
                 Rule::unique('cms_posts', 'slug')
                     ->ignore($post?->id)
                     ->whereNull('deleted_at'),
             ],
             'title' => ['required', 'string', 'max:200'],
-            'category_id' => ['nullable', 'exists:cms_categories,id'],
+            'category_id' => ['nullable', Rule::exists('categories', 'id')->where('type', Category::TYPE_POST)],
             'excerpt' => ['nullable', 'string', 'max:500'],
             'body' => ['nullable', 'string'],
             'featured_image' => ['nullable', 'string', 'max:500'],
@@ -61,11 +67,11 @@ class PostRequest extends FormRequest
             'meta_keywords' => ['nullable', 'string', 'max:300'],
             'og_image' => ['nullable', 'string', 'max:500'],
             'canonical_url' => ['nullable', 'url', 'max:500'],
-            'robots' => ['nullable', 'string', 'max:50'],
+            'robots' => ['nullable', 'string', 'max:500', new Robots],
             'published_at' => ['nullable', 'date'],
             'status' => ['nullable', 'in:draft,published,scheduled'],
-            'term_ids' => ['nullable', 'array'],
-            'term_ids.*' => ['integer', 'exists:cms_taxonomy_terms,id'],
+            'tag_ids' => ['nullable', 'array'],
+            'tag_ids.*' => ['integer', 'exists:tags,id'],
         ];
     }
 
@@ -85,7 +91,7 @@ class PostRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'slug.regex' => 'نامک فقط می‌تواند شامل حروف انگلیسی کوچک، عدد و خط تیره باشد.',
+            'slug.regex' => 'نامک فقط می‌تواند شامل حروف فارسی یا انگلیسی، عدد و خط تیره باشد.',
             'slug.unique' => 'این نامک قبلاً برای مقاله دیگری ثبت شده است.',
         ];
     }
@@ -118,17 +124,16 @@ class PostRequest extends FormRequest
         $validated['is_published'] = $isPublished;
         $validated['status'] = $status;
         $validated['published_at'] = $publishedAt;
-        $validated['category_id'] = ($validated['category_id'] ?? null) ?: null;
         $validated['reading_time_minutes'] = $temp->estimateReadingTime();
         $validated['author'] = ($validated['author'] ?? null) ?: config('cms.site_name_fa', 'راهبر حساب');
         $validated['og_image'] = ($validated['og_image'] ?? null) ?: ($validated['featured_image'] ?? null);
 
-        unset($validated['term_ids']);
+        unset($validated['category_id'], $validated['tag_ids']);
 
         return $validated;
     }
 
-    private function post(): ?CmsPost
+    private function postModel(): ?CmsPost
     {
         $post = $this->route('post');
 
