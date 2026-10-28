@@ -23,9 +23,12 @@ class SettingRequest extends FormRequest
             'site_favicon' => ['nullable', 'string', 'max:500'],
             'site_og_image' => ['nullable', 'string', 'max:500'],
             'top_bar_enabled' => ['nullable', 'boolean'],
+            'top_bar_mode' => ['nullable', 'in:text,image'],
             'top_bar_text' => ['nullable', 'string', 'max:300'],
             'top_bar_button_text' => ['nullable', 'string', 'max:80'],
             'top_bar_button_url' => ['nullable', 'string', 'max:500'],
+            'top_bar_image' => ['nullable', 'string', 'max:500'],
+            'top_bar_image_url' => ['nullable', 'string', 'max:500'],
         ];
     }
 
@@ -33,6 +36,7 @@ class SettingRequest extends FormRequest
     {
         $this->merge([
             'top_bar_enabled' => $this->boolean('top_bar_enabled'),
+            'top_bar_mode' => $this->input('top_bar_mode', 'text') === 'image' ? 'image' : 'text',
         ]);
     }
 
@@ -48,9 +52,12 @@ class SettingRequest extends FormRequest
             'site_favicon' => 'فاوآیکون',
             'site_og_image' => 'تصویر اشتراک‌گذاری',
             'top_bar_enabled' => 'نمایش نوار بالای هدر',
+            'top_bar_mode' => 'حالت نوار بالای هدر',
             'top_bar_text' => 'متن نوار بالای هدر',
             'top_bar_button_text' => 'متن دکمه نوار بالای هدر',
             'top_bar_button_url' => 'لینک دکمه نوار بالای هدر',
+            'top_bar_image' => 'تصویر یا گیف نوار بالای هدر',
+            'top_bar_image_url' => 'لینک تصویر نوار بالای هدر',
         ];
     }
 }

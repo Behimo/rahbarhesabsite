@@ -11,7 +11,7 @@
     </nav>
 
     <div class="rh-card p-6 sm:p-8">
-        <h1 class="mb-6 text-3xl font-extrabold text-slate-800">{{ $page->title }}</h1>
+        <h1 class="mb-6 text-3xl font-extrabold text-slate-800">{{ wp_texturize($page->title) }}</h1>
         <div class="prose prose-slate max-w-none">
             <div class="wp-imported-page rtl" dir="rtl">{!! $bodyHtml ?? '' !!}</div>
         </div>

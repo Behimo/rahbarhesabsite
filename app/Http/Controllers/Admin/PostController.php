@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\PostRequest;
 use App\Models\Category;
 use App\Models\CmsPost;
 use App\Models\CmsPostRevision;
@@ -12,7 +13,6 @@ use App\Services\SiteDataService;
 use App\Support\PersianSlug;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -81,9 +81,9 @@ class PostController extends Controller
         ])));
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(PostRequest $request): RedirectResponse
     {
-        $post = CmsPost::query()->create($this->validatePost($request));
+        $post = CmsPost::query()->create($request->postAttributes());
         $this->syncTaxonomy($post, $request);
         $this->storeRevision($post, 'ایجاد اولیه');
 
@@ -97,9 +97,9 @@ class PostController extends Controller
         return view('admin.posts.form', $this->formData($post));
     }
 
-    public function update(Request $request, CmsPost $post): RedirectResponse
+    public function update(PostRequest $request, CmsPost $post): RedirectResponse
     {
-        $post->update($this->validatePost($request, $post));
+        $post->update($request->postAttributes());
         $this->syncTaxonomy($post, $request);
         $this->storeRevision($post->fresh(), 'ذخیره تغییرات');
 
@@ -228,90 +228,6 @@ class PostController extends Controller
         $categoryId = $request->input('category_id') ? (int) $request->input('category_id') : null;
         $post->syncCategories($categoryId ? [$categoryId] : [], $categoryId);
         $post->syncTags($request->input('tag_ids', []));
-    }
-
-    private function validatePost(Request $request, ?CmsPost $post = null): array
-    {
-        $title = trim((string) $request->input('title'));
-        $slugInput = trim((string) $request->input('slug'));
-
-        if ($slugInput === '' && $title !== '') {
-            $slugInput = PersianSlug::unique(
-                $title,
-                fn (string $slug) => CmsPost::withTrashed()
-                    ->where('slug', $slug)
-                    ->when($post, fn ($q) => $q->where('id', '!=', $post->id))
-                    ->exists()
-            );
-            $request->merge(['slug' => $slugInput]);
-        } elseif ($slugInput !== '') {
-            $slugInput = PersianSlug::make($slugInput);
-            $request->merge(['slug' => $slugInput]);
-        }
-
-        $validated = $request->validate([
-            'slug' => [
-                'required',
-                'string',
-                'max:120',
-                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
-                Rule::unique('cms_posts', 'slug')
-                    ->ignore($post?->id)
-                    ->whereNull('deleted_at'),
-            ],
-            'title' => ['required', 'string', 'max:200'],
-            'category_id' => ['nullable', Rule::exists('categories', 'id')->where('type', Category::TYPE_POST)],
-            'excerpt' => ['nullable', 'string', 'max:500'],
-            'body' => ['nullable', 'string'],
-            'featured_image' => ['nullable', 'string', 'max:500'],
-            'featured_image_alt' => ['nullable', 'string', 'max:200'],
-            'author' => ['nullable', 'string', 'max:100'],
-            'meta_title' => ['nullable', 'string', 'max:200'],
-            'meta_description' => ['nullable', 'string', 'max:500'],
-            'meta_keywords' => ['nullable', 'string', 'max:300'],
-            'og_image' => ['nullable', 'string', 'max:500'],
-            'canonical_url' => ['nullable', 'url', 'max:500'],
-            'robots' => ['nullable', 'string', 'max:50'],
-            'published_at' => ['nullable', 'date'],
-            'status' => ['nullable', 'in:draft,published,scheduled'],
-            'tag_ids' => ['nullable', 'array'],
-            'tag_ids.*' => ['integer', 'exists:tags,id'],
-        ]);
-
-        $checkboxPublished = $request->boolean('is_published');
-        $requestedStatus = $validated['status'] ?? CmsPost::STATUS_DRAFT;
-        $publishedAt = ! empty($validated['published_at']) ? $validated['published_at'] : null;
-
-        // Checkbox OR status select can publish. Default status=draft must not
-        // undo a checked "منتشر شود" (previous bug kept every new post as draft).
-        $isPublished = $checkboxPublished
-            || in_array($requestedStatus, [
-                CmsPost::STATUS_PUBLISHED,
-                CmsPost::STATUS_SCHEDULED,
-            ], true);
-
-        if ($isPublished && $publishedAt && now()->lt($publishedAt)) {
-            $status = CmsPost::STATUS_SCHEDULED;
-        } elseif ($isPublished) {
-            $status = CmsPost::STATUS_PUBLISHED;
-            $publishedAt = $publishedAt ?: now()->toDateTimeString();
-        } else {
-            $status = CmsPost::STATUS_DRAFT;
-        }
-
-        $body = $validated['body'] ?? '';
-        $temp = new CmsPost(['body' => $body]);
-
-        $validated['is_published'] = $isPublished;
-        $validated['status'] = $status;
-        $validated['published_at'] = $publishedAt;
-        $validated['reading_time_minutes'] = $temp->estimateReadingTime();
-        $validated['author'] = ($validated['author'] ?? null) ?: config('cms.site_name_fa', 'راهبر حساب');
-        $validated['og_image'] = ($validated['og_image'] ?? null) ?: ($validated['featured_image'] ?? null);
-
-        unset($validated['category_id'], $validated['tag_ids']);
-
-        return $validated;
     }
 
     private function storeRevision(CmsPost $post, string $note): void

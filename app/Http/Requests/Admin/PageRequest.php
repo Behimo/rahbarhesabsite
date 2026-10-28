@@ -4,6 +4,8 @@ namespace App\Http\Requests\Admin;
 
 use App\Models\CmsPage;
 use App\Rules\EnglishSlug;
+use App\Rules\Robots;
+use App\Support\RobotsDirectives;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -21,6 +23,13 @@ class PageRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if (is_string($this->input('robots'))) {
+            $this->merge(['robots' => RobotsDirectives::normalize($this->input('robots'))]);
+        }
     }
 
     public function rules(): array
@@ -45,7 +54,7 @@ class PageRequest extends FormRequest
             'meta_keywords' => ['nullable', 'string', 'max:300'],
             'og_image' => ['nullable', 'string', 'max:500'],
             'canonical_url' => ['nullable', 'url', 'max:500'],
-            'robots' => ['required', 'string', 'max:50'],
+            'robots' => ['required', 'string', 'max:500', new Robots],
             'body_html' => ['nullable', 'string'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ];

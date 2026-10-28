@@ -6703,6 +6703,26 @@ a.rh-side-item:hover .rh-side-item__title {
 
 .cafe-answer__body--rich {
     white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.cafe-question__video {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin-top: 1rem;
+    border-radius: 1rem;
+}
+
+.cafe-answer--reply {
+    margin-inline-start: 1.5rem;
+    border-inline-start: 3px solid rgba(100, 58, 188, 0.16);
+}
+
+@media (max-width: 600px) {
+    .cafe-answer--reply {
+        margin-inline-start: 0.75rem;
+    }
 }
 
 .cafe-answer__body--rich>*:first-child {

@@ -437,6 +437,35 @@ class WordpressMigrationTest extends TestCase
         $this->assertTrue($post->fresh()->tags->contains('slug', 'moodian'));
     }
 
+    public function test_term_links_use_rank_math_primary_category_for_the_permalink(): void
+    {
+        Category::factory()->post()->create(['slug' => 'news', 'name' => 'اخبار']);
+        Category::factory()->post()->create(['slug' => 'blogs', 'name' => 'مقالات']);
+        $post = CmsPost::query()->create([
+            'slug' => 'penalty', 'title' => 'بخشودگی', 'body' => 'متن',
+            'status' => CmsPost::STATUS_PUBLISHED, 'is_published' => true, 'published_at' => now(),
+        ]);
+        $this->seedWordpressTerm(91, 'اخبار', 'news', 'category');
+        $this->seedWordpressTerm(95, 'مقالات', 'blogs', 'category');
+        DB::connection('wordpress')->table('posts')->insert([
+            'ID' => 803, 'post_type' => 'post', 'post_status' => 'publish', 'post_name' => 'penalty',
+            'post_title' => 'بخشودگی', 'post_content' => null, 'post_excerpt' => null, 'post_date' => null,
+        ]);
+        $this->attachWordpressTerm(803, 91);
+        $this->attachWordpressTerm(803, 95);
+        DB::connection('wordpress')->table('postmeta')->insert(['post_id' => 803, 'meta_key' => 'rank_math_primary_category', 'meta_value' => '95']);
+
+        app(WordpressMigrationService::class)->migrateTermLinks();
+
+        $this->assertSame('blogs', $post->fresh()->category->slug);
+        $this->assertSame('/blogs/penalty/', app(\App\Services\PermalinkService::class)->post($post->fresh()));
+
+        DB::connection('wordpress')->table('postmeta')->delete();
+        app(WordpressMigrationService::class)->migrateTermLinks();
+
+        $this->assertSame('news', $post->fresh()->category->slug, 'Without Rank Math meta WordPress uses the lowest term id.');
+    }
+
     public function test_course_migration_stores_relative_featured_image(): void
     {
         DB::connection('wordpress')->table('posts')->insert([
@@ -518,6 +547,32 @@ class WordpressMigrationTest extends TestCase
         $this->assertSame('/wp-content/uploads/2023/01/post.webp', $post->fresh()->featured_image);
         $this->assertSame('/wp-content/uploads/2023/01/og.webp', $post->fresh()->og_image);
         $this->assertSame('/wp-content/uploads/2023/01/course.webp', $product->fresh()->featured_image);
+    }
+
+    public function test_post_and_course_migration_preserve_all_historical_slug_redirects(): void
+    {
+        Category::query()->create(['name' => 'بلاگ', 'slug' => 'blogs', 'type' => Category::TYPE_POST]);
+        $this->seedWordpressTerm(20, 'بلاگ', 'blogs', 'category');
+        foreach (['post' => 9301, 'product' => 9302] as $type => $id) {
+            DB::connection('wordpress')->table('posts')->insert([
+                'ID' => $id, 'post_type' => $type, 'post_status' => 'publish',
+                'post_name' => 'current-'.$type, 'post_title' => 'عنوان',
+                'post_content' => 'متن', 'post_date' => '2020-01-01 00:00:00',
+            ]);
+            foreach (['old-one', 'old-two'] as $old) {
+                DB::connection('wordpress')->table('postmeta')->insert([
+                    'post_id' => $id, 'meta_key' => '_wp_old_slug', 'meta_value' => $old,
+                ]);
+            }
+        }
+        $this->attachWordpressTerm(9301, 20);
+        $service = app(WordpressMigrationService::class);
+        $service->migratePosts();
+        $service->migrateCourses();
+        foreach (['old-one', 'old-two'] as $old) {
+            $this->assertDatabaseHas('cms_redirects', ['from_path' => '/blogs/'.$old, 'to_path' => '/blogs/current-post/']);
+            $this->assertDatabaseHas('cms_redirects', ['from_path' => '/product/'.$old, 'to_path' => '/product/current-product/']);
+        }
     }
 
     private function createWordpressTables(): void

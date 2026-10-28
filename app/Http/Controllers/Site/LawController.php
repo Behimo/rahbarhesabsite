@@ -49,11 +49,11 @@ class LawController extends SiteController
 
         $categories = app(CategoryService::class)->flat(Category::TYPE_LAW, true);
 
-        $seo = $this->seo->meta([
+        $seo = [
             'title' => 'مواد قانونی حسابداری | راهبر حساب',
             'description' => 'متن مواد قانونی مرتبط با حسابداری، همراه با توضیح ساده، موارد استفاده، مثال و سیر تحول.',
             'keywords' => 'مواد قانونی, قانون حسابداری, مالیات, ماده قانونی',
-        ]);
+        ];
 
         return $this->render('pages.laws.index', [
             'seo' => $seo,
@@ -64,7 +64,7 @@ class LawController extends SiteController
             'sort' => $sort,
             'structuredData' => [
                 $this->seo->breadcrumbSchema([
-                    ['name' => 'خانه', 'url' => route('home')],
+                    ['name' => config('seo.defaults.home_label'), 'url' => route('home')],
                     ['name' => 'مواد قانونی', 'url' => route('laws.index')],
                 ]),
             ],
@@ -79,15 +79,16 @@ class LawController extends SiteController
             ->with(['categories.ancestors', 'evolutions'])
             ->firstOrFail();
 
-        $law->increment('views');
+        AccountingLaw::withoutTimestamps(fn () => $law->increment('views'));
 
-        $seo = $this->seo->meta([
+        $seo = [
             'title' => $law->meta_title ?: ($law->display_title.' | مواد قانونی'),
             'description' => $law->meta_description ?: $law->excerpt(),
             'keywords' => $law->meta_keywords,
             'og_title' => $law->meta_title ?: $law->display_title,
             'og_image' => $law->featured_image,
-        ]);
+            'og_type' => 'article',
+        ];
 
         $related = AccountingLaw::query()
             ->published()
@@ -107,7 +108,7 @@ class LawController extends SiteController
             'related' => $related,
             'structuredData' => [
                 $this->seo->breadcrumbSchema([
-                    ['name' => 'خانه', 'url' => route('home')],
+                    ['name' => config('seo.defaults.home_label'), 'url' => route('home')],
                     ['name' => 'مواد قانونی', 'url' => route('laws.index')],
                     ['name' => $law->display_title, 'url' => route('laws.show', $law->slug)],
                 ]),

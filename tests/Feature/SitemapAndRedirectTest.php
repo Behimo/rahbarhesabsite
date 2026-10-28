@@ -12,6 +12,7 @@ use App\Models\Tag;
 use App\Services\PermalinkService;
 use App\Services\RankMathRedirectImporter;
 use App\Services\SeoService;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -19,7 +20,7 @@ class SitemapAndRedirectTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_cms_redirect_rows_are_not_executed_on_public_requests(): void
+    public function test_cms_redirect_rows_are_executed_on_public_requests(): void
     {
         CmsRedirect::query()->create([
             'from_path' => '/old-tax-guide',
@@ -30,11 +31,11 @@ class SitemapAndRedirectTest extends TestCase
             'match_query' => false,
         ]);
 
-        // Cutover contract: final WP URLs only — no public 301 hops.
-        $this->get('/old-tax-guide')->assertNotFound();
+        // Historical redirects must lead directly to the final WordPress URL.
+        $this->get('/old-tax-guide')->assertRedirect(app(PermalinkService::class)->absolute('/blog/'));
     }
 
-    public function test_query_p_redirect_rows_are_not_executed_on_public_requests(): void
+    public function test_query_p_redirect_rows_are_executed_on_public_requests(): void
     {
         CmsRedirect::query()->create([
             'from_path' => '/?p=42',
@@ -45,9 +46,7 @@ class SitemapAndRedirectTest extends TestCase
             'match_query' => false,
         ]);
 
-        $this->get('/?p=42')
-            ->assertOk()
-            ->assertHeaderMissing('Location');
+        $this->get('/?p=42')->assertRedirect(app(PermalinkService::class)->absolute('/blogs/sample-post/'));
     }
 
     public function test_inactive_redirect_is_not_followed(): void
@@ -225,7 +224,7 @@ class SitemapAndRedirectTest extends TestCase
             'featured_image' => '/storage/articles/cover.webp',
         ]);
 
-        // In tests trailing-slash middleware is skipped; hit the WP-style category/slug path.
+        // Nonproduction requests are not forced onto the production host or scheme.
         $this->get('/blog/schema-article')
             ->assertOk()
             ->assertSee('"dateModified":"'.$post->updated_at->toIso8601String().'"', false)
@@ -262,11 +261,11 @@ class SitemapAndRedirectTest extends TestCase
     {
         Tag::query()->create(['name' => 'مالیات', 'slug' => 'maliat']);
 
-        for ($i = 0; $i < 10; $i++) {
+        for ($i = 0; $i <= config('seo.per_page.posts'); $i++) {
             CmsPost::factory()->published()->create(['slug' => 'paged-post-'.$i]);
         }
 
-        for ($i = 0; $i < 13; $i++) {
+        for ($i = 0; $i <= config('seo.per_page.products'); $i++) {
             ShopProduct::factory()->course()->create([
                 'slug' => 'paged-course-'.$i,
                 'is_published' => true,
@@ -315,7 +314,7 @@ class SitemapAndRedirectTest extends TestCase
         $this->get('/product-category/software/accounting')->assertOk();
     }
 
-    public function test_rankmath_query_redirect_import_is_stored_but_not_executed(): void
+    public function test_rankmath_query_redirect_import_is_executed(): void
     {
         $importer = app(RankMathRedirectImporter::class);
         $result = $importer->import("/old-page?utm=1,/blog/,301\n");
@@ -326,12 +325,12 @@ class SitemapAndRedirectTest extends TestCase
         $this->assertNotNull($row);
         $this->assertTrue($row->match_query);
 
-        $this->get('/old-page?utm=1')->assertNotFound();
+        $this->get('/old-page?utm=1')->assertRedirect(app(PermalinkService::class)->absolute('/blog/'));
     }
 
     public function test_course_pagination_preserves_type_filter(): void
     {
-        for ($i = 0; $i < 13; $i++) {
+        for ($i = 0; $i <= config('seo.per_page.products'); $i++) {
             ShopProduct::factory()->course()->create([
                 'slug' => 'free-course-'.$i,
                 'price' => 0,
@@ -376,7 +375,7 @@ class SitemapAndRedirectTest extends TestCase
         $this->get('/build')->assertNotFound();
     }
 
-    public function test_external_redirect_target_is_imported_but_not_executed(): void
+    public function test_external_redirect_target_is_executed(): void
     {
         $importer = app(RankMathRedirectImporter::class);
         $result = $importer->import("/go,https://example.com/landing,301\n");
@@ -384,7 +383,7 @@ class SitemapAndRedirectTest extends TestCase
         $this->assertSame(1, $result['imported']);
         $this->assertSame('https://example.com/landing', CmsRedirect::query()->value('to_path'));
 
-        $this->get('/go')->assertNotFound();
+        $this->get('/go')->assertRedirect('https://example.com/landing');
     }
 
     public function test_self_redirect_differing_only_by_trailing_slash_is_skipped(): void
@@ -399,12 +398,12 @@ class SitemapAndRedirectTest extends TestCase
         $this->get('/same-page')->assertNotFound();
     }
 
-    public function test_query_redirect_rows_do_not_execute_even_with_extra_params(): void
+    public function test_query_redirect_rows_match_with_extra_params(): void
     {
         $importer = app(RankMathRedirectImporter::class);
         $importer->import("/old-page?utm=1,/blog/,301\n");
 
-        $this->get('/old-page?utm=1&gclid=abc')->assertNotFound();
+        $this->get('/old-page?utm=1&gclid=abc')->assertRedirect(app(PermalinkService::class)->absolute('/blog/'));
     }
 
     public function test_duplicate_redirect_path_is_rejected_by_composite_unique(): void
@@ -417,7 +416,7 @@ class SitemapAndRedirectTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->expectException(\Illuminate\Database\UniqueConstraintViolationException::class);
+        $this->expectException(UniqueConstraintViolationException::class);
 
         CmsRedirect::query()->create([
             'from_path' => '/dupe',

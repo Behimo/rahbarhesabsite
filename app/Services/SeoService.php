@@ -2,25 +2,38 @@
 
 namespace App\Services;
 
+use App\Models\CmsPost;
+use App\Models\Course;
+use App\Models\ShopProduct;
+use App\Support\Money;
+use App\Support\RobotsDirectives;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+
 class SeoService
 {
     public function __construct(
         private SiteDataService $siteData,
         private PermalinkService $permalinks,
+        private Request $request,
+        private SitemapService $sitemaps,
     ) {}
 
     public function meta(array $overrides = []): array
     {
         $defaults = [
             'title' => config('cms.site_name_fa').' | '.config('cms.site_name'),
-            'description' => 'موسسه آموزش حسابداری راهبر حساب — دوره‌های کاربردی حسابداری و مالیات.',
-            'keywords' => 'راهبر حساب, آموزش حسابداری, مالیات, rahbarhesab',
+            'description' => config('seo.defaults.description'),
+            'keywords' => config('seo.defaults.keywords'),
             'og_title' => config('cms.site_name_fa').' — خالق رهبران حسابداری',
             'og_image' => $this->absoluteUrl(config('cms.default_og_image')),
+            'og_type' => 'website',
             'robots' => $this->defaultRobots(),
             'canonical' => $this->canonicalUrl(),
         ];
         $meta = array_merge($defaults, array_filter($overrides, fn ($value) => $value !== null && $value !== ''));
+
+        $meta['robots'] = RobotsDirectives::restrictive($this->defaultRobots(), $overrides['robots'] ?? null);
 
         if (! app()->environment('production')) {
             $meta['robots'] = 'noindex, nofollow';
@@ -36,17 +49,6 @@ class SeoService
     public function forPage(string $slug, array $extra = []): array
     {
         return $this->meta(array_merge($this->siteData->pageMeta($slug), $extra));
-    }
-
-    public function forProduct(array $product): array
-    {
-        return $this->meta([
-            'title' => $product['meta_title'] ?? ($product['title'].' | '.config('cms.site_name_fa')),
-            'description' => $product['meta_description'] ?? $product['description'],
-            'keywords' => $product['meta_keywords'] ?? $product['title'].', راهبر حساب, آموزش حسابداری',
-            'og_title' => $product['meta_title'] ?? $product['title'].' — '.config('cms.site_name_fa'),
-            'og_image' => isset($product['og_image']) ? $this->absoluteUrl($product['og_image']) : null,
-        ]);
     }
 
     public function organizationSchema(): array
@@ -114,30 +116,6 @@ class SeoService
         ];
     }
 
-    public function productSchema(array $product): array
-    {
-        return [
-            '@context' => 'https://schema.org',
-            '@type' => 'SoftwareApplication',
-            'name' => $product['title'],
-            'alternateName' => $product['subtitle'] ?? null,
-            'description' => $product['description'],
-            'url' => $product['href'],
-            'applicationCategory' => 'BusinessApplication',
-            'operatingSystem' => 'Web',
-            'offers' => [
-                '@type' => 'Offer',
-                'price' => '0',
-                'priceCurrency' => 'IRR',
-                'description' => 'مشاوره و دمو رایگان',
-            ],
-            'provider' => [
-                '@type' => 'Organization',
-                'name' => config('cms.site_name'),
-            ],
-        ];
-    }
-
     public function sitemapIndex(): array
     {
         return [
@@ -145,133 +123,53 @@ class SeoService
             ['loc' => $this->absoluteUrl('/page-sitemap.xml')],
             ['loc' => $this->absoluteUrl('/course-sitemap.xml')],
             ['loc' => $this->absoluteUrl('/law-sitemap.xml')],
+            ['loc' => $this->absoluteUrl('/qa-sitemap.xml')],
         ];
     }
 
     public function postSitemapUrls(): array
     {
-        $urls = [
-            ['loc' => $this->permalinks->absolute($this->permalinks->blogIndex()), 'priority' => '0.8', 'changefreq' => 'daily'],
-        ];
-
-        foreach (\App\Models\CmsPost::query()->published()->with('categories')->get() as $post) {
-            if ($this->isNoindex($post->robots ?? null)) {
-                continue;
-            }
-
-            $urls[] = [
-                'loc' => $this->permalinks->postAbsolute($post),
-                'priority' => '0.7',
-                'changefreq' => 'weekly',
-                'lastmod' => $post->updated_at?->toAtomString(),
-            ];
-        }
-
-        foreach (\App\Models\Category::query()->where('type', \App\Models\Category::TYPE_POST)->where('is_active', true)->get() as $category) {
-            $urls[] = [
-                'loc' => $this->permalinks->absolute($this->permalinks->category($category)),
-                'priority' => '0.6',
-                'changefreq' => 'weekly',
-                'lastmod' => $category->updated_at?->toAtomString(),
-            ];
-        }
-
-        foreach (\App\Models\Tag::query()->orderBy('name')->get() as $tag) {
-            $urls[] = [
-                'loc' => $this->permalinks->absolute($this->permalinks->tag($tag)),
-                'priority' => '0.5',
-                'changefreq' => 'weekly',
-            ];
-        }
-
-        return $urls;
+        return $this->sitemaps->posts();
     }
 
     public function pageSitemapUrls(): array
     {
-        $urls = [
-            ['loc' => $this->permalinks->absolute('/'), 'priority' => '1.0', 'changefreq' => 'daily'],
-            ['loc' => $this->permalinks->absolute($this->permalinks->productIndex()), 'priority' => '0.9', 'changefreq' => 'daily'],
-            ['loc' => $this->permalinks->absolute('/questions'), 'priority' => '0.8', 'changefreq' => 'daily'],
-            ['loc' => $this->permalinks->absolute('/laws'), 'priority' => '0.8', 'changefreq' => 'weekly'],
-            ['loc' => $this->permalinks->absolute($this->permalinks->pageBySlug('about')), 'priority' => '0.7', 'changefreq' => 'monthly'],
-            ['loc' => $this->permalinks->absolute($this->permalinks->pageBySlug('contact')), 'priority' => '0.8', 'changefreq' => 'monthly'],
-        ];
-
-        foreach (\App\Models\CmsPage::query()->published()->get() as $page) {
-            $slug = $page->slug;
-            if (in_array($slug, ['home', 'services', 'why-bisan'], true) || $page->is_system) {
-                continue;
-            }
-            if ($this->isNoindex($page->robots ?? null)) {
-                continue;
-            }
-
-            $urls[] = [
-                'loc' => $this->permalinks->pageAbsolute($page),
-                'priority' => '0.6',
-                'changefreq' => 'monthly',
-                'lastmod' => $page->updated_at?->toAtomString(),
-            ];
-        }
-
-        return $urls;
+        return $this->sitemaps->pages();
     }
 
     public function courseSitemapUrls(): array
     {
-        $urls = [];
-
-        foreach (\App\Models\ShopProduct::query()->published()->where('type', 'course')->get() as $course) {
-            if ($this->isNoindex($course->robots ?? null)) {
-                continue;
-            }
-
-            $urls[] = [
-                'loc' => $this->permalinks->productAbsolute($course),
-                'priority' => '0.9',
-                'changefreq' => 'weekly',
-                'lastmod' => $course->updated_at?->toAtomString(),
-            ];
-        }
-
-        foreach (\App\Models\Category::query()->where('type', \App\Models\Category::TYPE_PRODUCT)->where('is_active', true)->get() as $category) {
-            $urls[] = [
-                'loc' => $this->permalinks->absolute($this->permalinks->category($category)),
-                'priority' => '0.7',
-                'changefreq' => 'weekly',
-                'lastmod' => $category->updated_at?->toAtomString(),
-            ];
-        }
-
-        return $urls;
-    }
-
-    public function productSitemapUrls(): array
-    {
-        // Legacy marketing-product routes redirect to the course listing; do not advertise them.
-        return [];
+        return $this->sitemaps->courses();
     }
 
     public function lawSitemapUrls(): array
     {
-        $urls = [
-            ['loc' => route('laws.index'), 'priority' => '0.8', 'changefreq' => 'weekly'],
-        ];
-
-        foreach (\App\Models\AccountingLaw::query()->published()->get() as $law) {
-            $urls[] = [
-                'loc' => route('laws.show', $law->slug),
-                'priority' => '0.7',
-                'changefreq' => 'monthly',
-                'lastmod' => $law->updated_at?->toAtomString(),
-            ];
-        }
-
-        return $urls;
+        return $this->sitemaps->laws();
     }
 
-    public function courseSchema(\App\Models\ShopProduct $product, ?\App\Models\Course $course = null): array
+    public function questionSitemapUrls(): array
+    {
+        return $this->sitemaps->questions();
+    }
+
+    public function videoSchema(string $name, ?string $description, string $contentUrl, ?string $thumbnailUrl, ?Carbon $uploadDate): array
+    {
+        if (! $thumbnailUrl) {
+            return [];
+        }
+
+        return array_filter([
+            '@context' => 'https://schema.org',
+            '@type' => 'VideoObject',
+            'name' => $name,
+            'description' => $description,
+            'contentUrl' => $contentUrl,
+            'thumbnailUrl' => $thumbnailUrl,
+            'uploadDate' => $uploadDate?->toIso8601String(),
+        ], fn ($value) => $value !== null && $value !== '');
+    }
+
+    public function courseSchema(ShopProduct $product, ?Course $course = null): array
     {
         return [
             '@context' => 'https://schema.org',
@@ -287,7 +185,7 @@ class SeoService
             ],
             'offers' => [
                 '@type' => 'Offer',
-                'price' => $product->effectivePrice() * 10,
+                'price' => Money::tomanToRials($product->effectivePrice()),
                 'priceCurrency' => 'IRR',
                 'availability' => 'https://schema.org/InStock',
                 'url' => $this->permalinks->productAbsolute($product),
@@ -295,13 +193,29 @@ class SeoService
             'hasCourseInstance' => array_filter([
                 '@type' => 'CourseInstance',
                 'courseMode' => 'online',
-                'courseWorkload' => 'PT'.($course?->duration_minutes ?: 60).'M',
+                'courseWorkload' => $course?->duration_minutes > 0 ? 'PT'.$course->duration_minutes.'M' : null,
                 'instructor' => $course?->instructor?->name ? [
                     '@type' => 'Person',
                     'name' => $course->instructor->name,
                 ] : null,
             ]),
         ];
+    }
+
+    public function articleSchema(CmsPost $post): array
+    {
+        return array_filter([
+            '@context' => 'https://schema.org',
+            '@type' => 'Article',
+            'headline' => $post->title,
+            'description' => $post->excerpt ?: null,
+            'datePublished' => $post->published_at?->toIso8601String(),
+            'dateModified' => $post->updated_at?->toIso8601String(),
+            'mainEntityOfPage' => $post->canonical_url ?: $this->permalinks->postAbsolute($post),
+            'image' => $this->absoluteUrl($post->featured_image),
+            'author' => ['@type' => 'Person', 'name' => $post->author ?: config('cms.site_name_fa')],
+            'publisher' => ['@type' => 'Organization', 'name' => config('cms.site_name')],
+        ], fn ($value) => $value !== null && $value !== '');
     }
 
     public function faqSchema(array $faqs): ?array
@@ -335,38 +249,67 @@ class SeoService
 
     private function defaultRobots(): string
     {
-        if (request()->routeIs(['search', 'cart.*', 'checkout.*', 'login', 'login.verify', 'panel.*'])) {
+        if ($this->request->routeIs(['search', 'cart.*', 'checkout.*', 'login', 'login.verify', 'panel.*'])) {
             return 'noindex, follow';
         }
 
-        if (request()->hasAny(['s', 'replytocom'])) {
+        if ($this->request->hasAny(['s', 'replytocom'])) {
             return 'noindex, follow';
         }
 
-        foreach (array_keys(request()->query()) as $parameter) {
+        foreach (array_keys($this->request->query()) as $parameter) {
             if (str_starts_with($parameter, 'utm_') || in_array($parameter, ['utm', 'ref', 'add-to-cart'], true)) {
                 return 'noindex, follow';
             }
         }
 
-        return 'index, follow';
+        return (string) config('seo.defaults.robots', 'index, follow');
+    }
+
+    /**
+     * Rank Math "%title% %page% %sep% %sitename%" — %page% renders "- صفحه N از M" past page one.
+     */
+    public function wpTitle(string $title, ?int $page = null, ?int $lastPage = null, ?string $suffix = null): string
+    {
+        $paged = $page > 1 && $lastPage ? ' - صفحه '.$page.' از '.$lastPage : '';
+
+        return trim($title).$paged.($suffix ?? ' - '.config('cms.site_name_fa'));
+    }
+
+    /**
+     * Rank Math "%excerpt%": the first real text paragraph (page-builder counters such as
+     * "+100 نفر" are skipped), cut at a word boundary.
+     */
+    public function excerptDescription(?string $html, int $limit = 160): ?string
+    {
+        $html = (string) $html;
+        $plain = fn (string $value) => trim((string) preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags(str_replace(['<br>', '<br/>', '<br />'], ' ', $value)), ENT_QUOTES | ENT_HTML5)));
+        $text = '';
+        if (preg_match_all('/<p\b[^>]*>(.*?)<\/p>/isu', $html, $matches)) {
+            $paragraphs = array_values(array_filter(array_map($plain, $matches[1]), fn ($value) => $value !== ''));
+            $text = collect($paragraphs)->first(fn ($value) => count(preg_split('/\s+/u', $value)) >= 5) ?? ($paragraphs[0] ?? '');
+        }
+        if ($text === '') {
+            $text = $plain((string) preg_replace(['/<(h[1-6]|script|style)\b.*?<\/\1>/isu', '/<\/(div|li|h[1-6])>/iu'], [' ', ' '], $html));
+        }
+        if ($text === '') {
+            return null;
+        }
+        if (mb_strlen($text) <= $limit) {
+            return $text;
+        }
+        $cut = mb_substr($text, 0, $limit);
+        $space = mb_strrpos($cut, ' ');
+
+        return (string) preg_replace('/[\s،,؛:]+$/u', '', $space ? mb_substr($cut, 0, $space) : $cut);
     }
 
     private function canonicalUrl(): string
     {
-        return $this->permalinks->absolute('/'.trim((string) request()->path(), '/'));
+        return $this->permalinks->absolute('/'.trim((string) $this->request->path(), '/'));
     }
 
-    private function isNoindex(?string $robots): bool
-    {
-        if (! $robots) {
-            return false;
-        }
-
-        return str_contains(mb_strtolower($robots), 'noindex');
-    }
-
-    private function absoluteUrl(?string $path): ?string
+    public function absoluteUrl(?string $path): ?string
     {
         if (! $path) {
             return null;

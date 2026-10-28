@@ -85,12 +85,7 @@
                         <div class="form-text">اگر خالی باشد، آدرس خودکار دوره استفاده می‌شود.</div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label" for="course-robots">ربات‌های جستجو</label>
-                        <select id="course-robots" name="robots" class="form-select">
-                            @foreach (['index, follow', 'noindex, follow', 'index, nofollow', 'noindex, nofollow'] as $robots)
-                                <option value="{{ $robots }}" @selected(old('robots', $product->robots ?: 'index, follow') === $robots)>{{ $robots }}</option>
-                            @endforeach
-                        </select>
+                        <x-robots-select :value="$product->robots" id="course-robots" />
                     </div>
                     <div>
                         <label class="form-label" for="course-og">تصویر Open Graph</label>

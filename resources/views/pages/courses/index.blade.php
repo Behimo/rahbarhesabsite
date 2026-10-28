@@ -21,7 +21,7 @@
     };
 
     $activeCategoryName = $categories->first(fn ($category) => $category->full_slug === $activeCategory || $category->slug === $activeCategory)?->name;
-    $pageTitle = $activeCategoryName ?: 'دوره‌های آموزشی حسابداری';
+    $pageTitle = $activeCategoryName ?: 'دوره های آموزش حسابداری';
 @endphp
 
 @section('page')
@@ -31,11 +31,11 @@
             <a href="{{ route('home') }}">صفحه اصلی</a>
             <span class="courses-catalog-crumb__sep" aria-hidden="true">/</span>
             @if ($activeCategoryName)
-                <a href="{{ route('courses.index') }}">دوره‌های آموزشی حسابداری</a>
+                <a href="{{ route('courses.index') }}">دوره های آموزش حسابداری</a>
                 <span class="courses-catalog-crumb__sep" aria-hidden="true">/</span>
                 <span aria-current="page">{{ $activeCategoryName }}</span>
             @else
-                <span aria-current="page">دوره‌های آموزشی حسابداری</span>
+                <span aria-current="page">دوره های آموزش حسابداری</span>
             @endif
         </nav>
 

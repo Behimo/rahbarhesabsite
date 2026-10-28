@@ -9,9 +9,9 @@
     </div>
     <div class="cafe-hero__inner cafe-hero__inner--start">
         <p class="cafe-hero__brand">
-            <a href="{{ route('cafe-soal.index') }}">کافه سوال</a>
+            <a href="{{ route('cafe-soal.index') }}">کافه سوال راهبر حساب</a>
         </p>
-        <h1 id="cafeDetailTitle" class="cafe-hero__title cafe-hero__title--sm">{{ $question->title }}</h1>
+        <h1 id="cafeDetailTitle" class="cafe-hero__title cafe-hero__title--sm">{{ wp_texturize($question->title) }}</h1>
         <p class="cafe-hero__lead cafe-hero__lead--meta">
             @if ($question->category)
                 <span>{{ $question->category->name }}</span>
@@ -51,7 +51,12 @@
                     @endif
                 </div>
             </header>
-            <div class="cafe-question__body">{{ $question->body }}</div>
+            <div class="cafe-question__body cafe-answer__body--rich">{!! $question->bodyHtml() !!}</div>
+            @if ($question->video_url)
+                <video class="cafe-question__video" controls preload="none" playsinline @if($question->video_poster) poster="{{ $question->video_poster }}" @endif>
+                    <source src="{{ $question->video_url }}" type="video/mp4">
+                </video>
+            @endif
         </article>
 
         <section class="cafe-answers" aria-label="پاسخ‌ها">
@@ -69,7 +74,7 @@
                         <strong>{{ $official->user?->displayName() ?? 'کارشناس' }}</strong>
                         <time datetime="{{ $official->created_at->toDateString() }}">{{ fa_date($official->created_at) }}</time>
                     </div>
-                    <div class="cafe-answer__body cafe-answer__body--rich">{!! clean_html($official->body) !!}</div>
+                    <div class="cafe-answer__body cafe-answer__body--rich">{!! $official->bodyHtml() !!}</div>
                 </article>
             @endif
 
@@ -77,13 +82,25 @@
                 <article class="cafe-answer">
                     <div class="cafe-answer__head">
                         <div class="cafe-answer__who">
-                            <span class="cafe-answer__avatar" aria-hidden="true">{{ mb_substr($answer->user?->displayName() ?? 'ک', 0, 1) }}</span>
-                            <strong>{{ $answer->user?->displayName() ?? 'کاربر' }}</strong>
+                            <span class="cafe-answer__avatar" aria-hidden="true">{{ mb_substr($answer->authorDisplayName(), 0, 1) }}</span>
+                            <strong>{{ $answer->authorDisplayName() }}</strong>
                         </div>
                         <time datetime="{{ $answer->created_at->toDateString() }}">{{ fa_date($answer->created_at) }}</time>
                     </div>
-                    <div class="cafe-answer__body">{{ $answer->body }}</div>
+                    <div class="cafe-answer__body cafe-answer__body--rich">{!! $answer->bodyHtml() !!}</div>
                 </article>
+                @foreach ($answer->replies as $reply)
+                    <article class="cafe-answer cafe-answer--reply">
+                        <div class="cafe-answer__head">
+                            <div class="cafe-answer__who">
+                                <span class="cafe-answer__avatar" aria-hidden="true">{{ mb_substr($reply->authorDisplayName(), 0, 1) }}</span>
+                                <strong>{{ $reply->authorDisplayName() }}</strong>
+                            </div>
+                            <time datetime="{{ $reply->created_at->toDateString() }}">{{ fa_date($reply->created_at) }}</time>
+                        </div>
+                        <div class="cafe-answer__body cafe-answer__body--rich">{!! $reply->bodyHtml() !!}</div>
+                    </article>
+                @endforeach
             @empty
                 @unless ($official)
                     <div class="cafe-empty cafe-empty--inline" role="status">
