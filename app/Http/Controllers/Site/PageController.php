@@ -2,14 +2,19 @@
 
 namespace App\Http\Controllers\Site;
 
+use App\Services\ContentUrlRewriter;
 use App\Services\PageCssIsolator;
 use App\Services\PermalinkService;
 use Illuminate\View\View;
 
 class PageController extends SiteController
 {
-    public function show(string $slug, PermalinkService $permalinks, PageCssIsolator $pageCss): View
-    {
+    public function show(
+        string $slug,
+        PermalinkService $permalinks,
+        PageCssIsolator $pageCss,
+        ContentUrlRewriter $urlRewriter,
+    ): View {
         // Map WordPress page slugs to internal system pages.
         $internal = match ($slug) {
             'about-us' => 'about',
@@ -33,8 +38,9 @@ class PageController extends SiteController
         $isWpImport = ($page->template === 'wp-html')
             || (($content['import_source'] ?? '') === 'wp-rendered')
             || ! empty($content['stylesheet_urls']);
+        $bodyHtml = $urlRewriter->rewrite((string) ($content['body_html'] ?? ''));
         $isolated = $pageCss->isolate(
-            (string) ($content['body_html'] ?? ''),
+            $bodyHtml,
             array_values(array_filter($content['stylesheet_urls'] ?? [])),
         );
 
