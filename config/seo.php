@@ -57,7 +57,7 @@ return [
         // Blog & taxonomies
         'blog', 'category', 'tag', 'feed',
         // Content sections
-        'courses', 'laws', 'cafe-soal', 'search',
+        'courses', 'laws', 'questions', 'search',
         // Institutional routes
         'about', 'about-us', 'contact', 'contact-us', 'services', 'why-bisan',
         // Sitemaps & feeds

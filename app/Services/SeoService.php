@@ -192,7 +192,7 @@ class SeoService
         $urls = [
             ['loc' => $this->permalinks->absolute('/'), 'priority' => '1.0', 'changefreq' => 'daily'],
             ['loc' => $this->permalinks->absolute($this->permalinks->productIndex()), 'priority' => '0.9', 'changefreq' => 'daily'],
-            ['loc' => $this->permalinks->absolute('/cafe-soal'), 'priority' => '0.8', 'changefreq' => 'daily'],
+            ['loc' => $this->permalinks->absolute('/questions'), 'priority' => '0.8', 'changefreq' => 'daily'],
             ['loc' => $this->permalinks->absolute('/laws'), 'priority' => '0.8', 'changefreq' => 'weekly'],
             ['loc' => $this->permalinks->absolute($this->permalinks->pageBySlug('about')), 'priority' => '0.7', 'changefreq' => 'monthly'],
             ['loc' => $this->permalinks->absolute($this->permalinks->pageBySlug('contact')), 'priority' => '0.8', 'changefreq' => 'monthly'],

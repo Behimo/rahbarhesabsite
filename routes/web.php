@@ -127,7 +127,7 @@ Route::get('/contact-us', [PageController::class, 'contact'])->name('contact');
 Route::post('/contact-us', [ContactController::class, 'store'])->middleware('throttle:contact')->name('contact.store');
 
 // Cafe Soal (Q&A)
-Route::controller(CafeQuestionController::class)->prefix('cafe-soal')->name('cafe-soal.')->group(function () {
+Route::controller(CafeQuestionController::class)->prefix('questions')->name('cafe-soal.')->group(function () {
     Route::get('/', 'index')->name('index');
     Route::get('/ask', 'create')->middleware('auth')->name('ask');
     Route::post('/', 'store')->middleware(['auth', 'throttle:10,1'])->name('store');
