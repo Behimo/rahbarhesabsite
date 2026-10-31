@@ -35,6 +35,32 @@ class PageController extends SiteController
         abort_unless($page, 404);
 
         $content = is_array($page->content) ? $page->content : [];
+        $seo = [
+            'title' => $page->meta_title ?: $this->seo->wpTitle($page->title),
+            'description' => $page->meta_description ?: $this->seo->excerptDescription($content['body_html'] ?? ($content['html'] ?? null)),
+            'keywords' => $page->meta_keywords,
+            'og_image' => $page->og_image,
+            'canonical' => $page->canonical_url ?: $permalinks->pageAbsolute($page),
+            'robots' => $page->robots,
+        ];
+        $structuredData = [
+            $this->seo->breadcrumbSchema([
+                ['name' => config('seo.defaults.home_label'), 'url' => route('home')],
+                ['name' => $page->title, 'url' => $permalinks->pageAbsolute($page)],
+            ]),
+        ];
+
+        $migrated = config('cms_migrated_pages.pages.'.$slug);
+        if (is_array($migrated) && ! empty($migrated['view'])) {
+            return $this->renderSystemPage($slug, $migrated['view'], [
+                'page' => $page,
+                'migratedCss' => $migrated['css'] ?? null,
+                'fullBleedContent' => true,
+                'seo' => $seo,
+                'structuredData' => $structuredData,
+            ]);
+        }
+
         $isWpImport = ($page->template === 'wp-html')
             || (($content['import_source'] ?? '') === 'wp-rendered')
             || ! empty($content['stylesheet_urls']);
@@ -50,20 +76,8 @@ class PageController extends SiteController
             'scopedStylesheet' => $isolated['stylesheet'],
             'scopedCss' => $isolated['css'],
             'fullBleedContent' => $isWpImport,
-            'seo' => [
-                'title' => $page->meta_title ?: $this->seo->wpTitle($page->title),
-                'description' => $page->meta_description ?: $this->seo->excerptDescription($content['body_html'] ?? ($content['html'] ?? null)),
-                'keywords' => $page->meta_keywords,
-                'og_image' => $page->og_image,
-                'canonical' => $page->canonical_url ?: $permalinks->pageAbsolute($page),
-                'robots' => $page->robots,
-            ],
-            'structuredData' => [
-                $this->seo->breadcrumbSchema([
-                    ['name' => config('seo.defaults.home_label'), 'url' => route('home')],
-                    ['name' => $page->title, 'url' => $permalinks->pageAbsolute($page)],
-                ]),
-            ],
+            'seo' => $seo,
+            'structuredData' => $structuredData,
         ]);
     }
 
