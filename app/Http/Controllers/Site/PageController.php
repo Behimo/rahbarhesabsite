@@ -51,8 +51,10 @@ class PageController extends SiteController
             ]),
         ];
 
-        $migrated = config('cms_migrated_pages.pages.'.$slug);
-        if (is_array($migrated) && ! empty($migrated['view'])) {
+        // Prefer array key lookup over dotted config() — safer for Persian/hyphen slugs.
+        $migratedPages = config('cms_migrated_pages.pages', []);
+        $migrated = is_array($migratedPages) ? ($migratedPages[$slug] ?? null) : null;
+        if (is_array($migrated) && ! empty($migrated['view']) && view()->exists($migrated['view'])) {
             return $this->renderSystemPage($slug, $migrated['view'], [
                 'page' => $page,
                 'migratedCss' => $migrated['css'] ?? null,
