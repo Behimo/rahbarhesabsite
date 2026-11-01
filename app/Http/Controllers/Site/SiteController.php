@@ -30,7 +30,11 @@ abstract class SiteController extends Controller
         $content = is_array($page?->content) ? $page->content : [];
         $pageBuilder = app(PageBuilderService::class);
 
-        if ($pageBuilder->shouldRenderBuilder($page)) {
+        // Migrated WP blades must never be hijacked by the page builder.
+        $skipBuilder = ! empty($data['migratedCss'])
+            || str_starts_with($view, 'pages.migrated.');
+
+        if (! $skipBuilder && $pageBuilder->shouldRenderBuilder($page)) {
             $bodyHtml = app(BlockRenderer::class)->render($pageBuilder->resolveContent($page), $data);
 
             return $this->render('pages.sections', array_merge($data, [
