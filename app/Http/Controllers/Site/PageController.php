@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Site;
 use App\Services\ContentUrlRewriter;
 use App\Services\PageCssIsolator;
 use App\Services\PermalinkService;
+use App\Support\HtmlSanitizer;
 use Illuminate\View\View;
 
 class PageController extends SiteController
@@ -64,15 +65,22 @@ class PageController extends SiteController
         $isWpImport = ($page->template === 'wp-html')
             || (($content['import_source'] ?? '') === 'wp-rendered')
             || ! empty($content['stylesheet_urls']);
-        $bodyHtml = $urlRewriter->rewrite((string) ($content['body_html'] ?? ''));
+        $rawBody = (string) ($content['body_html'] ?? '');
+        // Isolate embedded CSS before strict cleaning so scoped styles survive.
+        $prepared = $isWpImport
+            ? HtmlSanitizer::cleanImported($rawBody)
+            : $rawBody;
         $isolated = $pageCss->isolate(
-            $bodyHtml,
+            $urlRewriter->rewrite($prepared),
             array_values(array_filter($content['stylesheet_urls'] ?? [])),
         );
+        $bodyHtml = $isWpImport
+            ? $isolated['html']
+            : HtmlSanitizer::clean($isolated['html']);
 
         return $this->renderSystemPage($slug, $isWpImport ? 'pages.wp-imported' : 'pages.dynamic', [
             'page' => $page,
-            'bodyHtml' => $isolated['html'],
+            'bodyHtml' => $bodyHtml,
             'scopedStylesheet' => $isolated['stylesheet'],
             'scopedCss' => $isolated['css'],
             'fullBleedContent' => $isWpImport,

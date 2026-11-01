@@ -43,7 +43,7 @@ abstract class SiteController extends Controller
         return $this->render($view, array_merge($data, [
             'seo' => $seo,
             'page' => $page,
-            'bodyHtml' => $data['bodyHtml'] ?? ($content['body_html'] ?? ''),
+            'bodyHtml' => $data['bodyHtml'] ?? clean_html($content['body_html'] ?? ''),
         ]));
     }
 }

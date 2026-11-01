@@ -76,3 +76,6 @@ besun
 *.sql
 *.sql.gz
 *.sql.zip
+
+# Generated route cache artifact
+/storage/framework/route-list.json

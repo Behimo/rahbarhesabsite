@@ -18,12 +18,14 @@ use App\Models\ShopProduct;
 use App\Models\Tag;
 use App\Models\User;
 use App\Support\AccessCatalog;
+use App\Support\HtmlSanitizer;
 use App\Support\PhoneNormalizer;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -825,7 +827,7 @@ class WordpressMigrationService
                 $cmsPost->save();
 
                 $cmsPost->load('categories');
-                $permalink = app(\App\Services\PermalinkService::class)->post($cmsPost);
+                $permalink = app(PermalinkService::class)->post($cmsPost);
                 $this->ensureRedirect('/?p='.$post->ID, $permalink);
                 $this->migrateOldSlugs((int) $post->ID, '/'.($cmsPost->category?->slug ?: 'blog'), $slug, $permalink);
 
@@ -895,7 +897,7 @@ class WordpressMigrationService
                     }
                 }
 
-                $bodyHtml = $this->stripDangerousHtml($bodyHtml);
+                $bodyHtml = HtmlSanitizer::cleanImported($bodyHtml);
                 $bodyHtml = wp_shortcodes($bodyHtml);
                 $bodyHtml = $urlRewriter->rewrite($bodyHtml);
 
@@ -1278,7 +1280,7 @@ class WordpressMigrationService
     }
 
     /** @param array<int, int|string> $userIds
-     *  @return array<int|string, array<string, mixed>>
+     * @return array<int|string, array<string, mixed>>
      */
     private function userMetaForIds(array $userIds): array
     {
@@ -1343,7 +1345,7 @@ class WordpressMigrationService
     }
 
     /** @param array<int, int|string> $postIds
-     *  @return array<int|string, array<string, mixed>>
+     * @return array<int|string, array<string, mixed>>
      */
     private function postMetaForIds(array $postIds): array
     {
@@ -1694,7 +1696,7 @@ class WordpressMigrationService
     private function ensureRedirect(string $from, string $to): bool
     {
         if (mb_strlen($from) > 500 || mb_strlen($to) > 500) {
-            \Illuminate\Support\Facades\Log::warning('WordPress redirect exceeds 500 characters.', ['from' => $from, 'to' => $to]);
+            Log::warning('WordPress redirect exceeds 500 characters.', ['from' => $from, 'to' => $to]);
 
             return false;
         }
@@ -2392,18 +2394,5 @@ class WordpressMigrationService
             },
             $css
         ) ?? $css;
-    }
-
-    private function stripDangerousHtml(string $html): string
-    {
-        if ($html === '') {
-            return '';
-        }
-
-        $html = preg_replace('#<script\b[^>]*>.*?</script>#is', '', $html) ?? $html;
-        $html = preg_replace('#<iframe\b[^>]*>.*?</iframe>#is', '', $html) ?? $html;
-        $html = preg_replace('/\s+on\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/iu', '', $html) ?? $html;
-
-        return $html;
     }
 }
