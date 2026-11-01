@@ -1,0 +1,55 @@
+.page-migrated.page-privacy-policy {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.page-migrated.page-privacy-policy .legal-doc {
+    width: min(1100px, calc(100% - 40px));
+    margin: 32px auto 80px;
+    color: #242027;
+    line-height: 1.9;
+    font-size: 1rem;
+}
+
+.page-migrated.page-privacy-policy .legal-doc__header {
+    margin-bottom: 20px;
+}
+
+.page-migrated.page-privacy-policy .legal-doc__title {
+    margin: 0 0 20px;
+    font-size: 28px;
+    font-weight: 800;
+    color: #242027;
+    line-height: 1.4;
+}
+
+.page-migrated.page-privacy-policy .legal-doc__section + .legal-doc__section {
+    margin-top: 8px;
+}
+
+.page-migrated.page-privacy-policy .legal-doc__section h2 {
+    margin: 24px 0 12px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #361e50;
+    line-height: 1.5;
+}
+
+.page-migrated.page-privacy-policy .legal-doc__section p {
+    margin: 0 0 12px;
+    line-height: 1.9;
+    color: #242027;
+}
+
+.page-migrated.page-privacy-policy .legal-doc__section p:last-child {
+    margin-bottom: 0;
+}
+
+.page-migrated.page-privacy-policy .legal-doc__label {
+    font-weight: 700;
+}
+
+.page-migrated.page-privacy-policy .legal-doc__section a {
+    color: #643abc;
+}

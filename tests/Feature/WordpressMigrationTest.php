@@ -6,13 +6,13 @@ use App\Jobs\IssueSpotplayerLicenseJob;
 use App\Models\Category;
 use App\Models\CmsPage;
 use App\Models\CmsPost;
-use App\Models\Course;
 use App\Models\CourseEnrollment;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\ShopProduct;
 use App\Models\Tag;
 use App\Models\User;
+use App\Services\PermalinkService;
 use App\Services\WordpressMigrationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -277,7 +277,7 @@ class WordpressMigrationTest extends TestCase
             'ID' => 8801,
             'post_type' => 'page',
             'post_status' => 'publish',
-            'post_name' => 'tax-consulting-services',
+            'post_name' => 'wp-import-html-fixture',
             'post_title' => 'خدمات مشاوره مالیاتی',
             'post_content' => '<div class="elementor"><p>محتوای برگه تست</p></div>',
             'post_excerpt' => null,
@@ -308,7 +308,7 @@ class WordpressMigrationTest extends TestCase
         $this->assertSame(1, $stats['skipped']);
         $this->assertDatabaseHas('cms_pages', [
             'wp_post_id' => 8801,
-            'slug' => 'tax-consulting-services',
+            'slug' => 'wp-import-html-fixture',
             'template' => 'wp-html',
             'meta_title' => 'خدمات مشاوره مالیاتی از مشاوره تا اجرا با '.config('cms.site_name_fa'),
         ]);
@@ -318,7 +318,7 @@ class WordpressMigrationTest extends TestCase
         $this->assertStringContainsString('محتوای برگه تست', $page->content['body_html'] ?? '');
         $this->assertSame('post_content', $page->content['import_source'] ?? null);
 
-        $this->get('/tax-consulting-services/')
+        $this->get('/wp-import-html-fixture/')
             ->assertOk()
             ->assertSee('محتوای برگه تست', false)
             ->assertSee('wp-imported-page', false);
@@ -458,7 +458,7 @@ class WordpressMigrationTest extends TestCase
         app(WordpressMigrationService::class)->migrateTermLinks();
 
         $this->assertSame('blogs', $post->fresh()->category->slug);
-        $this->assertSame('/blogs/penalty/', app(\App\Services\PermalinkService::class)->post($post->fresh()));
+        $this->assertSame('/blogs/penalty/', app(PermalinkService::class)->post($post->fresh()));
 
         DB::connection('wordpress')->table('postmeta')->delete();
         app(WordpressMigrationService::class)->migrateTermLinks();
