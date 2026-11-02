@@ -2,7 +2,7 @@
     "$schema": "https://getcomposer.org/schema.json",
     "name": "laravel/laravel",
     "type": "project",
-    "description": "Bisan corporate website and CMS.",
+    "description": "راهبرحساب corporate website and CMS.",
     "keywords": [
         "laravel",
         "framework"

@@ -1,13 +1,13 @@
 <?php
 
 return [
-  "creatorName" => "بیسان",
+  "creatorName" => "راهبرحساب",
   "creatorUrl" => "",
-  "templateName" => "بیسان",
+  "templateName" => "راهبرحساب",
   "templateSuffix" => "پنل مدیریت",
   "templateVersion" => "1.0.0",
   "templateFree" => false,
-  "templateDescription" => "پنل مدیریت محتوای بیسان",
+  "templateDescription" => "پنل مدیریت محتوای راهبرحساب",
   "templateKeyword" => "dashboard, bootstrap 5, cms, admin",
   "licenseUrl" => "",
   "livePreview" => "",

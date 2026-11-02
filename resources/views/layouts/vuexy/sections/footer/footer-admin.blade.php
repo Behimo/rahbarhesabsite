@@ -7,11 +7,11 @@ $containerFooter = (isset($configData['contentLayout']) && $configData['contentL
     <div class="footer-container d-flex align-items-center justify-content-between py-2 flex-md-row flex-column">
       <div>
         © {{ date('Y') }}،
-        <a href="{{ route('home') }}" class="footer-link fw-medium" target="_blank">بیسان</a>
+        <a href="{{ route('home') }}" class="footer-link fw-medium" target="_blank">راهبرحساب</a>
         — پنل مدیریت محتوا
       </div>
       <div class="d-none d-lg-inline-block">
-        <span class="footer-link text-muted">BISAN CMS</span>
+        <span class="footer-link text-muted">راهبرحساب CMS</span>
       </div>
     </div>
   </div>

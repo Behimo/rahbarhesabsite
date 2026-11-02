@@ -12,7 +12,7 @@ class CmsRefreshBrandCommand extends Command
 {
     protected $signature = 'cms:refresh-brand';
 
-    protected $description = 'Replace legacy Bisan page/product defaults with Rahbar Hesab CMS content';
+    protected $description = 'Replace legacy brand page/product defaults with راهبرحساب CMS content';
 
     public function handle(SiteDataService $siteData, CacheService $cache): int
     {
