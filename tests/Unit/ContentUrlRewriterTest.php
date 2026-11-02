@@ -16,8 +16,8 @@ class ContentUrlRewriterTest extends TestCase
 
         $out = app(ContentUrlRewriter::class)->rewrite($html);
 
-        $this->assertStringContainsString('src="/wp-content/uploads/2026/09/photo.webp"', $out);
-        $this->assertStringContainsString('srcset="/wp-content/uploads/2026/09/photo.webp 900w"', $out);
+        $this->assertStringContainsString('src="/storage/uploads/2026/09/photo.webp"', $out);
+        $this->assertStringContainsString('srcset="/storage/uploads/2026/09/photo.webp 900w"', $out);
         $this->assertStringContainsString('sizes="(max-width: 900px) 100vw, 900px"', $out);
         $this->assertStringNotContainsString('data-src=', $out);
         $this->assertStringNotContainsString('perfmatters-lazy', $out);
@@ -31,7 +31,7 @@ class ContentUrlRewriterTest extends TestCase
 
         $out = app(ContentUrlRewriter::class)->rewrite($html);
 
-        $this->assertStringContainsString('background-image:url(/wp-content/uploads/2026/10/poster.webp)', $out);
+        $this->assertStringContainsString('background-image:url(/storage/uploads/2026/10/poster.webp)', $out);
         $this->assertStringNotContainsString('data-bg=', $out);
         $this->assertStringNotContainsString('perfmatters-lazy', $out);
         $this->assertSame(1, preg_match_all('/\bstyle\s*=/', $out));
@@ -46,7 +46,7 @@ class ContentUrlRewriterTest extends TestCase
         $out = app(ContentUrlRewriter::class)->rewrite($html);
 
         $this->assertStringContainsString('src="https://www.dl.rahbarhesab.com/video.mp4"', $out);
-        $this->assertStringContainsString('poster="/wp-content/uploads/2026/10/poster.webp"', $out);
+        $this->assertStringContainsString('poster="/storage/uploads/2026/10/poster.webp"', $out);
         $this->assertStringNotContainsString('data-src=', $out);
         $this->assertStringNotContainsString('data-poster=', $out);
     }

@@ -83,6 +83,7 @@ class AccessCatalog
             'media' => ['label' => 'رسانه', 'actions' => [self::VIEW, self::CREATE, self::DELETE]],
             'messages' => ['label' => 'پیام‌های تماس', 'actions' => [self::VIEW, self::DELETE]],
             'questions' => ['label' => 'کافه سوال', 'actions' => [self::VIEW, self::UPDATE, self::DELETE]],
+            'comments' => ['label' => 'دیدگاه‌ها', 'actions' => [self::VIEW, self::UPDATE, self::DELETE]],
             'settings' => ['label' => 'تنظیمات، پیامک، درگاه و ریدایرکت', 'actions' => [self::VIEW, self::UPDATE]],
             'transfer' => [
                 'label' => 'درون‌ریزی و برون‌بری',
@@ -173,7 +174,7 @@ class AccessCatalog
         $groups = match ($role) {
             self::ROLE_ADMIN => array_keys(self::groups()),
             self::ROLE_SHOP_MANAGER => ['orders', 'courses'],
-            self::ROLE_EDITOR => ['posts', 'laws', 'pages', 'popups', 'sidebars', 'media', 'menus', 'taxonomies', 'messages', 'questions'],
+            self::ROLE_EDITOR => ['posts', 'laws', 'pages', 'popups', 'sidebars', 'media', 'menus', 'taxonomies', 'messages', 'questions', 'comments'],
             self::ROLE_INSTRUCTOR => ['courses', 'media'],
             default => [],
         };
@@ -219,6 +220,7 @@ class AccessCatalog
             'admin.media' => 'media',
             'admin.messages' => 'messages',
             'admin.questions' => 'questions',
+            'admin.comments' => 'comments',
             'admin.export' => 'transfer',
             'admin.import' => 'transfer',
         ];
@@ -384,6 +386,18 @@ class AccessCatalog
             'admin.questions.update' => self::UPDATE,
             'admin.questions.reject' => self::UPDATE,
             'admin.questions.answers.destroy' => self::DELETE,
+            'admin.comments.approve' => self::UPDATE,
+            'admin.comments.reject' => self::UPDATE,
+            'admin.comments.spam' => self::UPDATE,
+            'admin.comments.trash' => self::UPDATE,
+            'admin.comments.restore' => self::UPDATE,
+            'admin.comments.pin' => self::UPDATE,
+            'admin.comments.reply' => self::UPDATE,
+            'admin.comments.ban-user' => self::UPDATE,
+            'admin.comments.block-ip' => self::UPDATE,
+            'admin.comments.bulk' => self::UPDATE,
+            'admin.comments.settings' => self::UPDATE,
+            'admin.comments.settings.update' => self::UPDATE,
             'admin.export' => self::VIEW,
             'admin.import' => self::CREATE,
             'admin.settings.gateways' => self::UPDATE,

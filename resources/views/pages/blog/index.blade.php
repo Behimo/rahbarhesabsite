@@ -53,7 +53,16 @@
                                         <svg viewBox="0 0 24 24" aria-hidden="true">
                                             <path d="M6 16.5V7.5A2.5 2.5 0 0 1 8.5 5h7A2.5 2.5 0 0 1 18 7.5v6A2.5 2.5 0 0 1 15.5 16H9l-3 3v-2.5z"></path>
                                         </svg>
-                                        بدون نظرات
+                                        @php
+                                            $commentCount = $post instanceof \App\Models\CafeQuestion
+                                                ? (int) ($post->answers_count ?? $post->answers()->count())
+                                                : (int) ($post->approved_comments_count ?? $post->comments()->approved()->count());
+                                        @endphp
+                                        @if ($commentCount > 0)
+                                            {{ fa_digits($commentCount) }} دیدگاه
+                                        @else
+                                            بدون دیدگاه
+                                        @endif
                                     </span>
                                 </div>
                             </article>

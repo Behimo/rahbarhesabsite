@@ -6,6 +6,7 @@ use App\Http\Controllers\Site\SiteController;
 use App\Http\Requests\Panel\UpdatePasswordRequest;
 use App\Http\Requests\Panel\UpdateProfileRequest;
 use App\Models\CafeQuestion;
+use App\Models\Comment;
 use App\Models\CourseEnrollment;
 use App\Models\Order;
 use App\Models\SpotplayerLicense;
@@ -121,6 +122,17 @@ class DashboardController extends SiteController
             ->paginate(15);
 
         return $this->render('panel.questions', compact('questions'));
+    }
+
+    public function comments(): View
+    {
+        $comments = Comment::query()
+            ->with('commentable')
+            ->where('user_id', auth()->id())
+            ->latest()
+            ->paginate(15);
+
+        return $this->render('panel.comments', compact('comments'));
     }
 
     public function notifications(): View

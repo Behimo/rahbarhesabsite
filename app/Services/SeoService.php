@@ -204,6 +204,10 @@ class SeoService
 
     public function articleSchema(CmsPost $post): array
     {
+        $commentCount = method_exists($post, 'comments')
+            ? (int) $post->comments()->approved()->count()
+            : 0;
+
         return array_filter([
             '@context' => 'https://schema.org',
             '@type' => 'Article',
@@ -215,6 +219,7 @@ class SeoService
             'image' => $this->absoluteUrl($post->featured_image),
             'author' => ['@type' => 'Person', 'name' => $post->author ?: config('cms.site_name_fa')],
             'publisher' => ['@type' => 'Organization', 'name' => config('cms.site_name')],
+            'commentCount' => $commentCount > 0 ? $commentCount : null,
         ], fn ($value) => $value !== null && $value !== '');
     }
 

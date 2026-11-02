@@ -505,7 +505,7 @@ class WordpressMigrationTest extends TestCase
         $this->assertSame(1, $stats['created']);
         $product = ShopProduct::query()->where('slug', 'course-with-cover')->first();
         $this->assertNotNull($product);
-        $this->assertSame('/wp-content/uploads/2024/06/course-cover.webp', $product->featured_image);
+        $this->assertSame('/storage/uploads/2024/06/course-cover.webp', $product->featured_image);
     }
 
     public function test_normalize_media_url_and_rewrite_stored_absolute_hosts(): void
@@ -513,18 +513,18 @@ class WordpressMigrationTest extends TestCase
         $service = app(WordpressMigrationService::class);
 
         $this->assertSame(
-            '/wp-content/uploads/2022/12/a.webp',
+            '/storage/uploads/2022/12/a.webp',
             $service->normalizeMediaUrl('https://rahbarhesab.com/wp-content/uploads/2022/12/a.webp')
         );
         $this->assertSame(
-            '/wp-content/uploads/2022/12/a.webp',
+            '/storage/uploads/2022/12/a.webp',
             $service->normalizeMediaUrl('/wp-content/uploads/2022/12/a.webp')
         );
 
         $post = CmsPost::query()->create([
             'slug' => 'img-rewrite-post',
             'title' => 'پست',
-            'body' => 'x',
+            'body' => '<img src="http://rahbarhesab.com/wp-content/uploads/2022/12/inline.webp"><a href="https://rahbarhesab.com/product/">دوره</a>',
             'featured_image' => 'https://www.rahbarhesab.com/wp-content/uploads/2023/01/post.webp',
             'og_image' => 'https://rahbarhesab.com/wp-content/uploads/2023/01/og.webp',
             'is_published' => true,
@@ -544,9 +544,11 @@ class WordpressMigrationTest extends TestCase
 
         $this->assertGreaterThanOrEqual(1, $stats['posts']);
         $this->assertGreaterThanOrEqual(1, $stats['products']);
-        $this->assertSame('/wp-content/uploads/2023/01/post.webp', $post->fresh()->featured_image);
-        $this->assertSame('/wp-content/uploads/2023/01/og.webp', $post->fresh()->og_image);
-        $this->assertSame('/wp-content/uploads/2023/01/course.webp', $product->fresh()->featured_image);
+        $this->assertSame('/storage/uploads/2023/01/post.webp', $post->fresh()->featured_image);
+        $this->assertStringContainsString('src="/storage/uploads/2022/12/inline.webp"', (string) $post->fresh()->body);
+        $this->assertStringContainsString('href="https://rahbarhesab.com/product/"', (string) $post->fresh()->body);
+        $this->assertSame('/storage/uploads/2023/01/og.webp', $post->fresh()->og_image);
+        $this->assertSame('/storage/uploads/2023/01/course.webp', $product->fresh()->featured_image);
     }
 
     public function test_post_and_course_migration_preserve_all_historical_slug_redirects(): void

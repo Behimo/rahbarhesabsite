@@ -60,6 +60,7 @@ class BlogController extends SiteController
             : CmsPost::query()
                 ->published()
                 ->with('categories')
+                ->withCount(['comments as approved_comments_count' => fn ($q) => $q->approved()])
                 ->when($categoryModel, fn ($q) => $q->whereHas(
                     'categories',
                     fn ($related) => $related->whereIn('categories.id', $categoryIds)
@@ -138,8 +139,10 @@ class BlogController extends SiteController
         $rows = collect($page->items());
         $models = [
             'post' => CmsPost::query()->with('categories')
+                ->withCount(['comments as approved_comments_count' => fn ($q) => $q->approved()])
                 ->whereIn('id', $rows->where('item_type', 'post')->pluck('id'))->get()->keyBy('id'),
             'question' => CafeQuestion::query()
+                ->withCount('answers')
                 ->whereIn('id', $rows->where('item_type', 'question')->pluck('id'))->get()->keyBy('id'),
         ];
 

@@ -29,7 +29,7 @@ class ContentUrlRewriter
             function (array $m) {
                 $attr = $m[1];
                 $path = $m[2];
-                if (preg_match('/\.[a-zA-Z0-9]{1,8}$/', $path) || str_starts_with($path, '/wp-content/')) {
+                if (preg_match('/\.[a-zA-Z0-9]{1,8}$/', $path) || str_starts_with($path, '/wp-content/') || str_starts_with($path, '/storage/uploads/')) {
                     return $attr.'="'.$path.'"';
                 }
 
@@ -199,14 +199,14 @@ class ContentUrlRewriter
             ) ?? $html;
         }
 
-        // Uploaded media always lives under /wp-content/ locally after migration.
+        // Uploaded media is served from storage/app/public/uploads.
         $html = preg_replace(
             '#https?://[^"\'\s<>]+(/wp-content/uploads/[^"\'\s<>]*)#iu',
             '$1',
             $html
         ) ?? $html;
 
-        return $html;
+        return map_upload_path($html);
     }
 
     private function attributeNamePattern(string $name): string

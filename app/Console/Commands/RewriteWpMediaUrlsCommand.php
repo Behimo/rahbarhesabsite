@@ -9,7 +9,7 @@ class RewriteWpMediaUrlsCommand extends Command
 {
     protected $signature = 'wp:rewrite-media-urls';
 
-    protected $description = 'تبدیل URL مطلق رسانه‌های وردپرس ذخیره‌شده به مسیر نسبی /wp-content/...';
+    protected $description = 'تبدیل آدرس رسانه‌های وردپرس ذخیره‌شده به /storage/uploads';
 
     public function handle(WordpressMigrationService $migration): int
     {

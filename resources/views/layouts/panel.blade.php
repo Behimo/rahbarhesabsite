@@ -13,6 +13,7 @@
             <a href="{{ route('panel.courses') }}" class="panel-nav__link {{ request()->routeIs('panel.courses') ? 'is-active' : '' }}">دوره‌های من</a>
             <a href="{{ route('panel.orders') }}" class="panel-nav__link {{ request()->routeIs('panel.orders') ? 'is-active' : '' }}">سفارش‌ها</a>
             <a href="{{ route('panel.questions') }}" class="panel-nav__link {{ request()->routeIs('panel.questions') ? 'is-active' : '' }}">سوالات من</a>
+            <a href="{{ route('panel.comments') }}" class="panel-nav__link {{ request()->routeIs('panel.comments') ? 'is-active' : '' }}">دیدگاه‌های من</a>
             <a href="{{ route('panel.notifications') }}" class="panel-nav__link {{ request()->routeIs('panel.notifications*') ? 'is-active' : '' }}">
                 اعلان‌ها
                 @if ($unreadNotifications > 0)

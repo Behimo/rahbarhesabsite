@@ -119,6 +119,22 @@
                         <input type="checkbox" name="is_published" value="1" class="form-check-input" id="is_published" @checked(old('is_published', $product->is_published))>
                         <label class="form-check-label" for="is_published">منتشر شده</label>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="comments_status">وضعیت دیدگاه‌ها</label>
+                        <select name="comments_status" id="comments_status" class="form-select">
+                            @foreach (['inherit' => 'پیروی از تنظیمات', 'open' => 'باز', 'closed' => 'بسته'] as $value => $label)
+                                <option value="{{ $value }}" @selected(old('comments_status', $product->comments_status ?? 'inherit') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="comments_moderation">Moderation دیدگاه‌ها</label>
+                        <select name="comments_moderation" id="comments_moderation" class="form-select">
+                            @foreach (['inherit' => 'پیروی از تنظیمات', 'manual' => 'تأیید دستی', 'auto' => 'انتشار فوری'] as $value => $label)
+                                <option value="{{ $value }}" @selected(old('comments_moderation', $product->comments_moderation ?? 'inherit') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                     <div class="row g-3 mb-3">
                         <div class="col-6">
                             <label class="form-label" for="course-price">قیمت (تومان)</label>

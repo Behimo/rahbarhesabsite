@@ -62,6 +62,8 @@
                     @endforeach
                 </div>
             @endif
+
+            <x-comments.section :commentable="$post" type="post" />
         </div>
     </article>
 

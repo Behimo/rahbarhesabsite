@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\Admin\CafeQuestionController as AdminCafeQuestionController;
+use App\Http\Controllers\Admin\CommentController as AdminCommentController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Admin\CourseController as AdminCourseController;
@@ -32,6 +33,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Panel\DashboardController as PanelDashboardController;
 use App\Http\Controllers\Site\BlogController;
 use App\Http\Controllers\Site\CafeQuestionController;
+use App\Http\Controllers\Site\CommentController;
 use App\Http\Controllers\Site\ContactController;
 use App\Http\Controllers\Site\CourseController;
 use App\Http\Controllers\Site\HomeController;
@@ -136,6 +138,10 @@ Route::get('/about-us', [PageController::class, 'about'])->name('about');
 Route::get('/contact-us', [PageController::class, 'contact'])->name('contact');
 Route::post('/contact-us', [ContactController::class, 'store'])->middleware('throttle:contact')->name('contact.store');
 
+Route::post('/comments', [CommentController::class, 'store'])
+    ->middleware('throttle:comments')
+    ->name('comments.store');
+
 // Cafe Soal (Q&A)
 Route::permanentRedirect('/cafe-soal', '/questions/');
 Route::get('/cafe-soal/{path}', fn (string $path) => redirect(app(PermalinkService::class)->normalizePath('/questions/'.$path), 301))->where('path', '.*');
@@ -199,6 +205,7 @@ Route::prefix('panel')->name('panel.')->middleware('auth')->controller(PanelDash
     Route::get('/courses', 'courses')->name('courses');
     Route::get('/orders', 'orders')->name('orders');
     Route::get('/questions', 'questions')->name('questions');
+    Route::get('/comments', 'comments')->name('comments');
     Route::get('/notifications', 'notifications')->name('notifications');
     Route::post('/notifications/read-all', 'markAllNotificationsRead')->name('notifications.read-all');
     Route::get('/notifications/{id}/read', 'markNotificationRead')->name('notifications.read');
@@ -388,6 +395,23 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/{question}/reject', 'reject')->name('reject');
             Route::delete('/{question}/answers/{answer}', 'destroyAnswer')->name('answers.destroy');
             Route::delete('/{question}', 'destroy')->name('destroy');
+        });
+
+        Route::controller(AdminCommentController::class)->prefix('comments')->name('comments.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/settings', 'settings')->name('settings');
+            Route::put('/settings', 'updateSettings')->name('settings.update');
+            Route::post('/bulk', 'bulk')->name('bulk');
+            Route::post('/{comment}/approve', 'approve')->name('approve');
+            Route::post('/{comment}/reject', 'reject')->name('reject');
+            Route::post('/{comment}/spam', 'spam')->name('spam');
+            Route::post('/{comment}/trash', 'trash')->name('trash');
+            Route::post('/{comment}/restore', 'restore')->name('restore');
+            Route::post('/{comment}/pin', 'pin')->name('pin');
+            Route::post('/{comment}/reply', 'reply')->name('reply');
+            Route::post('/{comment}/ban-user', 'banUser')->name('ban-user');
+            Route::post('/{comment}/block-ip', 'blockIp')->name('block-ip');
+            Route::delete('/{comment}', 'destroy')->name('destroy');
         });
 
         Route::controller(ImportExportController::class)->group(function () {

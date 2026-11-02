@@ -70,6 +70,8 @@ class PostRequest extends FormRequest
             'robots' => ['nullable', 'string', 'max:500', new Robots],
             'published_at' => ['nullable', 'date'],
             'status' => ['nullable', 'in:draft,published,scheduled'],
+            'comments_status' => ['nullable', 'in:inherit,open,closed'],
+            'comments_moderation' => ['nullable', 'in:inherit,manual,auto'],
             'tag_ids' => ['nullable', 'array'],
             'tag_ids.*' => ['integer', 'exists:tags,id'],
         ];

@@ -69,6 +69,23 @@
             </div>
         </div>
     </div>
+    <div class="col-sm-6 col-xl">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-start justify-content-between">
+                    <div>
+                        <span class="d-block mb-1 text-muted">دیدگاه در انتظار</span>
+                        <h3 class="mb-0 text-warning">
+                            <a href="{{ route('admin.comments.index', ['status' => 'pending']) }}" class="text-warning text-decoration-none">
+                                {{ $stats['pending_comments'] ?? 0 }}
+                            </a>
+                        </h3>
+                    </div>
+                    <span class="badge bg-label-warning rounded p-2"><i class="ti ti-message-dots ti-md"></i></span>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="row g-4">

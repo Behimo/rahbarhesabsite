@@ -68,6 +68,17 @@ if (! function_exists('wp_shortcodes')) {
     }
 }
 
+if (! function_exists('map_upload_path')) {
+    /**
+     * WordPress files now live on the public disk at storage/app/public/uploads
+     * and are served at /storage/uploads/...
+     */
+    function map_upload_path(string $value): string
+    {
+        return str_replace('/wp-content/uploads', '/storage/uploads', $value);
+    }
+}
+
 if (! function_exists('block_media')) {
     function block_media(?string $path, string $fallback = ''): string
     {

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasCategories;
+use App\Models\Concerns\HasComments;
 use App\Models\Concerns\HasTags;
 use Database\Factories\ShopProductFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,7 +17,7 @@ use Illuminate\Support\Collection;
 class ShopProduct extends Model
 {
     /** @use HasFactory<ShopProductFactory> */
-    use HasCategories, HasFactory, HasTags, SoftDeletes;
+    use HasCategories, HasComments, HasFactory, HasTags, SoftDeletes;
 
     public const TYPE_COURSE = 'course';
 
@@ -30,6 +31,7 @@ class ShopProduct extends Model
         'slug', 'title', 'subtitle', 'description', 'price', 'sale_price', 'type',
         'featured_image', 'is_published', 'stock', 'meta_title', 'meta_description', 'meta_keywords',
         'og_image', 'robots', 'canonical_url', 'wp_post_id', 'sort_order',
+        'comments_status', 'comments_moderation',
     ];
 
     protected function casts(): array

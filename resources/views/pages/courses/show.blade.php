@@ -135,6 +135,10 @@
                     </section>
                 @endif
 
+                <section class="course-detail-section">
+                    <x-comments.section :commentable="$product" type="product" />
+                </section>
+
                 @if (count($requirementItems))
                     <section class="course-detail-section" aria-labelledby="course-req-heading">
                         <h2 id="course-req-heading">پیش‌نیازها</h2>

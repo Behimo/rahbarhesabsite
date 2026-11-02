@@ -157,6 +157,26 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by('api:ip:'.$request->ip());
         });
+
+        RateLimiter::for('comments', function (Request $request) {
+            $perMinute = 3;
+
+            try {
+                $perMinute = max(1, (int) app(\App\Services\Comments\CommentSettings::class)->get('throttle_per_minute', 3));
+            } catch (\Throwable) {
+                // settings table may be unavailable during early boot/migrate
+            }
+
+            $limits = [
+                Limit::perMinute($perMinute)->by('comments:ip:'.$request->ip()),
+            ];
+
+            if ($request->user()) {
+                $limits[] = Limit::perMinute($perMinute)->by('comments:user:'.$request->user()->id);
+            }
+
+            return $limits;
+        });
     }
 
     /**

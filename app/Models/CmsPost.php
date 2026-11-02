@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasCategories;
+use App\Models\Concerns\HasComments;
 use App\Models\Concerns\HasTags;
 use Database\Factories\CmsPostFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class CmsPost extends Model
 {
     /** @use HasFactory<CmsPostFactory> */
-    use HasCategories, HasFactory, HasTags, SoftDeletes;
+    use HasCategories, HasComments, HasFactory, HasTags, SoftDeletes;
 
     public const STATUS_DRAFT = 'draft';
 
@@ -26,6 +27,7 @@ class CmsPost extends Model
         'featured_image_alt', 'author', 'meta_title', 'meta_description', 'meta_keywords', 'og_image',
         'robots', 'canonical_url', 'wp_post_id',
         'is_published', 'status', 'published_at', 'views', 'reading_time_minutes',
+        'comments_status', 'comments_moderation',
     ];
 
     protected function casts(): array

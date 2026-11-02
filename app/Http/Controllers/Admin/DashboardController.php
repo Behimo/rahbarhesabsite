@@ -21,6 +21,7 @@ class DashboardController extends Controller
                 'users' => \App\Models\User::query()->count(),
                 'messages' => \App\Models\ContactMessage::query()->where('is_read', false)->count(),
                 'total_messages' => \App\Models\ContactMessage::query()->count(),
+                'pending_comments' => \App\Models\Comment::query()->pending()->count(),
             ],
             'recentMessages' => \App\Models\ContactMessage::query()->latest()->take(5)->get(),
             'recentPosts' => CmsPost::query()->latest()->take(5)->get(),

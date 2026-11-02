@@ -147,6 +147,22 @@
                         <input type="text" name="author" value="{{ old('author', $post->author ?? config('cms.site_name_fa', 'راهبر حساب')) }}" class="form-control">
                     </div>
                     <div class="mb-3">
+                        <label class="form-label" for="comments_status">وضعیت دیدگاه‌ها</label>
+                        <select name="comments_status" id="comments_status" class="form-select">
+                            @foreach (['inherit' => 'پیروی از تنظیمات', 'open' => 'باز', 'closed' => 'بسته'] as $value => $label)
+                                <option value="{{ $value }}" @selected(old('comments_status', $post->comments_status ?? 'inherit') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="comments_moderation">Moderation دیدگاه‌ها</label>
+                        <select name="comments_moderation" id="comments_moderation" class="form-select">
+                            @foreach (['inherit' => 'پیروی از تنظیمات', 'manual' => 'تأیید دستی', 'auto' => 'انتشار فوری'] as $value => $label)
+                                <option value="{{ $value }}" @selected(old('comments_moderation', $post->comments_moderation ?? 'inherit') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         @include('admin.partials.category-ui')
                         <div class="d-flex justify-content-between align-items-baseline gap-2 mb-2">
                             <label class="form-label mb-0">دستهٔ اصلی</label>

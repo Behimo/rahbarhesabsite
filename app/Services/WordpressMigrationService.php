@@ -2022,8 +2022,8 @@ class WordpressMigrationService
     }
 
     /**
-     * Store media as site-relative paths so local/staging/production all resolve
-     * against public/wp-content/uploads (or other public assets) via APP_URL.
+     * Store media as site-relative paths under /storage/uploads so every
+     * environment serves the copy in storage/app/public/uploads.
      */
     public function normalizeMediaUrl(?string $url, int $maxLength = 191): ?string
     {
@@ -2033,6 +2033,8 @@ class WordpressMigrationService
         }
 
         if (str_starts_with($url, '/')) {
+            $url = map_upload_path($url);
+
             return strlen($url) > $maxLength ? null : $url;
         }
 
@@ -2058,29 +2060,46 @@ class WordpressMigrationService
             }
         }
 
+        $path = map_upload_path($path);
+
         return strlen($path) > $maxLength ? null : $path;
+    }
+
+    /**
+     * Point stored HTML at /storage/uploads, whether the old address was absolute
+     * or already a /wp-content/uploads path. The rest of each path stays as it is.
+     */
+    public function relativizeEmbeddedMediaUrls(string $html): string
+    {
+        $rewritten = preg_replace(
+            '#https?://[^"\'\s<>]+(/wp-content/uploads/[^"\'\s<>]*)#iu',
+            '$1',
+            $html
+        );
+
+        return map_upload_path(is_string($rewritten) ? $rewritten : $html);
     }
 
     /**
      * Rewrite absolute legacy media hosts already stored in local tables.
      *
-     * @return array{posts: int, products: int, laws: int}
+     * @return array<string, int>
      */
     public function rewriteStoredMediaUrls(): array
     {
         $stats = ['posts' => 0, 'products' => 0, 'laws' => 0];
 
         foreach ([
-            'posts' => [CmsPost::class, ['featured_image', 'og_image']],
-            'products' => [ShopProduct::class, ['featured_image', 'og_image']],
-            'laws' => [AccountingLaw::class, ['featured_image']],
-        ] as $key => [$modelClass, $columns]) {
+            'posts' => [CmsPost::class, ['featured_image', 'og_image'], ['body']],
+            'products' => [ShopProduct::class, ['featured_image', 'og_image'], ['description']],
+            'laws' => [AccountingLaw::class, ['featured_image'], []],
+        ] as $key => [$modelClass, $columns, $htmlColumns]) {
             if (! class_exists($modelClass)) {
                 continue;
             }
 
             /** @var class-string<Model> $modelClass */
-            $modelClass::query()->orderBy('id')->chunkById(200, function ($rows) use ($columns, $key, &$stats): void {
+            $modelClass::query()->orderBy('id')->chunkById(200, function ($rows) use ($columns, $htmlColumns, $key, &$stats): void {
                 foreach ($rows as $row) {
                     $dirty = false;
                     foreach ($columns as $column) {
@@ -2097,6 +2116,20 @@ class WordpressMigrationService
                             $dirty = true;
                         }
                     }
+                    foreach ($htmlColumns as $column) {
+                        if (! $row->isFillable($column)) {
+                            continue;
+                        }
+                        $current = $row->getAttribute($column);
+                        if (! is_string($current) || $current === '') {
+                            continue;
+                        }
+                        $rewritten = $this->relativizeEmbeddedMediaUrls($current);
+                        if ($rewritten !== $current) {
+                            $row->setAttribute($column, $rewritten);
+                            $dirty = true;
+                        }
+                    }
                     if ($dirty) {
                         $row->save();
                         $stats[$key]++;
@@ -2105,7 +2138,56 @@ class WordpressMigrationService
             });
         }
 
+        foreach ([
+            'pages' => ['cms_pages', ['content', 'builder_content', 'og_image']],
+            'questions' => ['cafe_questions', ['body', 'featured_image', 'og_image', 'video_url', 'video_poster']],
+            'answers' => ['cafe_answers', ['body']],
+            'settings' => ['cms_settings', ['value']],
+        ] as $key => [$table, $columns]) {
+            $stats[$key] = $this->replaceStoredUploadPrefix($table, $columns);
+        }
+
         return $stats;
+    }
+
+    /**
+     * @param  list<string>  $columns
+     */
+    private function replaceStoredUploadPrefix(string $table, array $columns): int
+    {
+        if (! Schema::hasTable($table)) {
+            return 0;
+        }
+
+        $updated = 0;
+
+        foreach ($columns as $column) {
+            if (! Schema::hasColumn($table, $column)) {
+                continue;
+            }
+
+            DB::table($table)
+                ->where($column, 'like', '%/wp-content/uploads%')
+                ->orderBy('id')
+                ->chunkById(100, function ($rows) use ($table, $column, &$updated): void {
+                    foreach ($rows as $row) {
+                        $current = $row->{$column} ?? null;
+                        if (! is_string($current) || $current === '') {
+                            continue;
+                        }
+
+                        $rewritten = map_upload_path($current);
+                        if ($rewritten === $current) {
+                            continue;
+                        }
+
+                        DB::table($table)->where('id', $row->id)->update([$column => $rewritten]);
+                        $updated++;
+                    }
+                });
+        }
+
+        return $updated;
     }
 
     /**

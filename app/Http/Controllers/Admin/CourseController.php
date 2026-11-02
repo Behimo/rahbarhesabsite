@@ -195,6 +195,8 @@ class CourseController extends Controller
             'robots' => ['nullable', 'string', 'max:500', new Robots],
             'og_image' => ['nullable', 'string', 'max:500'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
+            'comments_status' => ['nullable', 'in:inherit,open,closed'],
+            'comments_moderation' => ['nullable', 'in:inherit,manual,auto'],
             'category_ids' => ['nullable', 'array'],
             'category_ids.*' => ['integer', Rule::exists('categories', 'id')->where('type', Category::TYPE_PRODUCT)],
             'primary_category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('type', Category::TYPE_PRODUCT)],
@@ -219,6 +221,8 @@ class CourseController extends Controller
         $productData['type'] = ShopProduct::TYPE_COURSE;
         $productData['stock'] = null;
         $productData['is_published'] = $request->boolean('is_published');
+        $productData['comments_status'] = $productData['comments_status'] ?? 'inherit';
+        $productData['comments_moderation'] = $productData['comments_moderation'] ?? 'inherit';
         $productData['og_image'] = ($productData['og_image'] ?? null) ?: ($productData['featured_image'] ?? null);
         $courseData['what_you_learn'] = array_values(array_filter(array_map('trim', explode("\n", $courseData['what_you_learn'] ?? ''))));
         $courseData['requirements'] = array_values(array_filter(array_map('trim', explode("\n", $courseData['requirements'] ?? ''))));

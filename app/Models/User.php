@@ -40,6 +40,7 @@ class User extends Authenticatable
         'password',
         'is_wp_password',
         'status',
+        'comments_banned_at',
         'last_login_at',
     ];
 
@@ -56,7 +57,18 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_wp_password' => 'boolean',
             'last_login_at' => 'datetime',
+            'comments_banned_at' => 'datetime',
         ];
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    public function isCommentsBanned(): bool
+    {
+        return $this->comments_banned_at !== null;
     }
 
     public function orders(): HasMany
