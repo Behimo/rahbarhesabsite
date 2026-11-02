@@ -41,8 +41,7 @@
         $sitePublic = public_path('site');
         $siteVer = fn (string $file) => file_exists($sitePublic . '/' . $file) ? filemtime($sitePublic . '/' . $file) : time();
     @endphp
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-    <link rel="preload" as="font" type="font/woff2" crossorigin href="https://cdn.jsdelivr.net/npm/@fontsource-variable/vazirmatn@5.1.0/files/vazirmatn-arabic-wght-normal.woff2">
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="{{ asset('site/fonts/vazirmatn-arabic-wght-normal.woff2') }}?v={{ $siteVer('fonts/vazirmatn-arabic-wght-normal.woff2') }}">
     <link rel="stylesheet" href="{{ asset('site/fonts.css') }}?v={{ $siteVer('fonts.css') }}">
     <link rel="stylesheet" href="{{ asset('site/style.css') }}?v={{ $siteVer('style.css') }}">
     <link rel="stylesheet" href="{{ asset('site/theme.css') }}?v={{ $siteVer('theme.css') }}">
