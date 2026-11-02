@@ -784,7 +784,7 @@ $(function () {
         }
       ],
       language: {
-        url: '//cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/' + lang + '.json'
+        url: (window.baseUrl || '/') + 'vendor/datatables/i18n/' + lang + '.json'
       },
       displayLength: 7,
       dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6 d-flex justify-content-center justify-content-md-end"f>>t<"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
