@@ -72,3 +72,5 @@ Header: `Authorization: Bearer {CMS_API_TOKEN}`
 - `GET /api/v1/pages`
 - `GET /api/v1/posts`
 - `GET /api/v1/courses`
+
+اپلیکیشن موبایل از این توکن استفاده نمی‌کند. قرارداد آن در `docs/api/mobile-v1.md` است: ورود با OTP مخصوص اپ و توکن Sanctum، جدا از نشست مرورگر.

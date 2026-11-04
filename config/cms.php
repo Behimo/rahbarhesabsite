@@ -38,6 +38,13 @@ return [
 
     'api_token' => env('CMS_API_TOKEN'),
 
+    'app' => [
+        'client_key' => env('APP_CLIENT_KEY'),
+        'deep_link' => env('APP_DEEP_LINK', 'rahbarhesab://payment'),
+        'token_ttl_days' => (int) env('APP_TOKEN_TTL_DAYS', 30),
+        'max_tokens' => (int) env('APP_MAX_TOKENS', 5),
+    ],
+
     'spotplayer' => [
         'api_key' => env('SPOTPLAYER_API_KEY'),
         'base_url' => env('SPOTPLAYER_BASE_URL', 'https://api.spotplayer.ir'),

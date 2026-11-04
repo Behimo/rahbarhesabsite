@@ -7,6 +7,7 @@ use App\Models\OtpVerification;
 use App\Models\User;
 use App\Services\OtpRequestException;
 use App\Services\OtpService;
+use App\Support\OtpCode;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -32,7 +33,8 @@ class OtpAuthFlowTest extends TestCase
 
             return $verification
                 && str_ends_with($verification->phone, '9121234567')
-                && strlen($verification->code) === (int) config('otp.length', 6);
+                && str_starts_with($verification->code, 'enc:')
+                && strlen(OtpCode::open($verification->code)) === (int) config('otp.length', 6);
         });
     }
 

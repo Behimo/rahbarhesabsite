@@ -14,12 +14,14 @@ use App\Models\Tag;
 use App\Models\User;
 use App\Observers\CafeAnswerObserver;
 use App\Observers\CategoryObserver;
+use App\Observers\RevokeAppTokens;
 use App\Observers\SitemapObserver;
 use App\Routing\UrlGenerator;
 use App\Services\BlockRegistry;
 use App\Services\BlockRenderer;
 use App\Services\CacheService;
 use App\Services\CategoryService;
+use App\Services\Comments\CommentSettings;
 use App\Services\MenuService;
 use App\Services\PageBuilderService;
 use App\Services\PageRenderContext;
@@ -73,6 +75,10 @@ class AppServiceProvider extends ServiceProvider
         Schema::defaultStringLength(191);
         Category::observe(CategoryObserver::class);
         CafeAnswer::observe(CafeAnswerObserver::class);
+        User::observe(RevokeAppTokens::class);
+        config([
+            'sanctum.expiration' => max(1, (int) config('cms.app.token_ttl_days', 30)) * 24 * 60,
+        ]);
         foreach ([CmsPost::class, CmsPage::class, ShopProduct::class,
             AccountingLaw::class, CafeQuestion::class, Category::class, Tag::class] as $model) {
             $model::observe(SitemapObserver::class);
@@ -158,11 +164,17 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by('api:ip:'.$request->ip());
         });
 
+        RateLimiter::for('api-license', function (Request $request) {
+            $userId = $request->user()?->id ?? $request->ip();
+
+            return Limit::perMinute(10)->by('api-license:'.$userId);
+        });
+
         RateLimiter::for('comments', function (Request $request) {
             $perMinute = 3;
 
             try {
-                $perMinute = max(1, (int) app(\App\Services\Comments\CommentSettings::class)->get('throttle_per_minute', 3));
+                $perMinute = max(1, (int) app(CommentSettings::class)->get('throttle_per_minute', 3));
             } catch (\Throwable) {
                 // settings table may be unavailable during early boot/migrate
             }

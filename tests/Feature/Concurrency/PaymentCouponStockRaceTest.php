@@ -169,6 +169,24 @@ class PaymentCouponStockRaceTest extends TestCase
         $this->assertSame(1, Order::query()->count());
     }
 
+    public function test_only_one_concurrent_request_can_consume_a_login_otp(): void
+    {
+        $phone = '09123334455';
+        $challenge = str_repeat('a', 40);
+        \App\Models\OtpVerification::query()->create([
+            'phone' => '+989123334455',
+            'purpose' => \App\Services\OtpService::PURPOSE_APP,
+            'challenge_id' => $challenge,
+            'code' => \App\Support\OtpCode::seal('123456'),
+            'expires_at' => now()->addMinutes(5),
+        ]);
+        $verify = function () use ($phone, $challenge) {
+            return app(\App\Services\OtpService::class)->verify($phone, '123456', \App\Services\OtpService::PURPOSE_APP, $challenge);
+        };
+        $results = Concurrency::run([$verify, $verify]);
+        $this->assertSame(1, count(array_filter($results)));
+    }
+
     private function courseProduct(int $price): ShopProduct
     {
         $product = ShopProduct::factory()->course()->create([

@@ -3,8 +3,10 @@
 namespace App\Jobs;
 
 use App\Models\OtpVerification;
+use App\Services\OtpService;
 use App\Services\Sms\SmsDeliveryException;
 use App\Services\Sms\SmsManager;
+use App\Support\OtpCode;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -30,6 +32,7 @@ class SendOtpSmsJob implements ShouldQueue
 
         $latestId = OtpVerification::query()
             ->where('phone', $verification->phone)
+            ->where('purpose', $verification->purpose ?: OtpService::PURPOSE_WEB)
             ->latest('id')
             ->value('id');
 
@@ -47,7 +50,7 @@ class SendOtpSmsJob implements ShouldQueue
         Log::channel('jobs')->info('SendOtpSmsJob: شروع ارسال OTP', $context);
 
         try {
-            $sms->sendOtp($verification->phone, $verification->code);
+            $sms->sendOtp($verification->phone, OtpCode::open((string) $verification->code));
         } catch (Throwable $exception) {
             Log::channel('jobs')->warning('SendOtpSmsJob: ارسال ناموفق؛ تلاش مجدد', $context + [
                 'exception' => $exception::class,

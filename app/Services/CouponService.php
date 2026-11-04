@@ -13,6 +13,7 @@ use Illuminate\Support\Collection;
 class CouponService
 {
     private const REJECTED = 'کد تخفیف معتبر نیست.';
+
     public function findActive(string $code): ?Coupon
     {
         $code = strtoupper(trim($code));
@@ -63,6 +64,27 @@ class CouponService
 
         $this->assertValid($coupon, $items, $user, $subtotal);
         session(['cart.coupon_code' => $coupon->code]);
+
+        return $coupon;
+    }
+
+    /**
+     * Validate a coupon against an explicit cart, without reading the web session.
+     *
+     * @param  Collection<int, CartItem>  $items
+     */
+    public function resolveForUser(string $code, User $user, Collection $items): Coupon
+    {
+        $coupon = $this->findActive($code);
+
+        if (! $coupon) {
+            throw new \RuntimeException(self::REJECTED);
+        }
+
+        $subtotal = (float) $items->sum(
+            fn ($item) => (int) ($item->product?->effectivePrice() ?? 0) * (int) $item->quantity
+        );
+        $this->assertValid($coupon, $items, $user, $subtotal);
 
         return $coupon;
     }

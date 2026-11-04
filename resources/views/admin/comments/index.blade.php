@@ -89,8 +89,17 @@
                                 <div class="small text-warning mt-1">دلایل: {{ implode(', ', $comment->spam_reasons) }}</div>
                             @endif
                         </td>
-                        <td class="text-muted small">
-                            {{ class_basename($comment->commentable_type) }} #{{ $comment->commentable_id }}
+                        <td>
+                            <div class="small text-muted mb-1">{{ $comment->commentableLabel() }}</div>
+                            @if ($url = $comment->commentableUrl())
+                                <a href="{{ $url }}" target="_blank" rel="noopener" class="fw-medium">
+                                    {{ Str::limit($comment->commentableTitle() ?: ('#'.$comment->commentable_id), 70) }}
+                                </a>
+                            @elseif ($title = $comment->commentableTitle())
+                                <span class="fw-medium">{{ Str::limit($title, 70) }}</span>
+                            @else
+                                <span class="text-muted small">حذف‌شده #{{ $comment->commentable_id }}</span>
+                            @endif
                         </td>
                         <td><span class="badge bg-label-secondary">{{ $statuses[$comment->status] ?? $comment->status }}</span></td>
                         <td class="text-muted small">{{ $comment->created_at?->format('Y/m/d H:i') }}</td>

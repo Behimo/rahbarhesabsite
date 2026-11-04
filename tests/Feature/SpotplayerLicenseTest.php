@@ -22,6 +22,28 @@ class SpotplayerLicenseTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_successful_license_job_does_not_log_the_license_key(): void
+    {
+        $user = User::factory()->create();
+        $product = $this->freeCourse('sp-log-test');
+        $course = $product->course;
+        $user->enrollments()->create([
+            'course_id' => $course->id, 'enrolled_at' => now(), 'status' => 'active', 'source' => 'free',
+        ]);
+        $license = new SpotplayerLicense(['status' => 'issued', 'license_key' => 'SECRET-LICENSE-DO-NOT-LOG']);
+        $this->mock(SpotPlayerService::class, function ($mock) use ($license) {
+            $mock->shouldReceive('isConfigured')->once()->andReturn(true);
+            $mock->shouldReceive('issueLicense')->once()->andReturn($license);
+        });
+        $logger = \Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $logger->shouldReceive('info')->twice()->withArgs(function ($message, $context) {
+            return ! str_contains(json_encode($context), 'SECRET-LICENSE-DO-NOT-LOG')
+                && ! array_key_exists('license_key', $context);
+        });
+        \Illuminate\Support\Facades\Log::shouldReceive('channel')->with('jobs')->andReturn($logger);
+        (new IssueSpotplayerLicenseJob($user->id, $course->id))->handle(app(SpotPlayerService::class));
+    }
+
     public function test_free_enrollment_queues_a_spotplayer_license(): void
     {
         Queue::fake();

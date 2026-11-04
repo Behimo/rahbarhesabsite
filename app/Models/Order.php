@@ -18,9 +18,13 @@ class Order extends Model
 
     public const STATUS_CANCELLED = 'cancelled';
 
+    public const CHANNEL_WEB = 'web';
+
+    public const CHANNEL_APP = 'app';
+
     protected $fillable = [
-        'user_id', 'order_number', 'status', 'subtotal', 'discount',
-        'total', 'currency', 'notes', 'paid_at', 'wp_id', 'needs_review',
+        'user_id', 'order_number', 'status', 'channel', 'idempotency_key',
+        'subtotal', 'discount', 'total', 'currency', 'notes', 'paid_at', 'wp_id', 'needs_review',
         'wp_customer_id', 'billing_phone', 'coupon_id',
         'coupon_code', 'user_ip', 'user_agent',
     ];

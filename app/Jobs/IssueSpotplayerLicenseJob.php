@@ -97,7 +97,6 @@ class IssueSpotplayerLicenseJob implements ShouldQueue
 
         Log::channel('jobs')->info('IssueSpotplayerLicenseJob: موفق', $context + [
             'license_id' => $license->id,
-            'license_key' => $license->license_key,
         ]);
     }
 

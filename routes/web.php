@@ -2,8 +2,8 @@
 
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\Admin\CafeQuestionController as AdminCafeQuestionController;
-use App\Http\Controllers\Admin\CommentController as AdminCommentController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Admin\CommentController as AdminCommentController;
 use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
@@ -168,6 +168,7 @@ Route::controller(ShopController::class)->group(function () {
     Route::delete('/cart/{item}', 'removeFromCart')->name('cart.remove');
 
     Route::get('/checkout/callback', 'callback')->name('checkout.callback');
+    Route::get('/checkout/app-return', 'appReturn')->name('checkout.app-return');
     Route::get('/checkout/failed/{order?}', 'failed')->name('checkout.failed');
 
     Route::middleware('auth')->group(function () {

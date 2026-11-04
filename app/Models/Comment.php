@@ -123,6 +123,41 @@ class Comment extends Model
         return (string) ($this->author_name ?: 'مهمان');
     }
 
+    public function commentableLabel(): string
+    {
+        return match ($this->commentable_type) {
+            CmsPost::class => 'مقاله',
+            ShopProduct::class => 'دوره',
+            default => class_basename((string) $this->commentable_type) ?: 'محتوا',
+        };
+    }
+
+    public function commentableTitle(): ?string
+    {
+        $commentable = $this->commentable;
+
+        if (! $commentable) {
+            return null;
+        }
+
+        $title = trim((string) ($commentable->title ?? ''));
+
+        return $title !== '' ? $title : null;
+    }
+
+    public function commentableUrl(): ?string
+    {
+        $commentable = $this->commentable;
+
+        if (! $commentable || ! method_exists($commentable, 'url')) {
+            return null;
+        }
+
+        $url = (string) $commentable->url();
+
+        return $url !== '' ? $url.'#comments' : null;
+    }
+
     public function isApproved(): bool
     {
         return $this->status === self::STATUS_APPROVED;

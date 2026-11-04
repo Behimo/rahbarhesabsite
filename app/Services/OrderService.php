@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Coupon;
 use App\Models\Course;
 use App\Models\CourseEnrollment;
 use App\Models\Order;
@@ -10,8 +9,7 @@ use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\ShopProduct;
 use App\Models\User;
-use App\Support\Money;
-use Illuminate\Support\Collection;
+use App\Services\Orders\OrderCreator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -22,6 +20,7 @@ class OrderService
         private CouponService $coupons,
         private CourseEnrollmentService $enrollments,
         private CourseProgressService $progress,
+        private OrderCreator $orderCreator,
     ) {}
 
     public function createFromCart(User $user, ?string $ip = null, ?string $userAgent = null): Order
@@ -32,74 +31,14 @@ class OrderService
             throw new \RuntimeException('سبد خرید خالی است.');
         }
 
-        $coupon = $this->coupons->applied($user);
-
-        $reusable = $this->reusablePendingOrder($user, $items, $coupon);
-        if ($reusable) {
-            return $reusable;
-        }
-
-        return DB::transaction(function () use ($user, $items, $coupon, $ip, $userAgent) {
-            $lockedProducts = ShopProduct::query()
-                ->whereIn('id', $items->pluck('shop_product_id'))
-                ->orderBy('id')
-                ->lockForUpdate()
-                ->get()
-                ->keyBy('id');
-
-            foreach ($items as $item) {
-                $product = $lockedProducts->get($item->shop_product_id);
-                if (! $product || ! $product->is_published) {
-                    throw new \RuntimeException('یکی از محصولات سبد خرید دیگر در دسترس نیست.');
-                }
-                if ($product->tracksInventory() && $item->quantity > (int) $product->stock) {
-                    throw new \RuntimeException('موجودی محصول «'.$product->title.'» برای تعداد درخواستی کافی نیست.');
-                }
-
-                $item->setRelation('product', $product);
-            }
-
-            $subtotal = (int) $items->sum(
-                fn ($item) => (int) $item->product->effectivePrice() * (int) $item->quantity
-            );
-            $discount = $coupon ? $this->coupons->discountFor($coupon, $items) : 0;
-            $total = max(0, $subtotal - $discount);
-
-            $order = Order::query()->create([
-                'user_id' => $user->id,
-                'order_number' => Order::generateOrderNumber(),
-                'status' => Order::STATUS_PENDING,
-                'subtotal' => $subtotal,
-                'discount' => $discount,
-                'total' => $total,
-                'currency' => Money::STORE_CURRENCY,
-                'coupon_id' => $coupon?->id,
-                'coupon_code' => $coupon?->code,
-                'user_ip' => $ip,
-                'user_agent' => $userAgent,
-            ]);
-
-            foreach ($items as $item) {
-                $product = $lockedProducts->get($item->shop_product_id);
-                $reserved = $this->reserveItem($product, (int) $item->quantity);
-
-                OrderItem::query()->create([
-                    'order_id' => $order->id,
-                    'shop_product_id' => $item->shop_product_id,
-                    'title' => $product->title,
-                    'price' => $product->effectivePrice(),
-                    'quantity' => $item->quantity,
-                    'metadata' => [
-                        'slug' => $product->slug,
-                        'type' => $product->type,
-                        'course_ids' => $product->relatedCourses()->pluck('id')->all(),
-                        'stock_reserved' => $reserved,
-                    ],
-                ]);
-            }
-
-            return $order->load('items.product');
-        });
+        return $this->orderCreator->create(
+            $user,
+            $items,
+            $this->coupons->applied($user),
+            Order::CHANNEL_WEB,
+            $ip,
+            $userAgent,
+        );
     }
 
     public function markPaid(Order $order, array $paymentFields = [], ?Payment $payment = null): void
@@ -262,60 +201,6 @@ class OrderService
     public function updateCourseProgress(User $user, Course $course): void
     {
         $this->progress->update($user, $course);
-    }
-
-    private function reusablePendingOrder(User $user, Collection $items, ?Coupon $coupon): ?Order
-    {
-        $pending = Order::query()
-            ->where('user_id', $user->id)
-            ->where('status', Order::STATUS_PENDING)
-            ->latest('id')
-            ->first();
-
-        if (! $pending) {
-            return null;
-        }
-
-        $pending->load('items');
-        $current = $items->map(fn ($item) => $item->shop_product_id.':'.$item->quantity)->sort()->values()->all();
-        $existing = $pending->items->map(fn ($item) => $item->shop_product_id.':'.$item->quantity)->sort()->values()->all();
-
-        if ($current !== $existing || ! $this->pendingQuoteMatches($pending, $items, $coupon)) {
-            $this->markFailed($pending);
-
-            return null;
-        }
-
-        return $pending->load('items.product');
-    }
-
-    private function pendingQuoteMatches(Order $pending, Collection $items, ?Coupon $coupon): bool
-    {
-        $items->loadMissing('product');
-
-        if ($items->contains(fn ($item) => $item->product === null || ! $item->product->is_published)) {
-            return false;
-        }
-
-        $pricesMatch = $pending->items->every(function (OrderItem $item) use ($items) {
-            $cartItem = $items->first(
-                fn ($cartItem) => (int) $cartItem->shop_product_id === (int) $item->shop_product_id
-            );
-
-            return $cartItem && (int) $item->price === (int) $cartItem->product->effectivePrice();
-        });
-
-        $subtotal = (int) $items->sum(
-            fn ($item) => (int) $item->product->effectivePrice() * (int) $item->quantity
-        );
-        $discount = $coupon ? $this->coupons->discountFor($coupon, $items) : 0;
-        $total = max(0, $subtotal - $discount);
-
-        return $pricesMatch
-            && (int) $pending->coupon_id === (int) ($coupon?->id ?? 0)
-            && (int) $pending->subtotal === $subtotal
-            && (int) $pending->discount === $discount
-            && (int) $pending->total === $total;
     }
 
     /** @param  array<string, mixed>  $paymentFields */

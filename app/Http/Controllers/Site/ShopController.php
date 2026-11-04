@@ -12,6 +12,8 @@ use App\Services\CartService;
 use App\Services\CouponService;
 use App\Services\OrderService;
 use App\Services\PaymentGatewayManager;
+use App\Services\Payments\PaymentReturnRedirector;
+use App\Services\PermalinkService;
 use App\Services\SeoService;
 use App\Services\SiteDataService;
 use Illuminate\Http\RedirectResponse;
@@ -37,7 +39,7 @@ class ShopController extends SiteController
             'seo' => [
                 'title' => 'سبد خرید خدمات و آموزش های '.config('cms.site_name_fa'),
                 'description' => 'سبد خرید برای ثبت نهایی ثبت نام دوره های آموزشی و استفاده از خدمات و نرم افزار های راهبرحساب',
-                'canonical' => app(\App\Services\PermalinkService::class)->rootUrl().'/cart/',
+                'canonical' => app(PermalinkService::class)->rootUrl().'/cart/',
             ],
         ]);
     }
@@ -216,7 +218,7 @@ class ShopController extends SiteController
         }
     }
 
-    public function callback(Request $request): RedirectResponse
+    public function callback(Request $request, PaymentReturnRedirector $returns): RedirectResponse
     {
         $gateway = $request->query('gateway');
 
@@ -229,14 +231,26 @@ class ShopController extends SiteController
         $payment = $this->payments->verifyCallback($gateway, $request->query());
 
         if ($payment) {
-            return redirect()->route('checkout.success', $payment->order);
+            return $returns->afterCallback($payment->order, true);
         }
 
         $order = $this->findOrderFromCallback($gateway, $request->query());
 
-        return redirect()
-            ->route('checkout.failed', array_filter(['order' => $order]))
-            ->with('error', 'پرداخت ناموفق یا لغو شد. سبد خرید شما حفظ شده است.');
+        return $returns->afterCallback($order, false);
+    }
+
+    public function appReturn(Request $request, PaymentReturnRedirector $returns): View
+    {
+        $data = $request->validate([
+            'order' => ['required', 'string', 'max:40'],
+            'status' => ['required', 'in:success,failed'],
+        ]);
+
+        return view('pages.shop.app-return', [
+            'orderNumber' => $data['order'],
+            'status' => $data['status'],
+            'deepLink' => $returns->deepLink($data['order'], $data['status']),
+        ]);
     }
 
     public function success(Order $order): View|RedirectResponse
