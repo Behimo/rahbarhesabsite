@@ -95,39 +95,46 @@
 
 قیمت‌ها عدد صحیح به تومان (`currency: IRT`) هستند. جزئیات شامل سرفصل و عنوان درس است. آدرس ویدیو، فایل دانلود و شناسه اسپات‌پلیر در پاسخ نیست. اگر توکن معتبر باشد، `is_owned` پر می‌شود.
 
-## خرید
+## خرید از طریق سایت
 
-`POST /orders`
+`POST /orders` با توکن کاربر، `X-App-Key` و `Idempotency-Key`:
 
 ```json
 { "product_id": 10, "coupon_code": null, "gateway": null }
 ```
 
-`gateway` اختیاری است. اگر فقط یک درگاه فعال باشد، همان استفاده می‌شود.
+این درخواست فقط جلسه خرید ایجاد می‌کند؛ سفارش، پرداخت و ثبت‌نام حتی برای دوره رایگان هنوز انجام نمی‌شوند. کد تخفیف و انتخاب درگاه باید قبل از این درخواست در اپ تعیین شوند؛ سایت صفحه سبد یا تأیید مجدد نمایش نمی‌دهد. اگر فقط یک درگاه فعال باشد، همان انتخاب می‌شود؛ با چند درگاه فعال، `gateway` لازم است.
 
-پاسخ `201` (یا `200` اگر همان `Idempotency-Key` تکرار شود):
+پاسخ `201` برای جلسه جدید و `200` برای تکرار همان کلید:
 
 ```json
 {
   "data": {
-    "order": { "order_number": "ORD-…", "status": "pending", "total": 150000, "currency": "IRT" },
-    "payment_url": "https://gateway.example/start/…"
+    "checkout_url": "https://example.com/checkout/app-start/1?expires=...&signature=...",
+    "payment_url": "https://example.com/checkout/app-start/1?expires=...&signature=...",
+    "expires_at": "2026-11-04T12:10:00+03:30"
   }
 }
 ```
 
-دوره رایگان همان‌جا `paid` می‌شود و `payment_url` برابر `null` است. خرید دوباره دوره‌ای که ثبت‌نام فعال دارد `409` با کد `course_already_owned` است.
+اپ باید `checkout_url` را در مرورگر باز کند. `payment_url` برای سازگاری با نام قبلی، همان آدرس سایت است؛ آدرس بانک نیست. فیلد `order` از پاسخ این درخواست حذف شده؛ اپ نباید تا بازشدن سایت انتظار شماره سفارش یا فعال‌شدن دوره را داشته باشد.
 
-اپ `payment_url` را در مرورگر باز می‌کند. بعد از بانک، سایت به اپ برمی‌گردد:
+لینک امضاشده ۱۰ دقیقه اعتبار دارد و فقط همان خرید را مجاز می‌کند. توکن اصلی اپ در لینک قرار نمی‌گیرد و مرورگر وارد حساب وب نمی‌شود. حساب موجود مرورگر تعیین‌کننده مالک سفارش نیست. خروج از اپ، ابطال/انقضای توکن یا غیرفعال‌شدن حساب، لینک را غیرفعال می‌کند.
+
+با بازشدن لینک، سایت محصول، مالکیت، قیمت، کد تخفیف و درگاه را بررسی می‌کند، سفارش با کانال `app` می‌سازد و مستقیم به بانک می‌فرستد. مبلغ صفر بدون بانک پرداخت‌شده می‌شود و صفحه بازگشت به اپ نمایش داده می‌شود. لینک را پیش‌بارگذاری نکنید؛ بازشدن آن شروع خرید است. درخواست `HEAD` خریدی انجام نمی‌دهد.
+
+تکرار لینک تا پایان اعتبار، همان سفارش/پرداخت را استفاده می‌کند. استفاده از همان `Idempotency-Key` با محصول، کد تخفیف یا درگاه متفاوت `409 idempotency_conflict` می‌دهد. اپ برای تمدید لینک منقضی، همان درخواست با همان کلید را دوباره با توکن معتبر ارسال می‌کند. خطای کد تخفیف یا شروع درگاه در صفحه سایت نمایش داده می‌شود.
+
+بعد از بانک، سایت پرداخت را تأیید می‌کند و صفحه‌ای با دکمه بازگشت به اپ نمایش می‌دهد:
 
 `{APP_DEEP_LINK}?order={order_number}&status=success|failed`
 
-این آدرس لایسنس ندارد. اپ با توکن کاربر وضعیت را می‌خواند:
+اپ باید نتیجه قطعی را با توکن از سرور بخواند؛ پارامتر `status` در لینک اثبات پرداخت نیست:
 
 - `GET /orders`
 - `GET /orders/{order_number}`
 
-وضعیت صدور لایسنس در `items[].license_status` است (`pending`، `issued`، `failed`) و خود کلید نیست.
+وضعیت لایسنس در `items[].license_status` است و خود کلید لایسنس در سفارش قرار نمی‌گیرد.
 
 ## دوره‌های من
 
@@ -145,6 +152,6 @@
 
 ### Checkout replay and bundle status
 
-An `Idempotency-Key` binds the product, coupon code and requested gateway. Reusing it with different inputs returns `409 idempotency_conflict`; use a new key for a changed purchase. Retrying the original request returns the original order.
+An `Idempotency-Key` binds the product, coupon code and requested gateway. Reusing it with different inputs returns `409 idempotency_conflict`; use a new key for a changed purchase. Retrying the original request returns a renewed hosted checkout link for the same purchase.
 
 For bundles, `items[].license_status` considers every course: `revoked` takes priority over `failed`, then `pending`. It is `issued` only when all course licenses are issued. Missing licenses count as `pending`.

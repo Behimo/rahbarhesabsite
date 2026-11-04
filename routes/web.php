@@ -160,6 +160,8 @@ Route::controller(CafeQuestionController::class)->prefix('questions')->name('caf
 |--------------------------------------------------------------------------
 */
 Route::controller(ShopController::class)->group(function () {
+    Route::get('/checkout/app-start/{checkout}', \App\Http\Controllers\Site\AppCheckoutController::class)
+        ->middleware(['signed', 'throttle:30,1'])->name('checkout.app-start');
     Route::get('/cart', 'cart')->name('cart.index');
     Route::post('/cart/add/{product}', 'addToCart')->name('cart.add');
     Route::post('/cart/coupon', 'applyCoupon')->middleware('throttle:coupon')->name('cart.coupon');

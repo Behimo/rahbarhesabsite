@@ -68,7 +68,9 @@ class StartCheckoutAction
             }
         }
 
-        $gatewayName = $product->effectivePrice() > 0 ? $this->gatewayName($gateway) : null;
+        $subtotal = $product->effectivePrice();
+        $discount = $coupon ? $this->coupons->discountFor($coupon, $items) : 0;
+        $gatewayName = $subtotal - $discount > 0 ? $this->gatewayName($gateway) : null;
 
         try {
             $order = $this->orders->create(
@@ -99,7 +101,7 @@ class StartCheckoutAction
         return $this->present($order, $gatewayName, true);
     }
 
-    private function purchasableProduct(User $user, int $productId): ShopProduct
+    public function purchasableProduct(User $user, int $productId): ShopProduct
     {
         $product = ShopProduct::query()->find($productId);
 

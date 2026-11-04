@@ -50,7 +50,10 @@ class CatalogCheckoutTest extends MobileApiTestCase
             'product_id' => $product->id,
         ])->assertCreated();
 
-        $first->assertJsonPath('data.order.status', Order::STATUS_PENDING);
+        Http::assertNothingSent();
+        $this->assertSame(0, Order::query()->count());
+        $this->get($first->json('data.checkout_url'))->assertRedirect('https://gateway.zibal.ir/start/998877');
+        $this->assertGuest('web');
         $this->assertNotEmpty($first->json('data.payment_url'));
         $this->assertStringNotContainsString('license_key', $first->getContent());
 
@@ -69,11 +72,13 @@ class CatalogCheckoutTest extends MobileApiTestCase
         $product = ShopProduct::factory()->course()->create(['price' => 0, 'sale_price' => null]);
         $course = Course::factory()->create(['shop_product_id' => $product->id, 'instructor_id' => null]);
 
-        $this->withHeaders($this->appHeaders($user) + ['Idempotency-Key' => 'free-course-1'])
+        $response = $this->withHeaders($this->appHeaders($user) + ['Idempotency-Key' => 'free-course-1'])
             ->postJson('/api/v1/app/orders', ['product_id' => $product->id])
-            ->assertCreated()
-            ->assertJsonPath('data.order.status', Order::STATUS_PAID)
-            ->assertJsonPath('data.payment_url', null);
+            ->assertCreated();
+
+        $this->assertFalse($user->fresh()->isEnrolledIn($course));
+        $this->get($response->json('data.checkout_url'))->assertRedirect();
+        $this->assertSame(Order::STATUS_PAID, $user->orders()->first()->status);
 
         $this->assertTrue($user->fresh()->isEnrolledIn($course));
     }
@@ -109,7 +114,7 @@ class CatalogCheckoutTest extends MobileApiTestCase
             $this->withHeaders($headers)->postJson('/api/v1/app/orders', array_replace(['product_id' => $product->id], $change))
                 ->assertStatus(409)->assertJsonPath('code', 'idempotency_conflict');
         }
-        $this->assertSame(1, $user->orders()->count());
+        $this->assertSame(0, $user->orders()->count());
     }
 
     public function test_catalog_loads_ownership_in_batches(): void
