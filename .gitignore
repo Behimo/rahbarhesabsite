@@ -79,3 +79,6 @@ besun
 
 # Generated route cache artifact
 /storage/framework/route-list.json
+
+# Local Android purchase test app (sources, tools, signing key and APK)
+/tools/android-smoke/
