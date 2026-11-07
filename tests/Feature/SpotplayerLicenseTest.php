@@ -15,7 +15,9 @@ use App\Services\SpotPlayerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
+use Psr\Log\LoggerInterface;
 use Tests\TestCase;
 
 class SpotplayerLicenseTest extends TestCase
@@ -35,12 +37,12 @@ class SpotplayerLicenseTest extends TestCase
             $mock->shouldReceive('isConfigured')->once()->andReturn(true);
             $mock->shouldReceive('issueLicense')->once()->andReturn($license);
         });
-        $logger = \Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $logger = \Mockery::mock(LoggerInterface::class);
         $logger->shouldReceive('info')->twice()->withArgs(function ($message, $context) {
             return ! str_contains(json_encode($context), 'SECRET-LICENSE-DO-NOT-LOG')
                 && ! array_key_exists('license_key', $context);
         });
-        \Illuminate\Support\Facades\Log::shouldReceive('channel')->with('jobs')->andReturn($logger);
+        Log::shouldReceive('channel')->with('jobs')->andReturn($logger);
         (new IssueSpotplayerLicenseJob($user->id, $course->id))->handle(app(SpotPlayerService::class));
     }
 
@@ -52,7 +54,7 @@ class SpotplayerLicenseTest extends TestCase
         $product = $this->freeCourse('sp-course-1');
 
         $this->actingAs($user)
-            ->get(route('courses.enroll-free', $product->slug))
+            ->post(route('courses.enroll-free', $product->slug))
             ->assertRedirect(route('courses.learn', $product->slug))
             ->assertSessionHas('success', 'ثبت‌نام انجام شد. دسترسی اسپات‌پلیر به‌زودی آماده می‌شود.');
 
@@ -97,7 +99,7 @@ class SpotplayerLicenseTest extends TestCase
         $product = $this->freeCourse(null);
 
         $this->actingAs($user)
-            ->get(route('courses.enroll-free', $product->slug))
+            ->post(route('courses.enroll-free', $product->slug))
             ->assertRedirect(route('courses.learn', $product->slug));
 
         Queue::assertNotPushed(IssueSpotplayerLicenseJob::class);
@@ -110,7 +112,7 @@ class SpotplayerLicenseTest extends TestCase
         $user = User::factory()->create();
         $product = $this->freeCourse('sp-course-2');
 
-        $this->actingAs($user)->get(route('courses.enroll-free', $product->slug));
+        $this->actingAs($user)->post(route('courses.enroll-free', $product->slug));
 
         $job = $this->pushedJob();
         $this->fakeSpotplayer(Http::response(['message' => 'rejected'], 422));
@@ -139,7 +141,7 @@ class SpotplayerLicenseTest extends TestCase
         $user = User::factory()->create();
         $product = $this->freeCourse('sp-course-3');
 
-        $this->actingAs($user)->get(route('courses.enroll-free', $product->slug));
+        $this->actingAs($user)->post(route('courses.enroll-free', $product->slug));
 
         $job = $this->pushedJob();
         $this->fakeSpotplayer(Http::response([

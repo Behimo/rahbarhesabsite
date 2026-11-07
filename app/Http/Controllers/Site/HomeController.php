@@ -63,7 +63,7 @@ class HomeController extends SiteController
             ->orderBy('sort_order');
 
         if ($freeOnly) {
-            $query->where('price', 0);
+            $query->free();
         }
 
         return $query->take($limit)->get();

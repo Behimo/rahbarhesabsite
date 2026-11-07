@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Site;
 
 use App\Http\Requests\Site\ApplyCouponRequest;
 use App\Models\CartItem;
+use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\ShopProduct;
 use App\Models\SpotplayerLicense;
+use App\Models\User;
 use App\Services\CartService;
 use App\Services\CouponService;
 use App\Services\OrderService;
@@ -18,6 +20,7 @@ use App\Services\SeoService;
 use App\Services\SiteDataService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class ShopController extends SiteController
@@ -145,8 +148,12 @@ class ShopController extends SiteController
         }
 
         try {
+            $user = $request->user();
+            $items = $this->cart->itemsForUser((int) $user->id);
             $order = $this->orders->createFromCart(
-                auth()->user(),
+                $user,
+                $items,
+                $this->couponFromSession($user, $items),
                 $request->ip(),
                 (string) $request->userAgent()
             );
@@ -298,6 +305,26 @@ class ShopController extends SiteController
             'message' => session('error') ?? 'پرداخت ناموفق یا لغو شد. سبد خرید شما حفظ شده است.',
             'seo' => ['title' => 'پرداخت ناموفق'],
         ]);
+    }
+
+    /**
+     * @param  Collection<int, CartItem>  $items
+     */
+    private function couponFromSession(User $user, Collection $items): ?Coupon
+    {
+        $code = (string) session('cart.coupon_code', '');
+
+        if ($code === '') {
+            return null;
+        }
+
+        try {
+            return $this->coupons->resolveForUser($code, $user, $items);
+        } catch (\RuntimeException) {
+            session()->forget('cart.coupon_code');
+
+            return null;
+        }
     }
 
     /** @return array<string, mixed> */

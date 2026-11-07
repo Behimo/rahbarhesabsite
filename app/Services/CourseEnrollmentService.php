@@ -6,7 +6,6 @@ use App\Jobs\IssueSpotplayerLicenseJob;
 use App\Models\Course;
 use App\Models\CourseEnrollment;
 use App\Models\Order;
-use App\Models\SpotplayerLicense;
 use App\Models\User;
 
 class CourseEnrollmentService
@@ -16,6 +15,7 @@ class CourseEnrollmentService
         Course $course,
         ?Order $order = null,
         string $source = CourseEnrollment::SOURCE_PURCHASE,
+        bool $queueLicense = true,
     ): CourseEnrollment {
         $months = (int) config('cms.enrollment_months', 12);
         $enrollment = CourseEnrollment::query()->firstOrCreate(
@@ -39,7 +39,7 @@ class CourseEnrollmentService
             ]);
         }
 
-        if ($needsLicense && $course->spotplayer_course_id) {
+        if ($queueLicense && $needsLicense && $course->spotplayer_course_id) {
             IssueSpotplayerLicenseJob::dispatch($user->id, $course->id, $order?->id)->afterCommit();
         }
 
@@ -74,14 +74,10 @@ class CourseEnrollmentService
 
     public function retryLicenses(Order $order): void
     {
+        $order->loadMissing('items');
+
         foreach ($order->items as $item) {
-            $product = $item->product;
-
-            if (! $product) {
-                continue;
-            }
-
-            foreach ($product->relatedCourses() as $course) {
+            foreach ($item->purchasedCourses() as $course) {
                 if ($course->spotplayer_course_id) {
                     IssueSpotplayerLicenseJob::dispatch($order->user_id, $course->id, $order->id)->afterCommit();
                 }

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Cache\TaggableStore;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
@@ -17,18 +18,29 @@ class CacheService
 
     public function remember(string $key, int $ttl, callable $callback, ?string $tag = null): mixed
     {
-        if ($tag && $this->supportsTags()) {
+        if ($tag === null) {
+            return Cache::remember($key, $ttl, $callback);
+        }
+
+        if ($this->supportsTags()) {
             return Cache::tags([$tag])->remember($key, $ttl, $callback);
         }
 
-        return Cache::remember($key, $ttl, $callback);
+        $version = (string) Cache::get($this->tagVersionKey($tag), 'initial');
+
+        return Cache::remember($this->versionedKey($tag, $version, $key), $ttl, $callback);
     }
 
     public function flushTag(string $tag): void
     {
         if ($this->supportsTags()) {
             Cache::tags([$tag])->flush();
+
+            return;
         }
+
+        $versionKey = $this->tagVersionKey($tag);
+        Cache::forever($versionKey, Str::random(32));
     }
 
     public function rememberSitemap(string $section, string $root, callable $callback): array
@@ -57,6 +69,16 @@ class CacheService
 
     private function supportsTags(): bool
     {
-        return in_array(config('cache.default'), ['redis', 'memcached', 'dynamodb'], true);
+        return Cache::getStore() instanceof TaggableStore;
+    }
+
+    private function tagVersionKey(string $tag): string
+    {
+        return 'cache.tag.version.'.$tag;
+    }
+
+    private function versionedKey(string $tag, string $version, string $key): string
+    {
+        return $tag.'.v'.$version.'.'.$key;
     }
 }

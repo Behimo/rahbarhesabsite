@@ -12,3 +12,4 @@ Schedule::command('cms:publish-scheduled')->everyMinute();
 Schedule::command('otp:prune-logs')->dailyAt('03:15');
 Schedule::command('queue:prune-failed --hours=168')->weekly();
 Schedule::command('payments:reconcile')->everyFifteenMinutes()->withoutOverlapping();
+Schedule::command('orders:recover-post-payment')->everyMinute()->withoutOverlapping();

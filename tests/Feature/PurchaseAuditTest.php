@@ -154,7 +154,7 @@ class PurchaseAuditTest extends TestCase
     public function test_an_unpaid_order_does_not_render_a_success_receipt(): void
     {
         [$user] = $this->cartWithCourse();
-        $order = app(OrderService::class)->createFromCart($user);
+        $order = $this->createCartOrder($user);
 
         $response = $this->get(route('checkout.success', $order));
 
@@ -166,7 +166,7 @@ class PurchaseAuditTest extends TestCase
     public function test_a_reused_pending_order_cannot_start_payment_for_an_unpublished_product(): void
     {
         [$user, $product] = $this->cartWithCourse();
-        app(OrderService::class)->createFromCart($user);
+        $this->createCartOrder($user);
         $product->update(['is_published' => false]);
         $this->fakeZibal();
 
@@ -195,7 +195,7 @@ class PurchaseAuditTest extends TestCase
     public function test_deleting_a_purchased_course_preserves_the_order_line(): void
     {
         [$user, $product] = $this->cartWithCourse();
-        $order = app(OrderService::class)->createFromCart($user);
+        $order = $this->createCartOrder($user);
         app(OrderService::class)->markPaid($order);
         $item = $order->items()->sole();
         $admin = $this->makeAdmin();
@@ -213,7 +213,7 @@ class PurchaseAuditTest extends TestCase
     public function test_deleting_a_customer_preserves_orders_and_payments(): void
     {
         [$user, $product] = $this->cartWithCourse();
-        $order = app(OrderService::class)->createFromCart($user);
+        $order = $this->createCartOrder($user);
         app(OrderService::class)->markPaid($order, [
             'status' => Payment::STATUS_SUCCESS,
             'gateway' => 'manual',
@@ -252,7 +252,7 @@ class PurchaseAuditTest extends TestCase
     public function test_duplicate_gateway_authority_is_rejected(): void
     {
         [$user] = $this->cartWithCourse();
-        $order = app(OrderService::class)->createFromCart($user);
+        $order = $this->createCartOrder($user);
         Payment::query()->create([
             'order_id' => $order->id,
             'user_id' => $user->id,
@@ -337,6 +337,15 @@ class PurchaseAuditTest extends TestCase
 
         Http::assertSentCount(1);
         $this->assertNotSame(SpotplayerLicense::STATUS_REVOKED, $license->fresh()->status);
+    }
+
+    private function createCartOrder(User $user): Order
+    {
+        return app(OrderService::class)->createFromCart(
+            $user,
+            app(CartService::class)->itemsForUser($user->id),
+            null,
+        );
     }
 
     /** @return array{User, ShopProduct} */

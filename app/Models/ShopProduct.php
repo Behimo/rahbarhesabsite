@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\HasCategories;
 use App\Models\Concerns\HasComments;
 use App\Models\Concerns\HasTags;
+use App\Services\PermalinkService;
 use Database\Factories\ShopProductFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -82,9 +83,19 @@ class ShopProduct extends Model
         return $query->where('is_published', true);
     }
 
+    public function scopeFree($query)
+    {
+        return $query->whereRaw('COALESCE(sale_price, price) = 0');
+    }
+
+    public function scopePaid($query)
+    {
+        return $query->whereRaw('COALESCE(sale_price, price) > 0');
+    }
+
     public function url(): string
     {
-        return app(\App\Services\PermalinkService::class)->productAbsolute($this);
+        return app(PermalinkService::class)->productAbsolute($this);
     }
 
     public function effectivePrice(): int

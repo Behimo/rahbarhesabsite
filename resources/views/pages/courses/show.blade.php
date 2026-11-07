@@ -215,7 +215,10 @@
                         </div>
 
                         @if ($isFree)
-                            <a href="{{ route('courses.enroll-free', $product->slug) }}" class="course-detail-cta">ثبت‌نام رایگان</a>
+                            <form method="POST" action="{{ route('courses.enroll-free', $product->slug) }}">
+                                @csrf
+                                <button type="submit" class="course-detail-cta">ثبت‌نام رایگان</button>
+                            </form>
                         @else
                             <form method="POST" action="{{ route('cart.add', $product) }}">
                                 @csrf
@@ -297,7 +300,10 @@
                 @endif
             </div>
             @if ($isFree)
-                <a href="{{ route('courses.enroll-free', $product->slug) }}" class="course-detail-cta course-detail-cta--compact">ثبت‌نام رایگان</a>
+                <form method="POST" action="{{ route('courses.enroll-free', $product->slug) }}">
+                    @csrf
+                    <button type="submit" class="course-detail-cta course-detail-cta--compact">ثبت‌نام رایگان</button>
+                </form>
             @else
                 <form method="POST" action="{{ route('cart.add', $product) }}">
                     @csrf

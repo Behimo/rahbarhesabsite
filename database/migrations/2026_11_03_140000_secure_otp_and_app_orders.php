@@ -35,7 +35,11 @@ return new class extends Migration
         });
 
         Schema::table('otp_verifications', function (Blueprint $table) {
+            $table->dropUnique(['challenge_id']);
             $table->dropIndex(['phone', 'purpose']);
+        });
+
+        Schema::table('otp_verifications', function (Blueprint $table) {
             $table->dropColumn(['purpose', 'challenge_id']);
         });
 

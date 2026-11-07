@@ -3,12 +3,14 @@
 namespace Tests\Feature;
 
 use App\Jobs\IssueSpotplayerLicenseJob;
+use App\Models\CartItem;
 use App\Models\CmsSetting;
 use App\Models\Coupon;
 use App\Models\Course;
 use App\Models\Order;
 use App\Models\ShopProduct;
 use App\Models\User;
+use App\Services\OrderService;
 use App\Support\Money;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -125,6 +127,29 @@ class ShopCheckoutTest extends TestCase
             'shop_product_id' => $product->id,
         ]);
         $this->assertSame(Order::STATUS_FAILED, $order->fresh()->status);
+    }
+
+    public function test_checkout_order_uses_the_given_cart_not_the_authenticated_session(): void
+    {
+        $buyer = User::factory()->create();
+        $other = User::factory()->create();
+        $buyerProduct = $this->paidCourse();
+        $otherProduct = $this->paidCourse();
+
+        $this->actingAs($buyer)->post(route('cart.add', $buyerProduct));
+        $this->actingAs($other)->post(route('cart.add', $otherProduct));
+        $this->actingAs($other);
+        session(['cart.coupon_code' => 'NOT-FOR-BUYER']);
+
+        $order = app(OrderService::class)->createFromCart(
+            $buyer,
+            CartItem::query()->where('user_id', $buyer->id)->get(),
+            null,
+        );
+
+        $this->assertSame($buyer->id, (int) $order->user_id);
+        $this->assertSame([$buyerProduct->id], $order->items->pluck('shop_product_id')->map(fn ($id) => (int) $id)->all());
+        $this->assertNull($order->coupon_id);
     }
 
     public function test_coupon_applies_on_checkout(): void

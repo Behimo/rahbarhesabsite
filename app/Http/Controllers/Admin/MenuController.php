@@ -8,7 +8,7 @@ use App\Http\Requests\Admin\MenuTreeRequest;
 use App\Models\CmsMenu;
 use App\Models\CmsPage;
 use App\Models\CmsPost;
-use App\Models\CmsProduct;
+use App\Models\ShopProduct;
 use App\Services\MenuService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -93,8 +93,8 @@ class MenuController extends Controller
             'posts' => Schema::hasTable('cms_posts')
                 ? $map(CmsPost::query()->orderBy('title')->get(['title', 'slug']))
                 : [],
-            'courses' => Schema::hasTable('cms_products')
-                ? $map(CmsProduct::query()->orderBy('title')->get(['title', 'slug']))
+            'courses' => Schema::hasTable('shop_products')
+                ? $map(ShopProduct::query()->where('type', ShopProduct::TYPE_COURSE)->orderBy('title')->get(['title', 'slug']))
                 : [],
         ];
     }

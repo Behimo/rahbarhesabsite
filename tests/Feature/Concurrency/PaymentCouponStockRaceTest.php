@@ -7,10 +7,13 @@ use App\Models\CouponUsage;
 use App\Models\Course;
 use App\Models\CourseEnrollment;
 use App\Models\Order;
+use App\Models\OtpVerification;
 use App\Models\ShopProduct;
 use App\Models\User;
 use App\Services\CartService;
 use App\Services\OrderService;
+use App\Services\OtpService;
+use App\Support\OtpCode;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Concurrency;
 use PHPUnit\Framework\Attributes\Group;
@@ -91,19 +94,19 @@ class PaymentCouponStockRaceTest extends TestCase
         $this->addToCart($userB, $product);
 
         $orders = app(OrderService::class);
-        $first = $orders->createFromCart($userA);
+        $first = $orders->createFromCart($userA, app(CartService::class)->itemsForUser($userA->id), null);
         $this->assertSame(Order::STATUS_PENDING, $first->status);
         $this->assertSame(0, (int) $product->fresh()->stock);
 
         try {
-            $orders->createFromCart($userB);
+            $orders->createFromCart($userB, app(CartService::class)->itemsForUser($userB->id), null);
             $this->fail('Second checkout should fail when stock is already reserved.');
         } catch (\RuntimeException $exception) {
             $this->assertStringContainsString('موجودی', $exception->getMessage());
         }
 
         $this->assertSame(0, (int) $product->fresh()->stock);
-        $this->assertSame(1, Order::query()->count());
+        $this->assertSame(1, Order::query()->whereIn('user_id', [$userA->id, $userB->id])->count());
     }
 
     public function test_double_mark_paid_does_not_duplicate_enrollment(): void
@@ -111,7 +114,7 @@ class PaymentCouponStockRaceTest extends TestCase
         $user = User::factory()->create();
         $product = $this->courseProduct(120_000);
         $this->addToCart($user, $product);
-        $order = app(OrderService::class)->createFromCart($user);
+        $order = app(OrderService::class)->createFromCart($user, app(CartService::class)->itemsForUser($user->id), null);
 
         $orders = app(OrderService::class);
         $orders->markPaid($order);
@@ -144,9 +147,9 @@ class PaymentCouponStockRaceTest extends TestCase
             function () use ($userAId) {
                 try {
                     $user = User::query()->findOrFail($userAId);
-                    auth()->login($user);
+                    $items = app(CartService::class)->itemsForUser($user->id);
 
-                    return ['ok' => true, 'order_id' => app(OrderService::class)->createFromCart($user)->id];
+                    return ['ok' => true, 'order_id' => app(OrderService::class)->createFromCart($user, $items, null)->id];
                 } catch (\Throwable $e) {
                     return ['ok' => false, 'error' => $e->getMessage()];
                 }
@@ -154,9 +157,9 @@ class PaymentCouponStockRaceTest extends TestCase
             function () use ($userBId) {
                 try {
                     $user = User::query()->findOrFail($userBId);
-                    auth()->login($user);
+                    $items = app(CartService::class)->itemsForUser($user->id);
 
-                    return ['ok' => true, 'order_id' => app(OrderService::class)->createFromCart($user)->id];
+                    return ['ok' => true, 'order_id' => app(OrderService::class)->createFromCart($user, $items, null)->id];
                 } catch (\Throwable $e) {
                     return ['ok' => false, 'error' => $e->getMessage()];
                 }
@@ -166,22 +169,22 @@ class PaymentCouponStockRaceTest extends TestCase
         $successes = collect($results)->where('ok', true)->count();
         $this->assertSame(1, $successes, 'Exactly one concurrent checkout may reserve the last unit. Results: '.json_encode($results));
         $this->assertGreaterThanOrEqual(0, (int) $product->fresh()->stock);
-        $this->assertSame(1, Order::query()->count());
+        $this->assertSame(1, Order::query()->whereIn('user_id', [$userAId, $userBId])->count());
     }
 
     public function test_only_one_concurrent_request_can_consume_a_login_otp(): void
     {
         $phone = '09123334455';
         $challenge = str_repeat('a', 40);
-        \App\Models\OtpVerification::query()->create([
+        OtpVerification::query()->create([
             'phone' => '+989123334455',
-            'purpose' => \App\Services\OtpService::PURPOSE_APP,
+            'purpose' => OtpService::PURPOSE_APP,
             'challenge_id' => $challenge,
-            'code' => \App\Support\OtpCode::seal('123456'),
+            'code' => OtpCode::seal('123456'),
             'expires_at' => now()->addMinutes(5),
         ]);
         $verify = function () use ($phone, $challenge) {
-            return app(\App\Services\OtpService::class)->verify($phone, '123456', \App\Services\OtpService::PURPOSE_APP, $challenge);
+            return app(OtpService::class)->verify($phone, '123456', OtpService::PURPOSE_APP, $challenge);
         };
         $results = Concurrency::run([$verify, $verify]);
         $this->assertSame(1, count(array_filter($results)));

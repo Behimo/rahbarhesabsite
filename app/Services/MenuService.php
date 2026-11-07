@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\CmsMenu;
 use App\Models\CmsMenuItem;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class MenuService
@@ -35,9 +36,12 @@ class MenuService
 
     public function saveTree(CmsMenu $menu, array $tree): void
     {
-        $menu->allItems()->update(['parent_id' => null]);
-        $menu->allItems()->delete();
-        $this->persistItems($menu, $tree);
+        DB::transaction(function () use ($menu, $tree) {
+            $menu->allItems()->update(['parent_id' => null]);
+            $menu->allItems()->delete();
+            $this->persistItems($menu, $tree);
+        });
+
         $this->forgetLocation($menu->location);
     }
 
@@ -147,9 +151,14 @@ class MenuService
                 $meta = $slug !== '' ? ['slug' => $slug] : null;
             }
 
+            $label = trim((string) ($node['label'] ?? ''));
+            if (mb_strlen($label) > 255) {
+                throw new \RuntimeException('عنوان آیتم منو بیش از حد طولانی است.');
+            }
+
             $item = $menu->allItems()->create([
                 'parent_id' => $parentId,
-                'label' => trim((string) ($node['label'] ?? '')),
+                'label' => $label,
                 'type' => $type,
                 'url' => $url,
                 'route_name' => $routeName,

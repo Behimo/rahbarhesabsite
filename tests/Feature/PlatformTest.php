@@ -67,6 +67,11 @@ class PlatformTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('courses.enroll-free', 'free-course'))
+            ->assertStatus(405);
+        $this->assertFalse($user->fresh()->isEnrolledIn($course));
+
+        $this->actingAs($user)
+            ->post(route('courses.enroll-free', 'free-course'))
             ->assertRedirect(route('courses.learn', 'free-course'));
 
         $this->assertTrue($user->isEnrolledIn($course));

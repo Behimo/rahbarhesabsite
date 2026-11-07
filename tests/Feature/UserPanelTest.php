@@ -133,6 +133,11 @@ class UserPanelTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('panel.notifications.read', $notification->id))
+            ->assertStatus(405);
+        $this->assertNull($notification->fresh()->read_at);
+
+        $this->actingAs($user)
+            ->post(route('panel.notifications.read', $notification->id))
             ->assertRedirect();
 
         $this->assertNotNull($notification->fresh()->read_at);
@@ -153,7 +158,7 @@ class UserPanelTest extends TestCase
         $notification = $owner->notifications()->firstOrFail();
 
         $this->actingAs($attacker)
-            ->get(route('panel.notifications.read', $notification->id))
+            ->post(route('panel.notifications.read', $notification->id))
             ->assertNotFound();
     }
 

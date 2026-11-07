@@ -68,8 +68,8 @@ class CourseController extends SiteController
                         ->orWhere('subtitle', 'like', "%{$search}%");
                 });
             })
-            ->when($type === 'free', fn ($q) => $q->whereRaw('COALESCE(sale_price, price) = 0'))
-            ->when($type === 'paid', fn ($q) => $q->whereRaw('COALESCE(sale_price, price) > 0'))
+            ->when($type === 'free', fn ($q) => $q->free())
+            ->when($type === 'paid', fn ($q) => $q->paid())
             ->orderBy('sort_order')
             ->paginate(config('seo.per_page.products'))->withQueryString();
 

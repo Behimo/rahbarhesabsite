@@ -31,6 +31,7 @@ use App\Http\Controllers\Admin\TagController as AdminTagController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Panel\DashboardController as PanelDashboardController;
+use App\Http\Controllers\Site\AppCheckoutController;
 use App\Http\Controllers\Site\BlogController;
 use App\Http\Controllers\Site\CafeQuestionController;
 use App\Http\Controllers\Site\CommentController;
@@ -106,7 +107,7 @@ Route::controller(CourseController::class)->prefix('courses')->name('courses.')-
     Route::get('/{slug}/lessons/{lessonSlug}/file', 'serveLessonFile')->name('lesson.file');
 
     Route::middleware('auth')->group(function () {
-        Route::get('/{slug}/enroll-free', 'enrollFree')->name('enroll-free');
+        Route::post('/{slug}/enroll-free', 'enrollFree')->name('enroll-free');
         Route::post('/{slug}/license/refresh', 'refreshLicense')->name('license.refresh');
         Route::get('/{slug}/learn/{lessonSlug?}', 'learn')->name('learn');
         Route::post('/{slug}/lessons/{lessonSlug}/complete', 'completeLesson')->name('lesson.complete');
@@ -160,7 +161,7 @@ Route::controller(CafeQuestionController::class)->prefix('questions')->name('caf
 |--------------------------------------------------------------------------
 */
 Route::controller(ShopController::class)->group(function () {
-    Route::get('/checkout/app-start/{checkout}', \App\Http\Controllers\Site\AppCheckoutController::class)
+    Route::get('/checkout/app-start/{checkout}', AppCheckoutController::class)
         ->middleware(['signed', 'throttle:30,1'])->name('checkout.app-start');
     Route::get('/cart', 'cart')->name('cart.index');
     Route::post('/cart/add/{product}', 'addToCart')->name('cart.add');
@@ -211,7 +212,7 @@ Route::prefix('panel')->name('panel.')->middleware('auth')->controller(PanelDash
     Route::get('/comments', 'comments')->name('comments');
     Route::get('/notifications', 'notifications')->name('notifications');
     Route::post('/notifications/read-all', 'markAllNotificationsRead')->name('notifications.read-all');
-    Route::get('/notifications/{id}/read', 'markNotificationRead')->name('notifications.read');
+    Route::post('/notifications/{id}/read', 'markNotificationRead')->name('notifications.read');
     Route::get('/profile', 'profile')->name('profile');
     Route::put('/profile', 'updateProfile')->name('profile.update');
     Route::put('/profile/password', 'updatePassword')->name('profile.password');

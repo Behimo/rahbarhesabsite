@@ -14,28 +14,34 @@ class BlockRenderer
     /** @param  array<string, mixed>  $contextData */
     public function render(array $builderContent, array $contextData = []): string
     {
+        $previous = $this->context->all();
         $this->context->set($contextData);
 
-        $blocks = $builderContent['blocks'] ?? [];
-        $html = '';
+        try {
+            $blocks = $builderContent['blocks'] ?? [];
+            $html = '';
 
-        foreach ($blocks as $block) {
-            $type = $block['type'] ?? null;
-            $settings = $block['settings'] ?? [];
+            foreach ($blocks as $block) {
+                $type = $block['type'] ?? null;
+                $settings = $block['settings'] ?? [];
 
-            if (! $type) {
-                continue;
+                if (! $type) {
+                    continue;
+                }
+
+                try {
+                    $html .= $this->registry->renderBlock($type, $settings);
+                } catch (\Throwable $e) {
+                    Log::error('Block render failed: '.$type, ['error' => $e->getMessage()]);
+
+                    continue;
+                }
             }
 
-            try {
-                $html .= $this->registry->renderBlock($type, $settings);
-            } catch (\Throwable $e) {
-                Log::error('Block render failed: ' . $type, ['error' => $e->getMessage()]);
-                continue;
-            }
+            return $html;
+        } finally {
+            $this->context->set($previous);
         }
-
-        return $html;
     }
 
     public function assets(array $builderContent): array

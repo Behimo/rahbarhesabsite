@@ -12,7 +12,34 @@ class CartService
 {
     public function items(): Collection
     {
-        $query = CartItem::query()->with('product');
+        return $this->remembered($this->ownerKey(), function () {
+            $query = CartItem::query()->with('product');
+
+            if (Auth::check()) {
+                $query->where('user_id', Auth::id());
+            } else {
+                $query->where('session_id', session()->getId());
+            }
+
+            return $query->get();
+        });
+    }
+
+    public function itemsForUser(int $userId): Collection
+    {
+        return $this->remembered('user:'.$userId, function () use ($userId) {
+            return CartItem::query()->with('product')->where('user_id', $userId)->get();
+        });
+    }
+
+    public function count(): int
+    {
+        return (int) $this->items()->sum('quantity');
+    }
+
+    public function quantityTotal(): int
+    {
+        $query = CartItem::query();
 
         if (Auth::check()) {
             $query->where('user_id', Auth::id());
@@ -20,12 +47,12 @@ class CartService
             $query->where('session_id', session()->getId());
         }
 
-        return $query->get();
+        return (int) $query->sum('quantity');
     }
 
-    public function count(): int
+    public function flushMemo(): void
     {
-        return $this->items()->sum('quantity');
+        app()->forgetInstance('cart.items.memo');
     }
 
     public function subtotal(): int
@@ -35,6 +62,8 @@ class CartService
 
     public function add(ShopProduct $product, int $quantity = 1): void
     {
+        $this->flushMemo();
+
         DB::transaction(function () use ($product, $quantity) {
             $item = $this->lockedOwnerItem($product->id);
 
@@ -60,6 +89,8 @@ class CartService
 
     public function update(CartItem $item, int $quantity): void
     {
+        $this->flushMemo();
+
         if ($quantity <= 0) {
             $item->delete();
 
@@ -86,11 +117,14 @@ class CartService
 
     public function remove(CartItem $item): void
     {
+        $this->flushMemo();
         $item->delete();
     }
 
     public function clear(): void
     {
+        $this->flushMemo();
+
         if (Auth::check()) {
             $this->clearForUser((int) Auth::id());
         } else {
@@ -100,6 +134,7 @@ class CartService
 
     public function clearForUser(int $userId): void
     {
+        $this->flushMemo();
         CartItem::query()->where('user_id', $userId)->delete();
         app(CouponService::class)->forget();
     }
@@ -109,6 +144,8 @@ class CartService
      */
     public function clearProductsForUser(int $userId, array $productIds): void
     {
+        $this->flushMemo();
+
         if ($productIds === []) {
             return;
         }
@@ -140,6 +177,7 @@ class CartService
 
     public function mergeGuestCart(int $userId, ?string $sessionId = null): void
     {
+        $this->flushMemo();
         $sessionId = $sessionId ?: session()->getId();
 
         DB::transaction(function () use ($userId, $sessionId) {
@@ -193,5 +231,24 @@ class CartService
         }
 
         return $query->lockForUpdate()->first();
+    }
+
+    private function ownerKey(): string
+    {
+        return Auth::check()
+            ? 'user:'.Auth::id()
+            : 'session:'.session()->getId();
+    }
+
+    private function remembered(string $key, callable $load): Collection
+    {
+        $all = app()->bound('cart.items.memo') ? app('cart.items.memo') : [];
+
+        if (! array_key_exists($key, $all)) {
+            $all[$key] = $load();
+            app()->instance('cart.items.memo', $all);
+        }
+
+        return $all[$key];
     }
 }

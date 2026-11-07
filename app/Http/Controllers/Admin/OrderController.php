@@ -73,13 +73,9 @@ class OrderController extends Controller
         ])->save();
 
         if ($order->isPaid()) {
-            $order->loadMissing('items.product');
+            $order->loadMissing('items');
             foreach ($order->items as $item) {
-                $product = $item->product;
-                if (! $product) {
-                    continue;
-                }
-                foreach ($product->relatedCourses() as $course) {
+                foreach ($item->purchasedCourses() as $course) {
                     $this->orders->enrollUser($user, $course, $order, CourseEnrollment::SOURCE_PURCHASE);
                 }
             }

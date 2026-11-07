@@ -163,9 +163,9 @@ class RouteSmokeTest extends TestCase
             'courses.lesson.file',
             'courses.lesson.download',
             'checkout.callback',
+            'checkout.app-start',
             'admin.pages.revisions.restore',
             'admin.posts.revisions.restore',
-            'panel.notifications.read',
             'admin.export', // JSON download covered in RbacRegressionTest
         ], true);
     }
@@ -183,7 +183,6 @@ class RouteSmokeTest extends TestCase
         if (str_starts_with($name, 'panel.')
             || str_starts_with($name, 'checkout.')
             || in_array($name, [
-                'courses.enroll-free',
                 'courses.learn',
                 'cafe-soal.ask',
             ], true)
@@ -211,7 +210,6 @@ class RouteSmokeTest extends TestCase
 
         // Auth-gated course/checkout pages for guests.
         if ($actor === 'guest' && in_array($name, [
-            'courses.enroll-free',
             'courses.learn',
             'checkout.index',
             'checkout.success',

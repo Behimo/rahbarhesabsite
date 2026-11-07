@@ -13,6 +13,11 @@ class PageRenderContext
         $this->data = $data;
     }
 
+    public function reset(): void
+    {
+        $this->data = [];
+    }
+
     public function get(string $key, mixed $default = null): mixed
     {
         return $this->data[$key] ?? $default;

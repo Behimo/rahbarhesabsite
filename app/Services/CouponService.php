@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\CouponUsageRejected;
 use App\Models\CartItem;
 use App\Models\Coupon;
 use App\Models\CouponUsage;
@@ -42,9 +43,12 @@ class CouponService
         }
 
         $items = app(CartService::class)->items();
+        $subtotal = (float) $items->sum(
+            fn (CartItem $item) => (int) ($item->product?->effectivePrice() ?? 0) * (int) $item->quantity
+        );
 
         try {
-            $this->assertValid($coupon, $items, $user ?? auth()->user(), app(CartService::class)->subtotal());
+            $this->assertValid($coupon, $items, $user ?? auth()->user(), $subtotal);
         } catch (\RuntimeException) {
             session()->forget('cart.coupon_code');
 
@@ -156,7 +160,7 @@ class CouponService
         $coupon = Coupon::query()->whereKey($order->coupon_id)->lockForUpdate()->first();
 
         if (! $coupon) {
-            throw new \RuntimeException(self::REJECTED);
+            throw new CouponUsageRejected(self::REJECTED);
         }
 
         $existing = CouponUsage::query()
@@ -169,7 +173,7 @@ class CouponService
         }
 
         if (! $coupon->isValidForCart((float) $order->subtotal, $order->user, $order->id)) {
-            throw new \RuntimeException(self::REJECTED);
+            throw new CouponUsageRejected(self::REJECTED);
         }
 
         CouponUsage::query()->create([

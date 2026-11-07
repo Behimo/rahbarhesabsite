@@ -2,31 +2,35 @@
 
 namespace App\Services;
 
+use App\Models\CartItem;
+use App\Models\Coupon;
 use App\Models\Course;
 use App\Models\CourseEnrollment;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\OrderPostPaymentTask;
 use App\Models\Payment;
 use App\Models\ShopProduct;
 use App\Models\User;
 use App\Services\Orders\OrderCreator;
+use App\Services\Orders\PostPaymentProcessor;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class OrderService
 {
     public function __construct(
-        private CartService $cart,
-        private CouponService $coupons,
         private CourseEnrollmentService $enrollments,
         private CourseProgressService $progress,
         private OrderCreator $orderCreator,
+        private PostPaymentProcessor $postPayment,
     ) {}
 
-    public function createFromCart(User $user, ?string $ip = null, ?string $userAgent = null): Order
+    /**
+     * @param  Collection<int, CartItem>  $items
+     */
+    public function createFromCart(User $user, Collection $items, ?Coupon $coupon = null, ?string $ip = null, ?string $userAgent = null): Order
     {
-        $items = $this->cart->items();
-
         if ($items->isEmpty()) {
             throw new \RuntimeException('سبد خرید خالی است.');
         }
@@ -34,7 +38,7 @@ class OrderService
         return $this->orderCreator->create(
             $user,
             $items,
-            $this->coupons->applied($user),
+            $coupon,
             Order::CHANNEL_WEB,
             $ip,
             $userAgent,
@@ -45,50 +49,47 @@ class OrderService
     {
         $order->refresh();
 
-        if ($order->isPaid()) {
-            return;
+        if (! $order->isPaid()) {
+            DB::transaction(function () use ($order, $paymentFields, $payment) {
+                $locked = Order::query()->lockForUpdate()->find($order->id);
+
+                if (! $locked || $locked->isPaid()) {
+                    return;
+                }
+
+                $locked->load('items.product');
+                foreach ($locked->items as $item) {
+                    if ($item->metadata['stock_reserved'] ?? false) {
+                        continue;
+                    }
+
+                    $product = $item->product;
+                    if (! $product?->tracksInventory()) {
+                        continue;
+                    }
+
+                    $this->reserveItem($product, (int) $item->quantity);
+                }
+
+                $locked->update([
+                    'status' => Order::STATUS_PAID,
+                    'paid_at' => now(),
+                ]);
+
+                if ($paymentFields !== []) {
+                    $this->recordPaymentResult($locked, $paymentFields, $payment);
+                }
+
+                $paid = $locked->fresh(['items', 'user']);
+                $this->fulfill($paid);
+                $this->queuePostPaymentTasks($paid);
+            });
         }
 
-        DB::transaction(function () use ($order, $paymentFields, $payment) {
-            $locked = Order::query()->lockForUpdate()->find($order->id);
-
-            if (! $locked || $locked->isPaid()) {
-                return;
-            }
-
-            $locked->load('items.product');
-            foreach ($locked->items as $item) {
-                if ($item->metadata['stock_reserved'] ?? false) {
-                    continue;
-                }
-
-                $product = $item->product;
-                if (! $product?->tracksInventory()) {
-                    continue;
-                }
-
-                $this->reserveItem($product, (int) $item->quantity);
-            }
-
-            $locked->update([
-                'status' => Order::STATUS_PAID,
-                'paid_at' => now(),
-            ]);
-
-            if ($paymentFields !== []) {
-                $this->recordPaymentResult($locked, $paymentFields, $payment);
-            }
-
-            $this->fulfill($locked->fresh(['items.product.course', 'user']));
-        });
-
-        $this->recordCouponUsage($order->fresh());
-
-        $order->load('items');
-        $this->cart->clearProductsForUser(
-            (int) $order->user_id,
-            $order->items->pluck('shop_product_id')->filter()->map(fn ($id) => (int) $id)->all(),
-        );
+        $fresh = $order->fresh();
+        if ($fresh?->isPaid()) {
+            $this->postPayment->process($fresh);
+        }
     }
 
     public function markFailed(Order $order): void
@@ -162,19 +163,15 @@ class OrderService
 
     public function fulfill(Order $order): void
     {
-        if (! $order->isPaid()) {
+        if (! $order->isPaid() || ! $order->user) {
             return;
         }
 
+        $order->loadMissing('items');
+
         foreach ($order->items as $item) {
-            $product = $item->product;
-
-            if (! $product) {
-                continue;
-            }
-
-            foreach ($product->relatedCourses() as $course) {
-                $this->enrollments->enroll($order->user, $course, $order, CourseEnrollment::SOURCE_PURCHASE);
+            foreach ($item->purchasedCourses() as $course) {
+                $this->enrollments->enroll($order->user, $course, $order, CourseEnrollment::SOURCE_PURCHASE, false);
             }
         }
     }
@@ -203,6 +200,54 @@ class OrderService
         $this->progress->update($user, $course);
     }
 
+    private function queuePostPaymentTasks(Order $order): void
+    {
+        $order->loadMissing('items');
+
+        if ($order->coupon_id) {
+            $this->firstPostPaymentTask($order, 'coupon', OrderPostPaymentTask::TYPE_COUPON, [
+                'coupon_id' => (int) $order->coupon_id,
+            ]);
+        }
+
+        $productIds = $order->items
+            ->pluck('shop_product_id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+
+        $this->firstPostPaymentTask($order, 'cart_clear', OrderPostPaymentTask::TYPE_CART_CLEAR, [
+            'product_ids' => $productIds,
+        ]);
+
+        if (! $order->user_id) {
+            return;
+        }
+
+        foreach ($order->items as $item) {
+            foreach ($item->purchasedCourses() as $course) {
+                if (! $course->spotplayer_course_id) {
+                    continue;
+                }
+
+                $this->firstPostPaymentTask($order, 'license:'.$course->id, OrderPostPaymentTask::TYPE_LICENSE, [
+                    'user_id' => (int) $order->user_id,
+                    'course_id' => (int) $course->id,
+                ]);
+            }
+        }
+    }
+
+    /** @param  array<string, mixed>  $payload */
+    private function firstPostPaymentTask(Order $order, string $key, string $type, array $payload): void
+    {
+        OrderPostPaymentTask::query()->firstOrCreate(
+            ['order_id' => $order->id, 'task_key' => $key],
+            ['type' => $type, 'payload' => $payload],
+        );
+    }
+
     /** @param  array<string, mixed>  $paymentFields */
     private function recordPaymentResult(Order $order, array $paymentFields, ?Payment $payment): void
     {
@@ -214,32 +259,6 @@ class OrderService
             ->first();
 
         $target?->update($paymentFields);
-    }
-
-    private function recordCouponUsage(Order $order): void
-    {
-        if (! $order->coupon_id || ! $order->isPaid()) {
-            return;
-        }
-
-        try {
-            DB::transaction(fn () => $this->coupons->recordUsage($order));
-        } catch (\RuntimeException $e) {
-            Log::error('Coupon usage was not recorded after a captured payment.', [
-                'order_id' => $order->id,
-                'coupon_id' => $order->coupon_id,
-                'message' => $e->getMessage(),
-            ]);
-
-            $note = 'سقف کوپن بعد از پرداخت موفق رد شد و مصرف ثبت نشد.';
-            $existing = trim((string) $order->notes);
-
-            if (! str_contains($existing, $note)) {
-                $order->update([
-                    'notes' => trim($existing."\n".$note),
-                ]);
-            }
-        }
     }
 
     private function failLockedOrder(?Order $locked): void
